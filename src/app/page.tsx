@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useState } from "react";
 import ProjectsShowcase, { ProjectTuple } from "./project_showcase";
 
 const proj1: ProjectTuple = [
@@ -28,31 +26,7 @@ const proj3: ProjectTuple = [
   "#",
 ]
 
-function StreamingText({
-  text,
-  className = "",
-  startDelay = 0,
-}: {
-  text: string;
-  className?: string;
-  startDelay?: number;
-}) {
-  const words = text.split(" ");
-  return (
-    <span className={className}>
-      {words.map((word, index) => (
-        <span
-          key={index}
-          className="opacity-0 animate-[streamInLoop_0.8s_ease-out_forwards]"
-          style={{ animationDelay: `${startDelay + index * 0.3}s` }}
-        >
-          {word}
-          {index < words.length - 1 ? " " : ""}
-        </span>
-      ))}
-    </span>
-  );
-}
+
 
 export default function Home() {
   return (
@@ -60,7 +34,7 @@ export default function Home() {
       {/* Menu bar */}
       <div className="font-[family-name:var(--font-inter)] flex flex-row gap-15 my-15 items-center justify-center mb-20 py-3 opacity-0 translate-y-[-20px] animate-[fadeInUp_0.3s_ease-out_0.05s_forwards]">
         <div className="flex flex-col gap-5 items-center mb-[-45]">
-          <img src="logo.svg" alt="" className="h-5" />
+          <img src="logo.svg" alt="Logo" className="h-5" />
           <div className="flex flex-row gap-15 w-85 px-10 py-3 bg-[#2c2c2c] rounded-full items-center justify-center">
             <p>about</p>
             <p>projects</p>
@@ -83,11 +57,11 @@ export default function Home() {
           className="mb-[-10] pr-5 mt-[-25] opacity-0 translate-y-[-30px] animate-[fadeInUp_0.4s_ease-out_0.25s_forwards]"
         />
         <h1 className="text-[80px] opacity-0 translate-y-[-30px] animate-[fadeInUp_0.4s_ease-out_0.35s_forwards]">
-          i'm moiz<span className="force-white">.</span>
+          i&apos;m moiz<span className="force-white">.</span>
         </h1>
         <img
           src="/sisyphus.jpg"
-          alt=""
+          alt="Sisyphus artwork"
           className="mix-blend-screen w-125 mr-14 mt-[-270] opacity-0 translate-y-[-40px] animate-[fadeInUpSubtle_0.5s_ease-out_0.45s_forwards]"
         />
       </div>
@@ -101,7 +75,7 @@ export default function Home() {
         <div className="font-[family-name:var(--font-libre-baskerville)] text-[30px] mt-10 flex flex-col">
           <h1 className="ml-30">about me</h1>
           <p className="opacity-50 text-[20px] ml-30">
-            i'm a 17y/o high school student passionate about robotics, drones,
+            i&apos;m a 17y/o high school student passionate about robotics, drones,
             machine learning and building things that matter. also sidequesting
             to make the panams in karate. i love f1, matcha and celsius. based
             close enough to toronto. this is my public notebook where i share my
@@ -110,11 +84,11 @@ export default function Home() {
         </div>
 
         <div className="font-[family-name:var(--font-libre-baskerville)] text-[30px] mt-20 flex flex-col">
-          <h1 className="ml-30">what i've been working on</h1>
+          <h1 className="ml-30">what i&apos;ve been working on</h1>
 
           <p className="text-white/60 text-[20px] mt-5 ml-30">
             ↳ co-founded{" "}
-            <img src="/factful.svg" className="inline-block w-5 mb-1" />{" "}
+            <img src="/factful.svg" alt="Factful logo" className="inline-block w-5 mb-1" />{" "}
             <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
               Factful
             </span>{" "}
@@ -124,7 +98,7 @@ export default function Home() {
 
           <p className="text-white/60 text-[20px] mt-5 ml-30">
             ↳ that same product was greenlit for $250k of{" "}
-            <img src="/azure.png" className="inline-block w-5 mb-1" />{" "}
+            <img src="/azure.png" alt="Azure logo" className="inline-block w-5 mb-1" />{" "}
             <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
               Azure Credits
             </span>{" "}
@@ -134,13 +108,13 @@ export default function Home() {
           <p className="text-white/60 text-[20px] mt-5 ml-30">
             ↳ that same product will be piloting at a college (will disclose
             soon){" "}
-            <img src="/luckyblock.png" className="inline-block w-5.5 mb-1" />{" "}
+            <img src="/luckyblock.png" alt="College logo" className="inline-block w-5.5 mb-1" />{" "}
             with over 40,000 students over 2026-2027
           </p>
 
           <p className="text-white/60 text-[20px] mt-5 ml-30">
             ↳ built{" "}
-            <img src="/tutorapp.svg" className="inline-block w-6 mb-1" />{" "}
+            <img src="/tutorapp.svg" alt="Tutorapp logo" className="inline-block w-6 mb-1" />{" "}
             <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
               Tutorapp
             </span>{" "}
@@ -150,7 +124,7 @@ export default function Home() {
 
           <p className="text-white/60 text-[20px] mt-5 ml-30">
             ↳ founded my schools podcast,{" "}
-            <img src="/wossweekly.svg" className="inline-block w-6" />{" "}
+            <img src="/wossweekly.svg" alt="WOSS Weekly logo" className="inline-block w-6" />{" "}
             <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
               WOSS Weekly
             </span>{" "}
