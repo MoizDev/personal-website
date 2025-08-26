@@ -217,11 +217,7 @@ export default function Home() {
           <div className="max-w-3xl text-left">
             <h1 className="text-clamp(24px,5vw,30px) mb-4">about me</h1>
             <p className="opacity-50 text-clamp(16px,3.5vw,20px)">
-              i&apos;m a 17y/o high school student passionate about robotics,
-              drones, machine learning and building things that matter. also
-              sidequesting to make the panams in karate. i love f1, matcha and
-              celsius. based close enough to toronto. this is my public notebook
-              where i share my work, thoughts and experiences.
+            when i was very young, i had a fascination with art. although my dad tried to convince me that programming—  building things— was art itself, nothing could convince my young self that there is creative expression beyond putting a paint brush to a canvas. this became fuel for my epiphany in grade 9 and part of that “supernova” is this website: a collision between the two worlds of art and programming. i’ve rapidly accumulated knowledge about numerous technologies and am very interested in machine learning, embedded systems and product design. 
             </p>
           </div>
         </div>
@@ -317,7 +313,7 @@ export default function Home() {
       >
         <div className="flex flex-col items-center text-[30px] mt-20">
           <h1 className="mb-10">Projects</h1>
-
+          <p className="mt-[-45] mb-5 text-[18px] opacity-25">(section incomplete)</p>
           <ProjectsShowcase projects={[proj1, proj2, proj3]} />
           <div className="border border-b-white border-[1px] opacity-15 mt-20 w-100" />
           <div className="flex flex-row gap-5 items-center mb-5">
