@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import ProjectsShowcase, { ProjectTuple } from "./project_showcase";
 
 const proj1: ProjectTuple = [
@@ -26,6 +27,149 @@ const proj3: ProjectTuple = [
   "#",
 ];
 
+function AnimatedMenu() {
+  const [activeItem, setActiveItem] = useState<string | null>(null);
+  const [pillStyle, setPillStyle] = useState({ width: 0, left: 0 });
+  const menuItemsRef = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const menuItems = ["about", "projects"];
+
+  const updatePillPosition = (item: string) => {
+    const element = menuItemsRef.current[item];
+    const container = containerRef.current;
+
+    if (element && container) {
+      const containerRect = container.getBoundingClientRect();
+
+      // Fixed spacing from all edges - this ensures perfect consistency
+      const fixedMargin = 8; // Exact same margin from all edges (px-2 py-2 = 8px)
+
+      // Calculate available width for pill
+      const availableWidth = containerRect.width - fixedMargin * 2;
+
+      // For 2 items, each gets half the available width
+      const sectionWidth = availableWidth / menuItems.length;
+      const itemIndex = menuItems.indexOf(item);
+
+      // Pill takes up most of its section with small gaps between sections
+      const gapBetweenSections = 8;
+      const pillWidth = sectionWidth - gapBetweenSections;
+
+      // Position pill in its section
+      const sectionLeft = fixedMargin + itemIndex * sectionWidth;
+      const pillLeft = sectionLeft + gapBetweenSections / 2;
+
+      setPillStyle({
+        width: pillWidth,
+        left: pillLeft,
+      });
+    }
+  };
+
+  useEffect(() => {
+    // Only update pill position if there's an active item
+    if (activeItem) {
+      const timer1 = setTimeout(() => updatePillPosition(activeItem), 50);
+      const timer2 = setTimeout(() => updatePillPosition(activeItem), 150);
+      const timer3 = setTimeout(() => updatePillPosition(activeItem), 300);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+        clearTimeout(timer3);
+      };
+    }
+  }, [activeItem]);
+
+  // Add resize observer to recalculate on any layout changes
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !activeItem) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(() => updatePillPosition(activeItem), 10);
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [activeItem]);
+
+  // Remove scroll spy functionality - only manual selection now
+
+  const smoothScrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      // Get the actual position of the element
+      const rect = element.getBoundingClientRect();
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+      const elementTop = rect.top + scrollTop;
+
+      // Different offsets for different sections
+      const offset = sectionId === "about" ? 150 : 100;
+      const targetPosition = elementTop - offset;
+
+      window.scrollTo({
+        top: Math.max(0, targetPosition), // Ensure we don't scroll to negative position
+        behavior: "smooth",
+      });
+    }
+  };
+
+  const handleItemClick = (item: string) => {
+    // 1. First, update active item and move pill immediately
+    setActiveItem(item);
+    setTimeout(() => updatePillPosition(item), 10);
+
+    // 2. Then, after pill animation completes, start scrolling
+    setTimeout(() => {
+      smoothScrollToSection(item);
+    }, 350); // Wait for pill animation (300ms) + small buffer
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative flex flex-row px-2 py-2 bg-[#2c2c2c] rounded-full items-center justify-between min-w-[310px]"
+    >
+      {/* Animated pill background - only show when there's an active item */}
+      {activeItem && (
+        <div
+          className="absolute bg-[#1a1a1a] rounded-full transition-all duration-300 ease-out"
+          style={{
+            width: `${pillStyle.width}px`,
+            left: `${pillStyle.left}px`,
+            height: `calc(100% - 16px)`, // 8px margin top and bottom
+            top: `8px`, // 8px from top
+          }}
+        />
+      )}
+
+      {/* Menu items */}
+      {menuItems.map((item) => (
+        <button
+          key={item}
+          ref={(el) => {
+            menuItemsRef.current[item] = el;
+          }}
+          onClick={() => handleItemClick(item)}
+          className={`relative z-10 px-8 py-3 text-base flex-1 transition-colors duration-200 ${
+            activeItem === item
+              ? "text-white font-medium"
+              : "text-gray-300 hover:text-white"
+          }`}
+        >
+          {item}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-x-clip">
@@ -33,11 +177,7 @@ export default function Home() {
       <div className="font-[family-name:var(--font-inter)] flex flex-row gap-15 my-15 items-center justify-center mb-20 py-3 opacity-0 translate-y-[-20px] animate-[fadeInUp_0.3s_ease-out_0.05s_forwards]">
         <div className="flex flex-col gap-5 items-center mb-[-45]">
           <img src="logo.svg" alt="Logo" className="h-5" />
-          <div className="flex flex-row gap-15 w-85 px-10 py-3 bg-[#2c2c2c] rounded-full items-center justify-center">
-            <p>about</p>
-            <p>projects</p>
-            <p>writing</p>
-          </div>
+          <AnimatedMenu />
         </div>
       </div>
 
@@ -70,7 +210,10 @@ export default function Home() {
 
       {/* Content container that clips its own decorations */}
       <div className="relative mx-auto max-w-4xl px-6">
-        <div className="font-[family-name:var(--font-libre-baskerville)] mt-10 flex flex-col items-center">
+        <div
+          id="about"
+          className="font-[family-name:var(--font-libre-baskerville)] mt-10 flex flex-col items-center"
+        >
           <div className="max-w-3xl text-left">
             <h1 className="text-clamp(24px,5vw,30px) mb-4">about me</h1>
             <p className="opacity-50 text-clamp(16px,3.5vw,20px)">
@@ -100,8 +243,8 @@ export default function Home() {
                 <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
                   Factful
                 </span>{" "}
-                (100k+ queries processed, inbound VC interest from Seqouia, A16z,
-                YC, others)
+                (100k+ queries processed, inbound VC interest from Seqouia,
+                A16z, YC, others)
               </p>
 
               <p className="text-white/60 text-clamp(14px,3vw,20px)">
@@ -139,8 +282,8 @@ export default function Home() {
                   Tutorapp
                 </span>{" "}
                 : a webapp to automate tutor-student connections for tutoring
-                clubs across Halton (serves over 1,000+ students across the school
-                board)
+                clubs across Halton (serves over 1,000+ students across the
+                school board)
               </p>
 
               <p className="text-white/60 text-clamp(14px,3vw,20px)">
@@ -168,7 +311,10 @@ export default function Home() {
       {/* Red ellipse — anchor at edge, move with transform (no layout overflow) */}
       <div className="pointer-events-none absolute w-100 h-150 border border-[#D6505A] rounded-full opacity-50 right-0 translate-x-1/2 top-[800px]" />
 
-      <div className="flex font-[family-name:var(--font-libre-baskerville)] items-center justify-center mt-20">
+      <div
+        id="projects"
+        className="flex font-[family-name:var(--font-libre-baskerville)] items-center justify-center mt-20"
+      >
         <div className="flex flex-col items-center text-[30px] mt-20">
           <h1 className="mb-10">Projects</h1>
 

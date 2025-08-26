@@ -39,7 +39,7 @@ export default function ProjectsShowcase({ projects }: Props) {
       className="w-full flex flex-col items-center"
     >
       {/* wrapper centers the stack of cards */}
-      <div className="w-full max-w-[min(90vw,1000px)] px-4 md:px-6 lg:px-8 flex flex-col items-center gap-6 md:gap-8">
+      <div className="w-full max-w-[min(85vw,750px)] px-4 md:px-6 lg:px-8 flex flex-col items-center gap-6 md:gap-8">
         {projects.map(([img, name, desc, techCSV, href], i) => {
           const techs = techCSV
             .split(",")
