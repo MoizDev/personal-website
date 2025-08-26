@@ -39,7 +39,7 @@ export default function ProjectsShowcase({ projects }: Props) {
       className="w-full flex flex-col items-center"
     >
       {/* wrapper centers the stack of cards */}
-      <div className="w-full max-w-[45vw] px-4 md:px-6 lg:px-8 flex flex-col items-center gap-6 md:gap-8">
+      <div className="w-full max-w-[min(90vw,1000px)] px-4 md:px-6 lg:px-8 flex flex-col items-center gap-6 md:gap-8">
         {projects.map(([img, name, desc, techCSV, href], i) => {
           const techs = techCSV
             .split(",")
@@ -72,7 +72,7 @@ export default function ProjectsShowcase({ projects }: Props) {
               <div className="p-5 md:p-6 flex flex-col gap-3 md:gap-4">
                 {/* Title + action */}
                 <div className="flex flex-row items-start justify-between gap-3">
-                  <h3 className="text-xl md:text-2xl tracking-tight text-zinc-50 font-baskerville">
+                  <h3 className="text-clamp(18px,4vw,24px) tracking-tight text-zinc-50 font-baskerville">
                     {name}
                   </h3>
 
@@ -88,7 +88,7 @@ export default function ProjectsShowcase({ projects }: Props) {
                 </div>
 
                 {/* Description */}
-                <p className="font-sans text-sm md:text-base leading-relaxed text-zinc-300/90 font-baskerville">
+                <p className="font-sans text-clamp(14px,3vw,16px) leading-relaxed text-zinc-300/90 font-baskerville">
                   {desc}
                 </p>
 

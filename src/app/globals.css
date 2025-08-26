@@ -69,3 +69,24 @@ body {
 .force-white {
   color: #ffffff !important;
 }
+
+/* Custom clamp utilities for responsive text */
+.text-clamp\(24px\,5vw\,30px\) {
+  font-size: clamp(24px, 5vw, 30px);
+}
+
+.text-clamp\(16px\,3\.5vw\,20px\) {
+  font-size: clamp(16px, 3.5vw, 20px);
+}
+
+.text-clamp\(14px\,3vw\,20px\) {
+  font-size: clamp(14px, 3vw, 20px);
+}
+
+.text-clamp\(18px\,4vw\,24px\) {
+  font-size: clamp(18px, 4vw, 24px);
+}
+
+.text-clamp\(14px\,3vw\,16px\) {
+  font-size: clamp(14px, 3vw, 16px);
+}

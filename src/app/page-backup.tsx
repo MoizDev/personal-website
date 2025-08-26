@@ -71,10 +71,10 @@ export default function Home() {
       <div className="pointer-events-none absolute -top-[200px] right-0 translate-x-1/3 bg-[#b5b5b5] w-90 h-90 rounded-full opacity-100 blur-[200px]" />
 
       {/* Content container that clips its own decorations */}
-      <div className="relative mx-auto max-w-4xl px-6">
-        <div className="font-[family-name:var(--font-libre-baskerville)] mt-10 flex flex-col items-center text-center">
-          <h1 className="text-clamp(24px,5vw,30px) mb-4">about me</h1>
-          <p className="opacity-50 text-clamp(16px,3.5vw,20px) max-w-3xl">
+      <div className="relative mx-auto w-250 px-6">
+        <div className="font-[family-name:var(--font-libre-baskerville)] text-[30px] mt-10 flex flex-col">
+          <h1 className="ml-30">about me</h1>
+          <p className="opacity-50 text-[20px] ml-30">
             i&apos;m a 17y/o high school student passionate about robotics, drones,
             machine learning and building things that matter. also sidequesting
             to make the panams in karate. i love f1, matcha and celsius. based
@@ -83,56 +83,54 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="font-[family-name:var(--font-libre-baskerville)] mt-20 flex flex-col items-center text-center">
-          <h1 className="text-clamp(24px,5vw,30px) mb-6">what i&apos;ve been working on</h1>
+        <div className="font-[family-name:var(--font-libre-baskerville)] text-[30px] mt-20 flex flex-col">
+          <h1 className="ml-30">what i&apos;ve been working on</h1>
 
-          <div className="max-w-3xl space-y-4">
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ co-founded{" "}
-              <img src="/factful.svg" alt="Factful logo" className="inline-block w-5 mb-1" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                Factful
-              </span>{" "}
-              (100k+ queries processed, inbound VC interest from Seqouia, A16z,
-              YC, others)
-            </p>
+          <p className="text-white/60 text-[20px] mt-5 ml-30">
+            ↳ co-founded{" "}
+            <img src="/factful.svg" alt="Factful logo" className="inline-block w-5 mb-1" />{" "}
+            <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+              Factful
+            </span>{" "}
+            (100k+ queries processed, inbound VC interest from Seqouia, A16z,
+            YC, others)
+          </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ that same product was greenlit for $250k of{" "}
-              <img src="/azure.png" alt="Azure logo" className="inline-block w-5 mb-1" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                Azure Credits
-              </span>{" "}
-              by Microsoft startup fund
-            </p>
+          <p className="text-white/60 text-[20px] mt-5 ml-30">
+            ↳ that same product was greenlit for $250k of{" "}
+            <img src="/azure.png" alt="Azure logo" className="inline-block w-5 mb-1" />{" "}
+            <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+              Azure Credits
+            </span>{" "}
+            by Microsoft startup fund
+          </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ that same product will be piloting at a college (will disclose
-              soon){" "}
-              <img src="/luckyblock.png" alt="College logo" className="inline-block w-5.5 mb-1" />{" "}
-              with over 40,000 students over 2026-2027
-            </p>
+          <p className="text-white/60 text-[20px] mt-5 ml-30">
+            ↳ that same product will be piloting at a college (will disclose
+            soon){" "}
+            <img src="/luckyblock.png" alt="College logo" className="inline-block w-5.5 mb-1" />{" "}
+            with over 40,000 students over 2026-2027
+          </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ built{" "}
-              <img src="/tutorapp.svg" alt="Tutorapp logo" className="inline-block w-6 mb-1" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                Tutorapp
-              </span>{" "}
-              : a webapp to automate tutor-student connections for tutoring clubs
-              across Halton (serves over 1,000+ students across the school board)
-            </p>
+          <p className="text-white/60 text-[20px] mt-5 ml-30">
+            ↳ built{" "}
+            <img src="/tutorapp.svg" alt="Tutorapp logo" className="inline-block w-6 mb-1" />{" "}
+            <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+              Tutorapp
+            </span>{" "}
+            : a webapp to automate tutor-student connections for tutoring clubs
+            across Halton (serves over 1,000+ students across the school board)
+          </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ founded my schools podcast,{" "}
-              <img src="/wossweekly.svg" alt="WOSS Weekly logo" className="inline-block w-6" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                WOSS Weekly
-              </span>{" "}
-              : connecting the youth to various successful individuals in an
-              attempt to bridge a knowledge gap through real insight
-            </p>
-          </div>
+          <p className="text-white/60 text-[20px] mt-5 ml-30">
+            ↳ founded my schools podcast,{" "}
+            <img src="/wossweekly.svg" alt="WOSS Weekly logo" className="inline-block w-6" />{" "}
+            <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+              WOSS Weekly
+            </span>{" "}
+            : connecting the youth to various successful individuals in an
+            attempt to bridge a knowledge gap through real insight
+          </p>
         </div>
 
         {/* Decorative outlines inside a clipping context */}
