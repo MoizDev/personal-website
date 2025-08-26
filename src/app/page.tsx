@@ -16,7 +16,7 @@ const proj2: ProjectTuple = [
   "Tutorapp is a web platform I built to streamline how tutoring clubs connect students with the right peer tutors across schools. Instead of relying on messy spreadsheets or manual sign-ups, Tutorapp automates the entire matching process—making it simple for students to request help, and for tutors to claim sessions instantly. Currently serving over 1,000+ students across the Halton school board, it provides a centralized hub where academic support is accessible, organized, and scalable. By reducing the overhead for club leaders and ensuring students get timely help, Tutorapp makes peer tutoring more efficient, impactful, and sustainable for both learners and mentors.",
   "Flask, React, Next.js, Typescript",
   "#",
-]
+];
 
 const proj3: ProjectTuple = [
   "/plant-dex-promo.png",
@@ -24,9 +24,7 @@ const proj3: ProjectTuple = [
   "PlantDex is an AI-powered plant identification and care assistant that my team and I built in just 18 hours during a hackathon. We designed it to help users quickly identify plants by simply snapping a photo, after which the app provides details like species, care instructions, and growth needs. Using computer vision and external APIs for plant recognition, we combined a sleek interface with real-time results to make plant care accessible to anyone—from casual gardeners to enthusiasts. Despite the tight time frame, our team collaborated seamlessly, dividing tasks across frontend, backend, and API integration to deliver a working prototype that impressed judges with its practicality and user-friendly design.",
   "Flask, React, Next.js, Typescript",
   "#",
-]
-
-
+];
 
 export default function Home() {
   return (
@@ -72,66 +70,93 @@ export default function Home() {
 
       {/* Content container that clips its own decorations */}
       <div className="relative mx-auto max-w-4xl px-6">
-        <div className="font-[family-name:var(--font-libre-baskerville)] mt-10 flex flex-col items-center text-center">
-          <h1 className="text-clamp(24px,5vw,30px) mb-4">about me</h1>
-          <p className="opacity-50 text-clamp(16px,3.5vw,20px) max-w-3xl">
-            i&apos;m a 17y/o high school student passionate about robotics, drones,
-            machine learning and building things that matter. also sidequesting
-            to make the panams in karate. i love f1, matcha and celsius. based
-            close enough to toronto. this is my public notebook where i share my
-            work, thoughts and experiences.
-          </p>
+        <div className="font-[family-name:var(--font-libre-baskerville)] mt-10 flex flex-col items-center">
+          <div className="max-w-3xl text-left">
+            <h1 className="text-clamp(24px,5vw,30px) mb-4">about me</h1>
+            <p className="opacity-50 text-clamp(16px,3.5vw,20px)">
+              i&apos;m a 17y/o high school student passionate about robotics,
+              drones, machine learning and building things that matter. also
+              sidequesting to make the panams in karate. i love f1, matcha and
+              celsius. based close enough to toronto. this is my public notebook
+              where i share my work, thoughts and experiences.
+            </p>
+          </div>
         </div>
 
-        <div className="font-[family-name:var(--font-libre-baskerville)] mt-20 flex flex-col items-center text-center">
-          <h1 className="text-clamp(24px,5vw,30px) mb-6">what i&apos;ve been working on</h1>
+        <div className="font-[family-name:var(--font-libre-baskerville)] mt-20 flex flex-col items-center">
+          <div className="max-w-3xl text-left">
+            <h1 className="text-clamp(24px,5vw,30px) mb-6">
+              what i&apos;ve been working on
+            </h1>
 
-          <div className="max-w-3xl space-y-4">
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ co-founded{" "}
-              <img src="/factful.svg" alt="Factful logo" className="inline-block w-5 mb-1" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                Factful
-              </span>{" "}
-              (100k+ queries processed, inbound VC interest from Seqouia, A16z,
-              YC, others)
-            </p>
+            <div className="space-y-4">
+              <p className="text-white/60 text-clamp(14px,3vw,20px)">
+                ↳ co-founded{" "}
+                <img
+                  src="/factful.svg"
+                  alt="Factful logo"
+                  className="inline-block w-5 mb-1"
+                />{" "}
+                <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+                  Factful
+                </span>{" "}
+                (100k+ queries processed, inbound VC interest from Seqouia, A16z,
+                YC, others)
+              </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ that same product was greenlit for $250k of{" "}
-              <img src="/azure.png" alt="Azure logo" className="inline-block w-5 mb-1" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                Azure Credits
-              </span>{" "}
-              by Microsoft startup fund
-            </p>
+              <p className="text-white/60 text-clamp(14px,3vw,20px)">
+                ↳ that same product was greenlit for $250k of{" "}
+                <img
+                  src="/azure.png"
+                  alt="Azure logo"
+                  className="inline-block w-5 mb-1"
+                />{" "}
+                <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+                  Azure Credits
+                </span>{" "}
+                by Microsoft startup fund
+              </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ that same product will be piloting at a college (will disclose
-              soon){" "}
-              <img src="/luckyblock.png" alt="College logo" className="inline-block w-5.5 mb-1" />{" "}
-              with over 40,000 students over 2026-2027
-            </p>
+              <p className="text-white/60 text-clamp(14px,3vw,20px)">
+                ↳ that same product will be piloting at a college (will disclose
+                soon){" "}
+                <img
+                  src="/luckyblock.png"
+                  alt="College logo"
+                  className="inline-block w-5.5 mb-1"
+                />{" "}
+                with over 40,000 students over 2026-2027
+              </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ built{" "}
-              <img src="/tutorapp.svg" alt="Tutorapp logo" className="inline-block w-6 mb-1" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                Tutorapp
-              </span>{" "}
-              : a webapp to automate tutor-student connections for tutoring clubs
-              across Halton (serves over 1,000+ students across the school board)
-            </p>
+              <p className="text-white/60 text-clamp(14px,3vw,20px)">
+                ↳ built{" "}
+                <img
+                  src="/tutorapp.svg"
+                  alt="Tutorapp logo"
+                  className="inline-block w-6 mb-1"
+                />{" "}
+                <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+                  Tutorapp
+                </span>{" "}
+                : a webapp to automate tutor-student connections for tutoring
+                clubs across Halton (serves over 1,000+ students across the school
+                board)
+              </p>
 
-            <p className="text-white/60 text-clamp(14px,3vw,20px)">
-              ↳ founded my schools podcast,{" "}
-              <img src="/wossweekly.svg" alt="WOSS Weekly logo" className="inline-block w-6" />{" "}
-              <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
-                WOSS Weekly
-              </span>{" "}
-              : connecting the youth to various successful individuals in an
-              attempt to bridge a knowledge gap through real insight
-            </p>
+              <p className="text-white/60 text-clamp(14px,3vw,20px)">
+                ↳ founded my schools podcast,{" "}
+                <img
+                  src="/wossweekly.svg"
+                  alt="WOSS Weekly logo"
+                  className="inline-block w-6"
+                />{" "}
+                <span className="text-white opacity-100 underline underline-offset-3 decoration-[#a0a0a0] hover:bg-[#2DA761]/50 cursor-pointer">
+                  WOSS Weekly
+                </span>{" "}
+                : connecting the youth to various successful individuals in an
+                attempt to bridge a knowledge gap through real insight
+              </p>
+            </div>
           </div>
         </div>
 
@@ -148,13 +173,11 @@ export default function Home() {
           <h1 className="mb-10">Projects</h1>
 
           <ProjectsShowcase projects={[proj1, proj2, proj3]} />
-          <div className="border border-b-white border-[1px] opacity-15 mt-20 w-100"/>
+          <div className="border border-b-white border-[1px] opacity-15 mt-20 w-100" />
           <div className="flex flex-row gap-5 items-center mb-5">
             <p className="text-[15px] mt-5">2025 © Moiz Hashmi</p>
-
           </div>
         </div>
-        
       </div>
     </div>
   );
