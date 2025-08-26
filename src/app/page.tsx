@@ -16,7 +16,7 @@ const proj2: ProjectTuple = [
   "WOSS Tutorapp",
   "Tutorapp is a web platform I built to streamline how tutoring clubs connect students with the right peer tutors across schools. Instead of relying on messy spreadsheets or manual sign-ups, Tutorapp automates the entire matching process—making it simple for students to request help, and for tutors to claim sessions instantly. Currently serving over 1,000+ students across the Halton school board, it provides a centralized hub where academic support is accessible, organized, and scalable. By reducing the overhead for club leaders and ensuring students get timely help, Tutorapp makes peer tutoring more efficient, impactful, and sustainable for both learners and mentors.",
   "Flask, React, Next.js, Typescript",
-  "#",
+  "",
 ];
 
 const proj3: ProjectTuple = [
@@ -24,7 +24,7 @@ const proj3: ProjectTuple = [
   "PlantDex",
   "PlantDex is an AI-powered plant identification and care assistant that my team and I built in just 18 hours during a hackathon. We designed it to help users quickly identify plants by simply snapping a photo, after which the app provides details like species, care instructions, and growth needs. Using computer vision and external APIs for plant recognition, we combined a sleek interface with real-time results to make plant care accessible to anyone—from casual gardeners to enthusiasts. Despite the tight time frame, our team collaborated seamlessly, dividing tasks across frontend, backend, and API integration to deliver a working prototype that impressed judges with its practicality and user-friendly design.",
   "Flask, React, Next.js, Typescript",
-  "#",
+  "https://github.com/BarjunM/PlantDex",
 ];
 
 function AnimatedMenu() {
