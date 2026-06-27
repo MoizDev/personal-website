@@ -4,7 +4,10 @@ import { Footer } from "@/components/Footer";
 import { getBooks } from "@/lib/books";
 
 export const metadata = {
-  title: "bookshelf — moiz hashmi",
+  title: "bookshelf",
+  description:
+    "what moiz hashmi is reading — a shelf of non-fiction, fiction, and pakistani writing, with ratings.",
+  alternates: { canonical: "/bookshelf" },
 };
 
 export default function BookshelfPage() {

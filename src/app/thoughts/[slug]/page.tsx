@@ -14,9 +14,33 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const article = getThought(slug);
+  if (!article) return { title: "drawer of thoughts" };
+
+  const url = `/thoughts/${article.slug}`;
+  const idx = thoughtIndex(slug);
+  const ogImage = article.image ?? thoughtImages[idx % thoughtImages.length];
+
   return {
-    title: article ? `${article.title} — moiz hashmi` : "drawer of thoughts",
-    description: article?.blurb,
+    title: article.title,
+    description: article.blurb,
+    keywords: article.keywords,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description: article.blurb,
+      url,
+      publishedTime: article.published ?? article.date,
+      authors: ["Moiz Hashmi"],
+      tags: article.keywords,
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.blurb,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
   };
 }
 

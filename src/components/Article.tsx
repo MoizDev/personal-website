@@ -1,9 +1,43 @@
 import { ChevronLeft } from "lucide-react";
 import { Footer } from "./Footer";
 import { ReadingProgress } from "./ReadingProgress";
-import { readingTime, type Article as ArticleType, type Block } from "@/lib/thoughts";
+import {
+  readingTime,
+  getRelated,
+  type Article as ArticleType,
+  type Block,
+} from "@/lib/thoughts";
+import { SITE } from "@/lib/site";
 
 type NavLink = { slug: string; title: string } | null;
+
+// turn [label](href) into links; internal links keep you on-site (good for SEO),
+// external ones open in a new tab.
+function renderInline(text: string) {
+  const re = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  let key = 0;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    const [, label, href] = m;
+    const external = /^https?:/.test(href);
+    out.push(
+      <a
+        key={key++}
+        href={href}
+        {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
+        className="text-[var(--accent)] underline decoration-[var(--accent)]/30 underline-offset-2 transition-colors hover:decoration-[var(--accent)]"
+      >
+        {label}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
 
 export function Article({
   article,
@@ -16,8 +50,30 @@ export function Article({
   prev: NavLink;
   next: NavLink;
 }) {
+  const related = getRelated(article.slug);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: article.title,
+    description: article.blurb,
+    datePublished: article.published ?? article.date,
+    dateModified: article.published ?? article.date,
+    author: { "@type": "Person", name: SITE.author, url: SITE.url },
+    publisher: { "@type": "Person", name: SITE.author },
+    mainEntityOfPage: `${SITE.url}/thoughts/${article.slug}`,
+    url: `${SITE.url}/thoughts/${article.slug}`,
+    keywords: article.keywords?.join(", "),
+    ...(image
+      ? { image: image.startsWith("http") ? image : `${SITE.url}${image}` }
+      : {}),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <ReadingProgress />
 
       <div className="relative overflow-x-hidden">
@@ -66,6 +122,37 @@ export function Article({
             />
           ))}
         </article>
+
+        {/* related — internal backlinks for readers and crawlers */}
+        {related.length > 0 && (
+          <section
+            aria-label="Related thoughts"
+            className="mx-auto max-w-[680px] px-5 pt-4 sm:px-8"
+          >
+            <h2 className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+              related thoughts
+            </h2>
+            <ul className="mt-4 space-y-3">
+              {related.map((r) => (
+                <li key={r.slug}>
+                  <a
+                    href={`/thoughts/${r.slug}`}
+                    className="group block"
+                    rel="bookmark"
+                  >
+                    <span className="font-medium text-[var(--fg)] transition-colors group-hover:text-[var(--accent)]">
+                      {r.title}
+                    </span>
+                    <span className="text-sm text-[var(--muted)]">
+                      {" — "}
+                      {r.blurb}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* prev / next */}
         {(prev || next) && (
@@ -137,7 +224,7 @@ function BlockView({ block, lead }: { block: Block; lead: boolean }) {
   if (block.type === "quote") {
     return (
       <blockquote className="my-8 border-l-2 border-[var(--accent)] pl-5 text-base leading-[1.55] [font-family:var(--font-serif)]">
-        {block.text}
+        {renderInline(block.text)}
       </blockquote>
     );
   }
@@ -149,7 +236,7 @@ function BlockView({ block, lead }: { block: Block; lead: boolean }) {
           : ""
       }`}
     >
-      {block.text}
+      {renderInline(block.text)}
     </p>
   );
 }

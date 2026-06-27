@@ -5,10 +5,31 @@ import { Projects } from "@/components/Projects";
 import { Reveal } from "@/components/Reveal";
 import { Footer } from "@/components/Footer";
 import { arcImages, projectImages } from "@/lib/images";
+import { SITE } from "@/lib/site";
+
+const personLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: SITE.author,
+  url: SITE.url,
+  jobTitle: "Software Engineer",
+  description: SITE.description,
+  knowsAbout: [
+    "Machine Learning",
+    "AI Infrastructure",
+    "CUDA",
+    "Systems Programming",
+    "Software Engineering",
+  ],
+};
 
 export default function Home() {
   return (
     <div className="relative overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personLd) }}
+      />
       {/* Sisyphus line art bleeding off the right edge of the site. Blended so
           its solid background drops out: light → invert + multiply; dark → screen. */}
       <div

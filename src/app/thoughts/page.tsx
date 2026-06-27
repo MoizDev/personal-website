@@ -4,7 +4,10 @@ import { Footer } from "@/components/Footer";
 import { thoughtImages } from "@/lib/images";
 
 export const metadata = {
-  title: "drawer of thoughts — moiz hashmi",
+  title: "drawer of thoughts",
+  description:
+    "short essays on software craft, learning, taste, and building at the seam between applied ml and the systems it runs on.",
+  alternates: { canonical: "/thoughts" },
 };
 
 export default function ThoughtsPage() {
