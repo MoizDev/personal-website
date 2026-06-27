@@ -21,6 +21,11 @@ const personLd = {
     "Systems Programming",
     "Software Engineering",
   ],
+  sameAs: [
+    "https://x.com/moizhashmi0",
+    "https://github.com/MoizDev",
+    "https://www.linkedin.com/in/moiz-ahmed-hashmi-a36670213/",
+  ],
 };
 
 export default function Home() {

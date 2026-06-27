@@ -1,3 +1,5 @@
+import { SocialLinks } from "./SocialLinks";
+
 function Tag({
   children,
   color,
@@ -15,21 +17,25 @@ function Tag({
 export function Hero() {
   return (
     <section id="me" className="pt-2">
-      <h1
-        className="hero-rise inline-block text-[clamp(1.75rem,6vw,4.5rem)] font-normal leading-[0.95] tracking-tight [font-family:var(--font-serif)]"
-        style={{
-          ["--i" as string]: 1,
-          backgroundImage:
-            "linear-gradient(115deg, var(--fg) 38%, color-mix(in srgb, var(--fg) 12%, transparent) 92%)",
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
-        }}
-      >
-        moiz
-        <br />
-        hashmi
-      </h1>
+      <div className="flex items-start justify-between gap-4">
+        <h1
+          className="hero-rise inline-block text-[clamp(1.75rem,6vw,4.5rem)] font-normal leading-[0.95] tracking-tight [font-family:var(--font-serif)]"
+          style={{
+            ["--i" as string]: 1,
+            backgroundImage:
+              "linear-gradient(115deg, var(--fg) 38%, color-mix(in srgb, var(--fg) 12%, transparent) 92%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
+        >
+          moiz
+          <br />
+          hashmi
+        </h1>
+        {/* top edge sits on the imaginary line off the top of "moiz" */}
+        <SocialLinks className="hero-rise mt-[0.35rem] shrink-0" />
+      </div>
 
       {/* wrapper carries the entrance animation so the inner nudge survives */}
       <div className="hero-rise" style={{ ["--i" as string]: 2 }}>
