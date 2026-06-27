@@ -1,59 +1,70 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Libre_Baskerville, Inter } from "next/font/google";
+import {
+  Inter,
+  Anton,
+  Libre_Baskerville,
+  Noto_Nastaliq_Urdu,
+} from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { Notch } from "@/components/Notch";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const anton = Anton({
   subsets: ["latin"],
+  weight: "400",
+  variable: "--font-display",
+  display: "swap",
 });
 
 const libreBaskerville = Libre_Baskerville({
-  variable: "--font-libre-baskerville",
   subsets: ["latin"],
   weight: ["400", "700"],
-  style: ["normal", "italic"],
+  variable: "--font-serif",
+  display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const notoNastaliq = Noto_Nastaliq_Urdu({
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+  variable: "--font-urdu",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "moiz hashmi",
+  title: "Moiz Hashmi",
   description:
-    "17y/o high school student passionate about robotics, drones, machine learning and building things that matter.",
-  icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
-  },
+    "Moiz Hashmi — building at the intersection of software, design, and ideas.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="shortcut icon" href="/favicon.ico" />
+        {/* Apply the saved theme before first paint — prevents the light→dark
+            flash on full page loads. Defaults to light; never reads the OS. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${libreBaskerville.variable} ${inter.variable} antialiased`}
+        className={`${inter.variable} ${anton.variable} ${libreBaskerville.variable} ${notoNastaliq.variable} font-sans`}
       >
-        {children}
+        <ThemeProvider>
+          <Notch />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

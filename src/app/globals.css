@@ -1,92 +1,351 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #121212;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #9a9a9a;
+  --accent: #03a5fc;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  --bg: #111110;
+  --fg: #f2f0ec;
+  --muted: #6f6f6c;
+  --accent: #36b3ff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #121212;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  text-transform: lowercase;
 }
 
-@keyframes fadeInUp {
+/* Hand-drawn highlight marker behind text */
+.mark {
+  background-image: linear-gradient(
+    var(--mark-color, #ffe066),
+    var(--mark-color, #ffe066)
+  );
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 45%;
+  padding: 0 0.15em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  /* highlight is always light, so keep the text dark in both themes */
+  color: #1a1a1a;
+  /* light mode: the highlight shrinks down to an underline */
+  animation: mark-shrink 0.55s ease-out both;
+}
+@keyframes mark-shrink {
+  from {
+    background-size: 100% 100%;
+  }
+  to {
+    background-size: 100% 45%;
+  }
+}
+
+/* dark mode: the highlight sweeps up to cover the whole word */
+.dark .mark {
+  animation: mark-fill 0.55s ease-out both;
+}
+@keyframes mark-fill {
+  from {
+    background-size: 100% 45%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mark {
+    animation: none;
+    background-size: 100% 45%;
+  }
+  .dark .mark {
+    animation: none;
+    background-size: 100% 100%;
+  }
+}
+
+/* Soft pill tags */
+.tag {
+  display: inline-block;
+  padding: 0.05em 0.45em;
+  border-radius: 0.35em;
+  font-weight: 500;
+  white-space: nowrap;
+  /* pills are always light pastels, so keep text dark in both themes */
+  color: #1a1a1a;
+}
+
+/* Hand-drawn circle annotation */
+.circle-note {
+  position: relative;
+  white-space: nowrap;
+}
+.circle-note::after {
+  content: "";
+  position: absolute;
+  inset: -35% -10%;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  transform: rotate(-3deg);
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Underline annotation that looks sketched */
+.squiggle {
+  text-decoration: none;
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-position: 0 100%;
+  background-size: 100% 2px;
+  background-repeat: no-repeat;
+  padding-bottom: 1px;
+}
+
+/* Image arc — the ring of tiles slowly orbits around its (off-screen) center */
+.arc-spin {
+  animation: arc-spin 90s linear infinite;
+  transform-origin: center;
+}
+@keyframes arc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arc-spin {
+    animation: none;
+  }
+}
+
+/* ── Hero entrance ──────────────────────────────────────────────
+   Content fades in while settling down from a slight upward offset.
+   The notebook rules then DRAW themselves in once content has landed. */
+@keyframes hero-rise {
   from {
     opacity: 0;
-    transform: translateY(-30px);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+.hero-rise {
+  opacity: 0;
+  animation: hero-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.hero-stagger > li {
+  opacity: 0;
+  animation: hero-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.hero-stagger > li:nth-child(1) { animation-delay: 0.30s; }
+.hero-stagger > li:nth-child(2) { animation-delay: 0.36s; }
+.hero-stagger > li:nth-child(3) { animation-delay: 0.42s; }
+.hero-stagger > li:nth-child(4) { animation-delay: 0.48s; }
+.hero-stagger > li:nth-child(5) { animation-delay: 0.54s; }
+.hero-stagger > li:nth-child(6) { animation-delay: 0.60s; }
+.hero-stagger > li:nth-child(7) { animation-delay: 0.66s; }
 
-@keyframes fadeInUpSubtle {
-  from {
-    opacity: 0;
-    transform: translateY(-40px);
-  }
-  to {
-    opacity: 0.25;
-    transform: translateY(0);
-  }
+@keyframes draw-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes draw-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+/* blue rules draw left→right; red margin draws top→bottom, after the content */
+.rule-through::after,
+.rule-top::before {
+  transform-origin: left center;
+  animation: draw-x 0.7s 0.2s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.margin-line {
+  transform-origin: top center;
+  animation: draw-y 0.85s 0.3s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 
-@keyframes streamInLoop {
-  0% {
-    opacity: 0;
-    filter: blur(8px);
-  }
-  40% {
-    opacity: 0.7;
-    filter: blur(4px);
-  }
-  60% {
+/* scroll-reveal for everything below the hero */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* soft fade for the decorative atlas */
+@keyframes fade-soft {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.atlas-fade {
+  animation: fade-soft 1.5s 0.3s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise,
+  .hero-stagger > li {
+    animation: none;
     opacity: 1;
-    filter: blur(0px);
   }
-  100% {
+  .rule-through::after,
+  .rule-top::before,
+  .margin-line {
+    animation: none;
+  }
+  .reveal {
     opacity: 1;
-    filter: blur(0px);
+    transform: none;
+    transition: none;
+  }
+  .atlas-fade {
+    animation: none;
   }
 }
 
-.force-white {
-  color: #ffffff !important;
+/* Notebook red margin line — sits in the gutter, fades at top and bottom */
+.margin-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -1.5rem;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(229, 72, 77, 0.4) 0 5px,
+    transparent 5px 11px
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #000 18%,
+    #000 78%,
+    transparent 100%
+  );
 }
 
-/* Custom clamp utilities for responsive text */
-.text-clamp\(24px\,5vw\,30px\) {
-  font-size: clamp(24px, 5vw, 30px);
+/* Notebook blue ruled line that runs across the page (through the nav row and
+   into the main content) then fades out past where the content ends. Applied
+   only to the nav rows that line up with content on the other side. */
+.rule-through {
+  position: relative;
+}
+.rule-through::after,
+.rule-top::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  height: 1px;
+  /* spans the sidebar + gutter + main content, fading out at the content's end */
+  width: 64rem;
+  max-width: 88vw;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(37, 99, 235, 0.45) 0 5px,
+    transparent 5px 11px
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 72%,
+    transparent 97%
+  );
+  mask-image: linear-gradient(to right, #000 0%, #000 72%, transparent 97%);
+  pointer-events: none;
+}
+.rule-through::after {
+  bottom: -0.85rem;
+}
+.rule-top::before {
+  top: -0.85rem;
 }
 
-.text-clamp\(16px\,3\.5vw\,20px\) {
-  font-size: clamp(16px, 3.5vw, 20px);
+/* Star rotates a quarter turn, pauses at the corner, repeats — forever */
+.star-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: star-spin 7s cubic-bezier(0.65, 0, 0.35, 1) infinite,
+    star-hue 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes star-spin {
+  0%, 8% {
+    transform: rotate(0deg);
+  }
+  22%, 33% {
+    transform: rotate(90deg);
+  }
+  47%, 58% {
+    transform: rotate(180deg);
+  }
+  72%, 83% {
+    transform: rotate(270deg);
+  }
+  97%, 100% {
+    transform: rotate(360deg);
+  }
+}
+/* one hue per quarter-turn: blue → green → purple → red → blue */
+@keyframes star-hue {
+  0%, 8% {
+    fill: #03a5fc;
+  }
+  22%, 33% {
+    fill: #22c55e;
+  }
+  47%, 58% {
+    fill: #a855f7;
+  }
+  72%, 83% {
+    fill: #f43f5e;
+  }
+  97%, 100% {
+    fill: #03a5fc;
+  }
 }
 
-.text-clamp\(14px\,3vw\,20px\) {
-  font-size: clamp(14px, 3vw, 20px);
+@media (prefers-reduced-motion: reduce) {
+  .star-spin {
+    animation: none;
+  }
 }
 
-.text-clamp\(18px\,4vw\,24px\) {
-  font-size: clamp(18px, 4vw, 24px);
+@keyframes equalize {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+.eq-bar {
+  transform-origin: center;
+  animation: equalize 0.9s ease-in-out infinite;
 }
 
-.text-clamp\(14px\,3vw\,16px\) {
-  font-size: clamp(14px, 3vw, 16px);
+::selection {
+  background: var(--accent);
+  color: #fff;
 }
