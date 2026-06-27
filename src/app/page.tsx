@@ -26,7 +26,7 @@ export default function Home() {
       <div className="mx-auto max-w-[1100px] px-5 pt-16 sm:px-8 sm:pt-20">
         <div className="grid grid-cols-1 gap-x-12 lg:grid-cols-[210px_minmax(0,1fr)]">
           <Sidebar />
-          <main className="relative max-w-3xl pb-2 pt-2">
+          <main className="relative max-w-[680px] pb-2 pt-2">
             <Hero />
           </main>
         </div>

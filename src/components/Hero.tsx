@@ -57,39 +57,36 @@ export function Hero() {
         i like building the abstractions most people just import.
       </p>
 
-      <ul className="hero-stagger mt-7 space-y-3 text-[0.75rem] leading-relaxed md:text-[0.84375rem]">
+      <ul className="hero-stagger mt-7 space-y-3 text-[0.8rem] leading-relaxed md:text-[0.9rem]">
         <li>
-          <Caret /> incoming{" "}
-          <Tag color="#ffd6d6">@Startup</Tag>, prev{" "}
-          <Tag color="#d4f7d4">@BigCo</Tag>
+          <Caret /> co-founded <Tag color="#ffe2bf">factful</Tag>, an ai edtech
+          startup — turned down a $750k vc offer, now piloting with 70k seneca
+          students
         </li>
         <li>
-          <Caret /> launched{" "}
-          <Tag color="#ffe2bf">Flux</Tag>, a tool for makers (1M+ users, early
-          traction)
+          <Caret /> built <Tag color="#dbe9ff">weekloom</Tag> — a 2d to-do list
+          that works like a gantt chart; scaled to 30k users and 6-figure arr
         </li>
         <li>
-          <Caret /> growing a{" "}
-          <Tag color="#ededed">builder</Tag> community @campus
+          <Caret /> prev. swe at <Tag color="#ffd6d6">jazzba</Tag> — refactored
+          a legacy enterprise warehouse platform, rewriting backend services and
+          the api layer behind 1000s of skus/day
         </li>
         <li>
-          <Caret /> shipped products for{" "}
-          <Tag color="#dbe9ff">Acme</Tag>{" "}
-          <Tag color="#dbe9ff">Nova</Tag>{" "}
-          <Tag color="#dbe9ff">Orbit</Tag>
+          <Caret /> grew a school club into <Tag color="#d4f7d4">scire</Tag> — a
+          full-stack scheduling app now serving two school boards
         </li>
         <li>
-          <Caret /> built{" "}
-          <Tag color="#ffe2bf">PixelKit</Tag>, a design system generator for
-          fast UI
+          <Caret /> built <Tag color="#ece0ff">wmoj</Tag>, an online judge
+          grading c++/python for 200+ concurrent users
         </li>
         <li>
-          <Caret /> writing essays on{" "}
-          <Tag color="#ece0ff">craft</Tag> &amp;{" "}
-          <Tag color="#ece0ff">@moizbuilds</Tag>
+          <Caret /> advised a school board on student innovation — pitched a
+          policy that became a $5k founder grant
         </li>
         <li>
-          <Caret /> seeking summer 2027 internship opportunities
+          <Caret /> tackled water scarcity by pulling water from thin air with
+          piezoelectrics — bronze at <Tag color="#ededed">basef</Tag>
         </li>
       </ul>
     </section>
