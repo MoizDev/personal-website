@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { Article } from "@/components/Article";
-import { getProjectImages } from "@/lib/pexels";
+import { thoughtImages } from "@/lib/images";
 import { thoughts, getThought, thoughtIndex } from "@/lib/thoughts";
 
 export function generateStaticParams() {
@@ -29,13 +29,10 @@ export default async function ThoughtPage({
   const article = getThought(slug);
   if (!article) notFound();
 
-  const images = await getProjectImages(
-    "moody night city journey travel landscape film dark",
-    8
-  );
   const idx = thoughtIndex(slug);
   // same pool + index as the list, so the banner matches the card
-  const image = article.image ?? (images.length ? images[idx % images.length] : null);
+  const image =
+    article.image ?? thoughtImages[idx % thoughtImages.length] ?? null;
 
   const prev = idx > 0 ? thoughts[idx - 1] : null;
   const next = idx < thoughts.length - 1 ? thoughts[idx + 1] : null;

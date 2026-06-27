@@ -4,14 +4,9 @@ import { ImageArc } from "@/components/ImageArc";
 import { Projects } from "@/components/Projects";
 import { Reveal } from "@/components/Reveal";
 import { Footer } from "@/components/Footer";
-import { getArcImages, getProjectImages } from "@/lib/pexels";
+import { arcImages, projectImages } from "@/lib/images";
 
-export default async function Home() {
-  const [arcImages, projectImages] = await Promise.all([
-    getArcImages("moody foggy landscape nature mountains forest minimal", 44),
-    getProjectImages(),
-  ]);
-
+export default function Home() {
   return (
     <div className="relative overflow-x-hidden">
       {/* Sisyphus line art bleeding off the right edge of the site. Blended so
