@@ -1,13 +1,10 @@
 import { XTwitter, Linkedin, Github } from "./Icons";
+import { SOCIALS } from "@/lib/site";
 
 const socials = [
-  { label: "X", href: "https://x.com/moizhashmi0", Icon: XTwitter },
-  {
-    label: "LinkedIn",
-    href: "https://www.linkedin.com/in/moiz-ahmed-hashmi-a36670213/",
-    Icon: Linkedin,
-  },
-  { label: "GitHub", href: "https://github.com/MoizDev", Icon: Github },
+  { label: "X", href: SOCIALS.x, Icon: XTwitter },
+  { label: "LinkedIn", href: SOCIALS.linkedin, Icon: Linkedin },
+  { label: "GitHub", href: SOCIALS.github, Icon: Github },
 ];
 
 export function SocialLinks({ className = "" }: { className?: string }) {

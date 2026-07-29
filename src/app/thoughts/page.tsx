@@ -2,12 +2,13 @@ import { Sidebar } from "@/components/Sidebar";
 import { DrawerOfThoughts } from "@/components/DrawerOfThoughts";
 import { Footer } from "@/components/Footer";
 import { thoughtImages } from "@/lib/images";
+import { alternates } from "@/lib/site";
 
 export const metadata = {
   title: "drawer of thoughts",
   description:
     "short essays on software craft, learning, taste, and building at the seam between applied ml and the systems it runs on.",
-  alternates: { canonical: "/thoughts" },
+  alternates: alternates("/thoughts"),
 };
 
 export default function ThoughtsPage() {

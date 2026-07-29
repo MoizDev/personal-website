@@ -8,7 +8,7 @@ import {
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Notch } from "@/components/Notch";
-import { SITE } from "@/lib/site";
+import { SITE, alternates } from "@/lib/site";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -56,7 +56,8 @@ export const metadata: Metadata = {
     "systems",
     "portfolio",
   ],
-  alternates: { canonical: "/" },
+  // Carries RSS autodiscovery, so a reader (or the webring's scraper) finds the feed.
+  alternates: alternates("/"),
   openGraph: {
     type: "website",
     siteName: SITE.name,

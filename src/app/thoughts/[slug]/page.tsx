@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Article } from "@/components/Article";
 import { thoughtImages } from "@/lib/images";
 import { thoughts, getThought, thoughtIndex } from "@/lib/thoughts";
+import { alternates } from "@/lib/site";
 
 export function generateStaticParams() {
   return thoughts.map((t) => ({ slug: t.slug }));
@@ -24,7 +25,7 @@ export async function generateMetadata({
     title: article.title,
     description: article.blurb,
     keywords: article.keywords,
-    alternates: { canonical: url },
+    alternates: alternates(url),
     openGraph: {
       type: "article",
       title: article.title,

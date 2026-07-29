@@ -1,4 +1,5 @@
 import { LogoMark } from "./LogoMark";
+import { Webring } from "./Webring";
 
 const pages = [
   { label: "me", href: "/#me" },
@@ -33,9 +34,15 @@ export function Footer() {
           </nav>
         </div>
 
-        <div className="mt-12 flex items-center justify-between text-xs">
-          <span className="opacity-70">moiz hashmi</span>
-          <span className="opacity-50">© {new Date().getFullYear()}</span>
+        {/* Colophon row: name and © as one unit on the left, ring badge on the right
+            under the page list. Wraps rather than crushes if the row runs out of width. */}
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-x-4 gap-y-5 text-xs">
+          <div className="flex items-center gap-3">
+            <span className="opacity-70">moiz hashmi</span>
+            <span className="opacity-50">© {new Date().getFullYear()}</span>
+          </div>
+
+          <Webring />
         </div>
       </div>
 

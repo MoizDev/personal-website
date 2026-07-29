@@ -2,12 +2,13 @@ import { Sidebar } from "@/components/Sidebar";
 import { Bookshelf } from "@/components/Bookshelf";
 import { Footer } from "@/components/Footer";
 import { getBooks } from "@/lib/books";
+import { alternates } from "@/lib/site";
 
 export const metadata = {
   title: "bookshelf",
   description:
     "what moiz hashmi is reading — a shelf of non-fiction, fiction, and pakistani writing, with ratings.",
-  alternates: { canonical: "/bookshelf" },
+  alternates: alternates("/bookshelf"),
 };
 
 export default function BookshelfPage() {
