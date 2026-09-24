@@ -65,22 +65,25 @@ export function Hero() {
 
       <ul className="hero-stagger mt-7 space-y-3 text-[0.8rem] leading-relaxed md:text-[0.9rem]">
         <li>
+          <Caret /> won hack the north 2026 with{" "}
+          <Linked href="https://devpost.com/software/a-feuvb1">
+            <Logo src="/bricked-logo.png" alt="Bricked" em={1.05} />
+            <Tag color="#fff0b3">bricked</Tag>
+          </Linked>
+          , ai that designs buildable lego sets, and bronze at{" "}
+          <Linked href="https://www.basef.ca/">
+            <Tag color="#ededed">basef</Tag>
+          </Linked>{" "}
+          for pulling water out of thin air
+        </li>
+        <li>
           <Caret /> co-founded{" "}
           <Linked href="https://factful.io/">
             <Logo src="/factful.png" alt="Factful" em={1.35} />
             <Tag color="#ffe2bf">factful</Tag>
           </Linked>
-          , an ai edtech startup: turned down a $750k vc offer, now piloting with
-          70k seneca students
-        </li>
-        <li>
-          <Caret /> built{" "}
-          <Linked href="https://weekloom.com/">
-            <Logo src="/weekloom-logo.svg" alt="Weekloom" />
-            <Tag color="#dbe9ff">weekloom</Tag>
-          </Linked>
-          : a 2d to-do list that works like a gantt chart; scaled to 30k users
-          with zero marketing spend
+          , an ai edtech startup: turned down $750k vc, piloting with 70k
+          students
         </li>
         <li>
           <Caret /> prev. swe at{" "}
@@ -88,8 +91,7 @@ export function Hero() {
             <Logo src="/jazzba-logo.png" alt="Jazzba" em={1.05} />
             <Tag color="#ffd6d6">jazzba</Tag>
           </Linked>
-          : broke a legacy warehouse monolith into containerized microservices on
-          kubernetes, re-architecting the api layer behind 1000s of skus/day
+          : modernized a legacy warehouse platform moving 1000s of skus/day
         </li>
         <li>
           <Caret /> built{" "}
@@ -97,30 +99,18 @@ export function Hero() {
             <Logo src="/wmoj.webp" alt="WMOJ" em={1.35} />
             <Tag color="#ece0ff">wmoj</Tag>
           </Linked>
-          , an online judge powering board-wide computing competitions; grades
-          c++/python for 200+ concurrent users
-        </li>
-        <li>
-          <Caret /> grew a school club into{" "}
-          <Linked href="https://app.tutoringapp.ca">
-            <Logo src="/scire-logo.webp" alt="Scire" em={1.35} />
-            <Tag color="#d4f7d4">scire</Tag>
+          , an online judge for 200+ concurrent users, and{" "}
+          <Linked href="https://weekloom.com/">
+            <Logo src="/weekloom-logo.svg" alt="Weekloom" />
+            <Tag color="#dbe9ff">weekloom</Tag>
           </Linked>
-          : a full-stack scheduling app now serving two school boards
+          , a to-do list that works like a gantt chart
         </li>
         <li>
-          <Caret /> advised a school board{" "}
-          <Linked href="https://hdsb.ca/">
-            <Logo src="/school-board-logo.png" alt="School board" em={1.35} />
-          </Linked>{" "}
-          on student innovation: pitched a policy that became a $5k founder grant
-        </li>
-        <li>
-          <Caret /> tackled water scarcity by pulling water from thin air with
-          piezoelectrics: bronze at{" "}
-          <Linked href="https://www.basef.ca/">
-            <Tag color="#ededed">basef</Tag>
-          </Linked>
+          <Caret /> building{" "}
+          <Logo src="/watwiki-logo.png" alt="WatWiki" em={1.4} />
+          <Tag color="#d6f2ec">watwiki</Tag>: ai agents that turn lectures into
+          shared, linked notes
         </li>
       </ul>
     </section>
