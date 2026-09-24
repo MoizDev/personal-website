@@ -108,9 +108,11 @@ export function Hero() {
         </li>
         <li>
           <Caret /> building{" "}
-          <Logo src="/watwiki-logo.png" alt="WatWiki" em={1.4} />
-          <Tag color="#d6f2ec">watwiki</Tag>: ai agents that turn lectures into
-          shared, linked notes
+          <Linked href="https://github.com/MoizDev/wat-wiki">
+            <Logo src="/watwiki-logo.png" alt="WatWiki" em={1.4} />
+            <Tag color="#d6f2ec">watwiki</Tag>
+          </Linked>
+          : ai agents that turn lectures into shared, linked notes
         </li>
       </ul>
     </section>
