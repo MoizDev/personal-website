@@ -107,20 +107,36 @@ const DAY: Rgb = [255, 255, 255];
 const NIGHT: Rgb = [14, 16, 20];
 const BLACK: Rgb = [0, 0, 0];
 
-/** A colour as CSS, after the theme's vividness (saturation) and lightness. */
-function paint([r, g, b]: Rgb, look: ThemeLook) {
+/** A colour after the theme's vividness (saturation) and lightness. */
+function shadeOf([r, g, b]: Rgb, look: ThemeLook): Rgb {
   const y = r * 0.299 + g * 0.587 + b * 0.114;
-  let c: Rgb = [y + (r - y) * look.vivid, y + (g - y) * look.vivid, y + (b - y) * look.vivid];
-  if (look.lightness > 0) c = mix(c, DAY, Math.min(1, look.lightness));
-  else if (look.lightness < 0) c = mix(c, BLACK, Math.min(1, -look.lightness));
-  return `rgb(${clamp255(c[0])},${clamp255(c[1])},${clamp255(c[2])})`;
+  const c: Rgb = [y + (r - y) * look.vivid, y + (g - y) * look.vivid, y + (b - y) * look.vivid];
+  if (look.lightness > 0) return mix(c, DAY, Math.min(1, look.lightness));
+  if (look.lightness < 0) return mix(c, BLACK, Math.min(1, -look.lightness));
+  return c;
 }
+
+const css = (c: Rgb) => `rgb(${clamp255(c[0])},${clamp255(c[1])},${clamp255(c[2])})`;
+
+/** A colour as CSS, after the theme's vividness (saturation) and lightness. */
+const paint = (c: Rgb, look: ThemeLook) => css(shadeOf(c, look));
+
+/** "#rrggbb" to rgb, or null. */
+function hexRgb(hex: string): Rgb | null {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+}
+
+/** How fast the bodies fade to a new card's colour (seconds to get most of the way). */
+const ACCENT_EASE = 0.3;
 
 const ramp = (v: number) => RAMP[1 + Math.min(RAMP.length - 2, Math.floor(clamp01(v) * (RAMP.length - 1)))];
 
 /* ---------- the renderer ---------- */
 
 type Cell = { ch: string; color: string; alpha: number };
+/** A cell on a body, before the card's colour goes over it. */
+type BodyCell = { ch: string; color: Rgb; alpha: number };
 
 function makeRenderer(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d")!;
@@ -134,6 +150,15 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   let zbuf = new Float32Array(0);
   let ink: Rgb = [22, 22, 22];
   let dark = false;
+  /**
+   * The light theme paints the bodies in the colour of the card in the spot:
+   * `accent` is that colour (null back at the row), and the drawing eases
+   * `accentNow` toward it and `accentK` (how much of it shows) toward 1 or 0.
+   */
+  let accent: Rgb | null = null;
+  let accentNow: Rgb = [0, 0, 0];
+  let accentK = 0;
+  let lastFrame = 0;
   /** the font the cells were measured with; when the panel changes it, re-measure */
   let font = "";
   /** the view's tilt: the sine and cosine of how steeply we look down onto the orbits */
@@ -185,6 +210,27 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   function setTheme(rgb: Rgb, isDark: boolean) {
     ink = rgb;
     dark = isDark;
+  }
+
+  /** The card colour for the bodies; `instant` skips the fade (for a still drawing). */
+  function setAccent(rgb: Rgb | null, instant: boolean) {
+    if (rgb && accentK === 0) accentNow = rgb;
+    accent = rgb;
+    if (instant) {
+      if (rgb) accentNow = rgb;
+      accentK = rgb ? 1 : 0;
+    }
+  }
+
+  /** Ease the card colour along by the time since the last frame. */
+  function easeAccent() {
+    const now = performance.now();
+    const dt = lastFrame ? Math.min(0.1, (now - lastFrame) / 1000) : 0;
+    lastFrame = now;
+    const e = 1 - Math.exp(-dt / ACCENT_EASE);
+    if (accent) accentNow = mix(accentNow, accent, e);
+    accentK += ((accent ? 1 : 0) - accentK) * e;
+    if (Math.abs(accentK - (accent ? 1 : 0)) < 0.002) accentK = accent ? 1 : 0;
   }
 
   /** Put a character in a cell if it's empty (for orbits, the belt, stars and glow). */
@@ -254,6 +300,14 @@ function makeRenderer(canvas: HTMLCanvasElement) {
 
   function frame(t: number) {
     const L0 = look();
+    easeAccent();
+    // light theme only: how much of the card's colour the bodies take
+    const tintK = dark ? 0 : accentK;
+    /** A body's cell with the card's colour over it, at full opacity. */
+    const tinted = (c: BodyCell): Cell =>
+      tintK > 0
+        ? { ch: c.ch, color: css(mix(c.color, accentNow, tintK)), alpha: c.alpha + (1 - c.alpha) * tintK }
+        : { ch: c.ch, color: css(c.color), alpha: c.alpha };
     const sh = SOLAR.shared;
     if (fontFor() !== font) layout();
     S = Math.max(0.02, Math.min(1, sh.tilt));
@@ -280,11 +334,11 @@ function makeRenderer(canvas: HTMLCanvasElement) {
      */
     const body = (v: number, c: Rgb, alpha: number, tone = 1): Cell => {
       const cv = contrast(v);
-      return {
+      return tinted({
         ch: ramp(cv),
-        color: paint(mix(greyOf(cv * tone), c, colour), L0),
+        color: shadeOf(mix(greyOf(cv * tone), c, colour), L0),
         alpha: (1 + (alpha - 1) * colour) * L0.bodies,
-      };
+      });
     };
 
     // world (x, z) on the plane of the orbits -> screen and depth
@@ -317,7 +371,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
       const spin = t * 0.5;
       const tint = p.tint;
 
-      if (p.look === "saturn") rings(sx, sy, d, r, L, tint, L0);
+      if (p.look === "saturn") rings(sx, sy, d, r, L, tint, L0, tinted);
 
       sphere(sx, sy, d, r, L, (wx, wy, wz, lit) => {
         const shade = 0.2 + lit * 0.8;
@@ -413,7 +467,16 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   }
 
   /** Saturn's rings: an annulus in a plane tipped toward us, with a gap in it. */
-  function rings(px: number, py: number, d0: number, r: number, L: [number, number, number], tint: Rgb, look: ThemeLook) {
+  function rings(
+    px: number,
+    py: number,
+    d0: number,
+    r: number,
+    L: [number, number, number],
+    tint: Rgb,
+    look: ThemeLook,
+    tinted: (c: BodyCell) => Cell,
+  ) {
     const colour = clamp01(look.colour);
     const outer = r * 2.25;
     const inner = r * 1.3;
@@ -442,17 +505,17 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const density = shadow < 1 ? 0.15 : 0.9 - band * 0.4;
         const g = mix(NIGHT, DAY, look.invert >= 0.5 ? 1 - density : density);
         const alpha = (0.35 + 0.35 * (1 - band)) * shadow;
-        cells[kk] = {
+        cells[kk] = tinted({
           ch: band < 0.58 ? "=" : "-",
-          color: paint(mix(g, tint, colour), look),
+          color: shadeOf(mix(g, tint, colour), look),
           alpha: (1 + (alpha - 1) * colour) * look.bodies,
-        };
+        });
         zbuf[kk] = depth;
       }
     }
   }
 
-  return { resize, frame, setTheme };
+  return { resize, frame, setTheme, setAccent };
 }
 
 export function SolarSystem() {
@@ -484,6 +547,10 @@ export function SolarSystem() {
     r.resize();
 
     const still = matchMedia("(prefers-reduced-motion: reduce)");
+    /** The colour of the card in the spot, which CardStack sets on the root as --project-tone. */
+    const readAccent = () => r.setAccent(hexRgb(root.style.getPropertyValue("--project-tone")), still.matches);
+    readAccent();
+
     // a fixed moment, for reduced motion: the planets spread out nicely
     const STILL_T = 40;
     // the scene's own clock, so changing the speed doesn't make it jump
@@ -518,10 +585,18 @@ export function SolarSystem() {
     ro.observe(canvas);
     const onChange = () => {
       readTheme();
+      readAccent();
       redraw();
     };
-    const mo = new MutationObserver(onChange);
-    mo.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    // the theme re-reads styles; a change of card (an inline style) only needs the colour
+    const mo = new MutationObserver((records) => {
+      if (records.some((m) => m.attributeName === "data-theme")) onChange();
+      else {
+        readAccent();
+        redraw();
+      }
+    });
+    mo.observe(root, { attributes: true, attributeFilter: ["data-theme", "style"] });
     still.addEventListener("change", run);
     addEventListener(SOLAR_EVENT, onChange);
 
