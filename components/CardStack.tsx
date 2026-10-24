@@ -220,6 +220,7 @@ export function CardStack() {
         m.pitch = 0;
         m.pitchVel = 0;
         paint();
+        if (atRest()) rowBox = boxRow();
         m.running = false;
         return;
       }
@@ -258,8 +259,12 @@ export function CardStack() {
       aim(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
-    /** Whether (x, y) is over the row: the box round the cards standing in it, padded a little. */
-    function overRow(x: number, y: number) {
+    // The row's box on the page: round the cards standing in it, padded a little.
+    // Taken with the row at rest, where it's the same whichever card is in front,
+    // so it doesn't shrink and shift while cards move. In page coordinates, so
+    // scrolling doesn't stale it.
+    let rowBox: { l: number; t: number; r: number; b: number } | null = null;
+    function boxRow() {
       let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
       for (let j = 0; j < M; j++) {
         const el = cards.current[j];
@@ -271,29 +276,33 @@ export function CardStack() {
         b = Math.max(b, box.bottom);
       }
       const pad = 24;
-      return x >= l - pad && x <= r + pad && y >= t - pad && y <= b + pad;
+      return { l: l - pad, t: t + window.scrollY - pad, r: r + pad, b: b + window.scrollY + pad };
+    }
+    const atRest = () => m.cur === Math.round(m.cur) && performance.now() >= introEnd;
+    function overRow(x: number, y: number) {
+      const box = rowBox ?? boxRow();
+      const py = y + window.scrollY;
+      return x >= box.l && x <= box.r && py >= box.t && py <= box.b;
     }
 
-    // The wheel moves the row only with the pointer over it; anywhere else the page
-    // scrolls as normal. Past the last project the page scrolls on from the row too.
-    // A gesture's momentum never crosses over: the handover waits for a pause.
+    // Each wheel gesture goes wholly to the row or wholly to the page, decided as it
+    // starts: the row if the pointer is over it, else the page. So the page scrolling
+    // under the pointer never steals a gesture, and the row never strands one.
+    // Past the last project, a new gesture onward goes to the page.
     let lastWheel = -Infinity;
-    let wheelWent: "row" | "page" = "row";
-    const PAUSE = 250;
+    let wheelGoes: "row" | "page" = "page";
+    const PAUSE = 200; // ms of quiet that ends a gesture (trackpad momentum included)
 
     function onWheel(e: WheelEvent) {
       if (e.ctrlKey) return; // pinch zoom
       const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
       const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-      const fresh = e.timeStamp - lastWheel > PAUSE;
-      lastWheel = e.timeStamp;
-      if (!overRow(e.clientX, e.clientY) || (d > 0 && atEnd() && (fresh || wheelWent === "page"))) {
-        wheelWent = "page"; // the browser scrolls
-        return;
+      if (e.timeStamp - lastWheel > PAUSE) {
+        wheelGoes = overRow(e.clientX, e.clientY) && !(d > 0 && atEnd()) ? "row" : "page";
       }
+      lastWheel = e.timeStamp;
+      if (wheelGoes === "page") return; // the browser scrolls
       e.preventDefault();
-      if (wheelWent === "page" && !fresh) return; // momentum from scrolling up; let it die
-      wheelWent = "row";
       push(d * unit * MOTION.wheel);
       settleSoon();
     }
@@ -372,6 +381,7 @@ export function CardStack() {
     function onResize() {
       measure();
       paint();
+      rowBox = atRest() ? boxRow() : null;
     }
 
     measure();
