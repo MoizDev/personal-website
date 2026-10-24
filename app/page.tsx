@@ -1,10 +1,10 @@
 import { CardStack } from "@/components/CardStack";
 import dynamic from "next/dynamic";
 
-// Sliders for the scene. Off unless the dev server runs with NEXT_PUBLIC_TUNE=1;
-// behind a dynamic import in a dead branch so production builds drop it entirely.
+// Sliders for the scene, for development only. Behind a dynamic import in a
+// dead branch so production builds drop the panel entirely.
 const TunePanel =
-  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_TUNE === "1"
+  process.env.NODE_ENV === "development"
     ? dynamic(() => import("@/components/TunePanel").then((m) => m.TunePanel))
     : () => null;
 

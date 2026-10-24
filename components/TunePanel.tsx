@@ -6,8 +6,8 @@
  * MOTION), are kept per breakpoint in localStorage, and the changed ones are
  * listed at the bottom so they can be copied or screenshotted.
  *
- * Off by default. Start the dev server with NEXT_PUBLIC_TUNE=1 to show it
- * (see app/page.tsx); production builds never include it.
+ * Shown in development only (see app/page.tsx). Minimize it with the "–"
+ * button, or toggle it with the backslash key.
  */
 
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
@@ -183,14 +183,26 @@ export function TunePanel() {
     update(next);
   };
 
-  const toggle = () => {
+  const toggle = useCallback(() => {
     setOpen((o) => {
       try {
         localStorage.setItem(OPEN_KEY, o ? "0" : "1");
       } catch {}
       return !o;
     });
-  };
+  }, []);
+
+  // backslash shows and hides the panel from anywhere
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "\\" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if ((e.target as HTMLElement | null)?.closest("input, textarea, [contenteditable]")) return;
+      e.preventDefault();
+      toggle();
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [toggle]);
 
   const changed = FIELDS.filter((f) => f.key in overrides);
   const summary = [
@@ -221,8 +233,8 @@ export function TunePanel() {
       onKeyDown={stop}
     >
       <div className="tune-bar">
-        <button type="button" className="tune-title" onClick={toggle}>
-          Tune <span>{bp}</span>
+        <button type="button" className="tune-title" onClick={toggle} title="Show or hide (\)">
+          Tune <span>{open ? bp : changed.length ? `${changed.length} changed` : "show"}</span>
         </button>
         {open && (
           <span className="tune-actions">
@@ -234,6 +246,9 @@ export function TunePanel() {
             </button>
             <button type="button" onClick={() => update({})} disabled={!changed.length}>
               Reset
+            </button>
+            <button type="button" className="tune-min" onClick={toggle} title="Minimize (\)" aria-label="Minimize">
+              –
             </button>
           </span>
         )}

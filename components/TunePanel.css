@@ -151,3 +151,9 @@
     left: auto;
   }
 }
+
+.tune-actions .tune-min {
+  width: 24px;
+  padding: 3px 0;
+  font-weight: 600;
+}
