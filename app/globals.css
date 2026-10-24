@@ -53,14 +53,14 @@ svg {
 
   /* the spot a pulled-out card lands in, with its write-up below */
   /* the floating navbar */
-  --nav-top: calc(14 * var(--u));
+  --nav-top: calc(44 * var(--u));
   --nav-h: calc(46 * var(--u));
   --nav-w: calc(96 * var(--u)); /* a small pill, centred: the logo and the menu button (the theme switch shows when open) */
   --nav-open-w: min(760 * var(--u), calc(100vw - 32 * var(--u))); /* room for the menu */
 
   --spot-x: calc(44 * var(--u));
   --spot-y: calc(var(--intro-bottom, calc(200 * var(--u))) + 48 * var(--u)); /* --intro-bottom is set by CardStack */
-  --spot-w: min(547 * var(--u), calc(100vh - var(--spot-y) - 212 * var(--u))); /* leaves room for the write-up */
+  --spot-w: min(547 * var(--u), calc(100vh - var(--spot-y) - 182 * var(--u))); /* leaves room for the write-up */
 }
 
 /* dark mode: set by the navbar toggle, or the system until it is used (see app/layout.tsx) */
