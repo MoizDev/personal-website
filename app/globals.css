@@ -29,9 +29,15 @@ svg {
   --gap: 0.36; /* space between cards, in card widths */
   --yaw: 54deg; /* how the row turns away from you */
   --pitch: -6.5deg; /* how far you look down on the ground at rest */
-  --ox: calc(var(--card-w) * 0.04); /* where the front card stands */
-  --oy: calc(var(--card-w) * 0.14);
-  --depth: calc(var(--card-w) * 2.6); /* perspective */
+  /* where the front card stands, in card widths from the centre */
+  --ox-k: 0.04;
+  --oy-k: 0.14;
+  --depth-k: 2.6; /* perspective distance, in card widths */
+  --po-x: 50%; /* the vanishing point */
+  --po-y: -10%;
+  --ox: calc(var(--card-w) * var(--ox-k));
+  --oy: calc(var(--card-w) * var(--oy-k));
+  --depth: calc(var(--card-w) * var(--depth-k));
 
   /* the spot a pulled-out card lands in, with its write-up below */
   --spot-x: 44px;
@@ -77,7 +83,7 @@ body {
   inset: 0;
   overflow: hidden;
   perspective: var(--depth);
-  perspective-origin: 50% -10%;
+  perspective-origin: var(--po-x) var(--po-y);
   touch-action: none;
   cursor: grab;
 }
@@ -316,18 +322,15 @@ body {
     --gap: 0.34;
     --yaw: 54deg;
     --pitch: -6deg;
-    --ox: calc(var(--card-w) * -0.65);
-    --oy: calc(var(--card-w) * 2);
-    --depth: calc(var(--card-w) * 2.4);
+    --ox-k: -0.65;
+    --oy-k: 2;
+    --depth-k: 2.4;
+    --po-x: 50%;
+    --po-y: 85%;
 
     --spot-x: 20px;
     --spot-y: 24px;
     --spot-w: min(calc(100vw - 40px), calc(66vh - 250px));
-  }
-
-  /* the row runs off to the right along the bottom, under the spot */
-  .scene {
-    perspective-origin: 50% 85%;
   }
 
   /* a pulled-out card takes the top of the screen, so the intro steps aside */
@@ -385,7 +388,7 @@ body {
 
 @media (max-width: 640px) and (max-height: 760px) {
   :root {
-    --oy: calc(var(--card-w) * 1.75);
+    --oy-k: 1.75;
   }
 
   .intro {

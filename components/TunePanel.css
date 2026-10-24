@@ -1,0 +1,153 @@
+/* dev-only tuning panel; see TunePanel.tsx */
+.tune {
+  position: fixed;
+  z-index: 20;
+  top: 64px;
+  right: 16px;
+  width: 330px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 12px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(22, 22, 22, 0.08),
+    0 8px 30px rgba(22, 22, 22, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 11px;
+  line-height: 1.3;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+.tune[data-open="false"] {
+  width: auto;
+  padding-bottom: 10px;
+}
+
+.tune button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.tune-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tune-title {
+  font-weight: 600;
+}
+
+.tune-title span {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.tune-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.tune-actions button,
+.tune-copy {
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(22, 22, 22, 0.06);
+}
+
+.tune-actions button:hover,
+.tune-copy:hover {
+  background: rgba(22, 22, 22, 0.12);
+}
+
+.tune button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tune-body section {
+  margin-top: 12px;
+}
+
+.tune-body h2 {
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tune-row {
+  display: grid;
+  grid-template-columns: 96px 1fr 58px;
+  align-items: center;
+  gap: 8px;
+  height: 22px;
+}
+
+.tune-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--soft);
+}
+
+.tune-row[data-changed="true"] .tune-label,
+.tune-row[data-changed="true"] .tune-value {
+  color: #2f6bff;
+  font-weight: 600;
+}
+
+.tune-row input {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--fg);
+}
+
+.tune-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tune-out {
+  margin-top: 14px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(22, 22, 22, 0.05);
+  font: 10.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.tune-copy {
+  margin-top: 8px;
+  width: 100%;
+  padding: 5px 8px;
+}
+
+@media (max-width: 640px) {
+  /* the top is empty in the opening view; collapse it to see a pulled-out card */
+  .tune {
+    top: 64px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: 40vh;
+  }
+
+  .tune[data-open="false"] {
+    left: auto;
+  }
+}

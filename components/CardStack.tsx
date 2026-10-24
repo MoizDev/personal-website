@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { MOTION } from "@/lib/motion";
 import { PROJECTS, type Project } from "@/lib/projects";
 
 /*
@@ -39,17 +40,9 @@ const START = -6;
 // Scroll. Positions are in cards, speeds in cards per second.
 // The row chases the scroll target on a critically damped spring, so it eases
 // in and out of every move instead of jumping to speed.
-const GLIDE = 4.2; // spring frequency (rad/s); lower glides longer
-const WHEEL = 0.0026; // cards per wheel pixel
-const DRAG = 0.007; // cards per dragged pixel
+// The feel of it lives in MOTION (lib/motion.ts), so the dev panel can tune it live.
 const MAX_LEAD = 5; // how far the target may run ahead of the row, in cards
 const SNAP_DELAY = 180; // ms of quiet before settling on a card
-
-// Ground pitch. A soft, slightly bouncy spring chases a target set by speed.
-const PITCH_PER_SPEED = 0.75; // degrees per card/s
-const MAX_PITCH = 4.5;
-const PITCH_FREQ = 4; // rad/s
-const PITCH_DAMPING = 0.5; // under 1, so it swings back a touch past rest
 
 const wrap = (v: number, m: number) => ((v % m) + m) % m;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -117,7 +110,6 @@ export function CardStack() {
   useEffect(() => {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const m = { cur: START, target: 0, vel: 0, pitch: 0, pitchVel: 0, last: 0, running: false };
-    const glide = reduce ? 16 : GLIDE;
     let raf = 0;
     let snapTimer = 0;
     let shown = -2;
@@ -180,6 +172,7 @@ export function CardStack() {
         return;
       }
 
+      const glide = reduce ? 16 : MOTION.glide;
       m.vel += (glide * glide * (m.target - m.cur) - 2 * glide * m.vel) * dt;
       m.cur += m.vel * dt;
       if (Math.abs(m.target - m.cur) < 5e-4 && Math.abs(m.vel) < 5e-3) {
@@ -187,9 +180,9 @@ export function CardStack() {
         m.vel = 0;
       }
 
-      const want = reduce ? 0 : clamp(m.vel * PITCH_PER_SPEED, -MAX_PITCH, MAX_PITCH);
-      const f = PITCH_FREQ;
-      m.pitchVel += (f * f * (want - m.pitch) - 2 * PITCH_DAMPING * f * m.pitchVel) * dt;
+      const want = reduce ? 0 : clamp(m.vel * MOTION.pitchPerSpeed, -MOTION.maxPitch, MOTION.maxPitch);
+      const f = MOTION.pitchFreq;
+      m.pitchVel += (f * f * (want - m.pitch) - 2 * MOTION.pitchDamping * f * m.pitchVel) * dt;
       m.pitch += m.pitchVel * dt;
 
       paint();
@@ -237,7 +230,7 @@ export function CardStack() {
       e.preventDefault();
       const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
       const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-      push(d * unit * WHEEL);
+      push(d * unit * MOTION.wheel);
       settleSoon();
     }
 
@@ -274,7 +267,7 @@ export function CardStack() {
       if (!drag) return;
       const dx = e.clientX - drag.x;
       const dy = e.clientY - drag.y;
-      const d = -(Math.abs(dy) >= Math.abs(dx) ? dy : dx) * DRAG;
+      const d = -(Math.abs(dy) >= Math.abs(dx) ? dy : dx) * MOTION.drag;
       const dt = Math.max((e.timeStamp - drag.t) / 1000, 1 / 240);
       drag.v = drag.v * 0.6 + (d / dt) * 0.4;
       drag.moved += Math.hypot(dx, dy);

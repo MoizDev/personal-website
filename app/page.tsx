@@ -1,4 +1,12 @@
 import { CardStack } from "@/components/CardStack";
+import dynamic from "next/dynamic";
+
+// Sliders for the scene, for development only. Behind a dynamic import in a
+// dead branch so production builds drop the panel entirely.
+const TunePanel =
+  process.env.NODE_ENV === "development"
+    ? dynamic(() => import("@/components/TunePanel").then((m) => m.TunePanel))
+    : () => null;
 
 const LINKS = [
   { label: "Resume", href: "/resume.pdf" },
@@ -26,6 +34,8 @@ export default function Home() {
           ))}
         </nav>
       </header>
+
+      <TunePanel />
     </main>
   );
 }
