@@ -85,18 +85,7 @@ export function Navbar() {
             <Logo className="nav-logo" />
           </Link>
 
-          <div className="nav-buttons">
-            <button type="button" className="nav-theme" onClick={toggleTheme} aria-label="Toggle dark mode">
-              <svg className="nav-sun" viewBox="0 0 24 24" aria-hidden>
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.55 1.55M17.15 17.15l1.55 1.55M5.3 18.7l1.55-1.55M17.15 6.85l1.55-1.55" />
-              </svg>
-              <svg className="nav-moon" viewBox="0 0 24 24" aria-hidden>
-                <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
-              </svg>
-            </button>
-
-            <button
+          <button
             ref={button}
             type="button"
             className="nav-toggle"
@@ -108,7 +97,6 @@ export function Navbar() {
             <span />
             <span />
           </button>
-          </div>
         </div>
 
         <div className="nav-panel" id={panelId} ref={panel} tabIndex={-1} inert={!open}>
@@ -144,6 +132,13 @@ export function Navbar() {
                     </a>
                   </li>
                 ))}
+                <li>
+                  <button type="button" className="nav-theme" onClick={toggleTheme}>
+                    {/* the label names the mode you'd switch to; CSS picks one */}
+                    <span className="nav-to-dark">Dark mode</span>
+                    <span className="nav-to-light">Light mode</span>
+                  </button>
+                </li>
               </ul>
             </div>
 

@@ -46,7 +46,7 @@ svg {
   /* the floating navbar */
   --nav-top: 14px;
   --nav-h: 46px;
-  --nav-w: 132px; /* a small pill, centred: the logo, theme and menu buttons */
+  --nav-w: 96px; /* a small pill, centred: the logo and the menu button */
   --nav-open-w: min(760px, calc(100vw - 32px)); /* room for the menu */
 
   --spot-x: 44px;
