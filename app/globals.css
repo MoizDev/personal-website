@@ -374,14 +374,50 @@ body {
   transform: translate(calc(var(--px, 0) * -18%), calc(var(--py, 0) * -18%));
 }
 
+/* The light's reflection, a card wide and centred on it (CardStack moves and
+   scales it). Screen blending only ever brightens what's under it, so on a dark
+   screenshot it reads as light on glass, not a grey smudge: a soft round
+   hotspot falling off smoothly, and a faint diagonal sheen through it. */
 .card-glare-light {
   position: absolute;
-  inset: 36% 2%; /* a wide, soft-edged panel: the light's reflection, centred on the card */
-  border-radius: 22% / 50%;
-  background: linear-gradient(rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1));
-  filter: blur(calc(var(--card-w) * 0.012));
+  inset: 0;
+  mix-blend-mode: screen;
   transform: scale(0);
   will-change: transform;
+  pointer-events: none;
+}
+
+.card-glare-light::before,
+.card-glare-light::after {
+  content: "";
+  position: absolute;
+}
+
+.card-glare-light::before {
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.24) 20%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.03) 78%,
+    rgba(255, 255, 255, 0)
+  );
+}
+
+/* the sheen: a long soft streak across the hotspot, fading toward its ends */
+.card-glare-light::after {
+  inset: -60%;
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 45.5%,
+    rgba(255, 255, 255, 0.2) 49.5%,
+    rgba(255, 255, 255, 0.08) 53.5%,
+    transparent 59%
+  );
+  mask-image: radial-gradient(closest-side, #000 45%, transparent);
 }
 
 .card-shot {
