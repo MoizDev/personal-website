@@ -433,6 +433,11 @@ body {
   filter: invert(1);
 }
 
+/* the Arion mark is inverted for light mode; dark mode shows it as it comes */
+:root[data-theme="dark"] .org-icon {
+  filter: none;
+}
+
 .nowrap {
   white-space: nowrap;
 }
