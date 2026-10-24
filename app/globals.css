@@ -266,6 +266,12 @@ body {
   letter-spacing: -0.01em;
 }
 
+.intro-name {
+  margin-bottom: 6px;
+  font-size: inherit;
+  font-weight: 600;
+}
+
 .intro-bio {
   font-size: inherit;
   font-weight: 400;
@@ -283,16 +289,22 @@ body {
   text-decoration-color: currentColor;
 }
 
-.nowrap {
+/* a company named in the bio, with its icon as a small tile before the name */
+.org {
   white-space: nowrap;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
+.org-icon {
+  display: inline-block;
+  width: 1.05em;
+  height: 1.05em;
+  margin-right: 0.28em;
+  vertical-align: -0.17em;
+  border-radius: 24%;
+  box-shadow: 0 0 0 1px rgba(22, 22, 22, 0.12);
+}
+
+.nowrap {
   white-space: nowrap;
 }
 
