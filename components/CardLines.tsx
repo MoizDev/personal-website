@@ -245,6 +245,41 @@ export const jazzbaLines: LineArt = () => {
   );
 };
 
+/**
+ * Quartermaster, a crew of agents each on its own branch: a git graph along the
+ * bottom (work forks off main and merges back), and a compass above it.
+ */
+export const quartermasterLines: LineArt = () => {
+  const commits: Pt[] = [[52, 90], [62, 90], [74, 90], [86, 90], [94, 90]];
+  // compass ticks round the ring, longer at the four points
+  let ticks = "";
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    const [c, s] = [Math.cos(a), Math.sin(a)];
+    const l = i % 6 === 0 ? 1.8 : 0.8;
+    ticks += `M${r(90 + c * 5.5)} ${r(75 + s * 5.5)}L${r(90 + c * (5.5 - l))} ${r(75 + s * (5.5 - l))}`;
+  }
+  return (
+    <>
+      <path d="M48 90H96" />
+      <path d="M57 90C59 82 61 80 66 80H76C81 80 83 82 85 90" />
+      <path d="M66 90C68 85 70 84 73 84H80" className="card-lines-faint" />
+      {commits.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={1.3} />
+      ))}
+      <circle cx="71" cy="80" r="1.1" />
+      <circle cx="80" cy="84" r="1" className="card-lines-faint" />
+      <circle cx="90" cy="75" r="5.5" />
+      <path d={ticks} />
+      <path d="M90 71.2L91 75L90 78.8L89 75Z" />
+      <Ruler from={[4, 96]} to={[4, 40]} n={20} />
+      <Guide>
+        <path d="M48 96H96M90 66V69M80 75H84" />
+      </Guide>
+    </>
+  );
+};
+
 /** Draws a card's line art; aria-hidden as it's decoration. */
 export function CardLines({ art: Art }: { art: LineArt }) {
   return (

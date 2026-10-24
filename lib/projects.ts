@@ -4,6 +4,7 @@ import {
   drrocketLines,
   factfulLines,
   jazzbaLines,
+  quartermasterLines,
   watwikiLines,
   weekloomLines,
   wmojLines,
@@ -13,6 +14,7 @@ import brickedLogo from "@/assets/logos/bricked.png";
 import drrocketLogo from "@/assets/logos/drrocket.svg";
 import factfulLogo from "@/assets/logos/factful.png";
 import jazzbaLogo from "@/assets/logos/jazzba.png";
+import quartermasterLogo from "@/assets/logos/quartermaster.svg";
 import watwikiLogo from "@/assets/logos/watwiki.png";
 import weekloomLogo from "@/assets/logos/weekloom.svg";
 import wmojLogo from "@/assets/logos/wmoj.png";
@@ -20,6 +22,7 @@ import bricked from "@/assets/projects/bricked.webp";
 import drrocket from "@/assets/projects/drrocket.webp";
 import factful from "@/assets/projects/factful.webp";
 import jazzba from "@/assets/projects/jazzba.webp";
+import quartermaster from "@/assets/projects/quartermaster.webp";
 import watwiki from "@/assets/projects/watwiki.webp";
 import weekloom from "@/assets/projects/weekloom.webp";
 import wmoj from "@/assets/projects/wmoj.webp";
@@ -76,6 +79,19 @@ export const PROJECTS: Project[] = [
     badge: { title: "Winner", detail: "Hack the North 2026" },
     tone: "#ff4d2e",
     lines: brickedLines,
+  },
+  {
+    name: "Quartermaster",
+    year: "2026",
+    kind: "Project",
+    blurb: "A macOS terminal app where one agent runs a crew of coding agents, each on its own git branch.",
+    about:
+      "A macOS terminal app where you talk to one agent, the Quartermaster. It hands the work to a crew of coding agents, each in its own git worktree, and ships their results as pull requests once you approve.",
+    href: "https://github.com/Adham-Aly/quartermaster",
+    art: { kind: "shot", src: quartermaster },
+    logo: quartermasterLogo,
+    tone: "#0f9d8a",
+    lines: quartermasterLines,
   },
   {
     name: "Factful",
