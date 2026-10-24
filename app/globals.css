@@ -40,6 +40,12 @@ svg {
   --depth: calc(var(--card-w) * var(--depth-k));
 
   /* the spot a pulled-out card lands in, with its write-up below */
+  /* the floating navbar */
+  --nav-top: 14px;
+  --nav-h: 46px;
+  --nav-w: clamp(280px, 20vw, 360px); /* a small pill, centred */
+  --nav-open-w: min(760px, calc(100vw - 32px)); /* room for the menu */
+
   --spot-x: 44px;
   --spot-y: calc(var(--intro-bottom, 200px) + 48px); /* --intro-bottom is set by CardStack */
   --spot-w: min(32vw, calc(100vh - var(--spot-y) - 212px)); /* leaves room for the write-up */
@@ -360,8 +366,13 @@ body {
     --po-y: 85%;
 
     --spot-x: 20px;
-    --spot-y: 24px;
-    --spot-w: min(calc(100vw - 40px), calc(66vh - 250px));
+    --nav-top: 12px;
+    --nav-h: 48px;
+    --nav-w: calc(100vw - 24px);
+    --nav-open-w: calc(100vw - 24px);
+
+    --spot-y: calc(var(--nav-top) + var(--nav-h) + 20px);
+    --spot-w: min(calc(100vw - 40px), calc(66vh - 310px));
   }
 
   /* a pulled-out card takes the top of the screen, so the intro steps aside */

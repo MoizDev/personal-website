@@ -2,7 +2,7 @@
 .tune {
   position: fixed;
   z-index: 20;
-  top: 64px;
+  top: 16px;
   right: 16px;
   width: 330px;
   max-height: calc(100vh - 80px);
@@ -140,7 +140,7 @@
 @media (max-width: 640px) {
   /* the top is empty in the opening view; collapse it to see a pulled-out card */
   .tune {
-    top: 64px;
+    top: 80px;
     right: 12px;
     left: 12px;
     width: auto;

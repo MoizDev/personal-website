@@ -2,6 +2,8 @@ import { CardStack } from "@/components/CardStack";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import arion from "@/assets/arion.png";
+import { Navbar } from "@/components/Navbar";
+import { LINKS } from "@/lib/links";
 
 // Sliders for the scene, for development only. Behind a dynamic import in a
 // dead branch so production builds drop the panel entirely.
@@ -10,17 +12,11 @@ const TunePanel =
     ? dynamic(() => import("@/components/TunePanel").then((m) => m.TunePanel))
     : () => null;
 
-const LINKS = [
-  { label: "Resume", href: "/resume.pdf" },
-  { label: "GitHub", href: "https://github.com/MoizDev" },
-  { label: "LinkedIn", href: "https://www.linkedin.com/in/moiz-ahmed-hashmi-a36670213/" },
-  { label: "Email", href: "mailto:hashmoiz1546@gmail.com" },
-];
-
 export default function Home() {
   return (
     <main className="home">
       <CardStack />
+      <Navbar />
 
       <header className="intro">
         <h1 className="intro-name">Moiz Hashmi</h1>
@@ -32,7 +28,7 @@ export default function Home() {
           </a>, building novel, <span className="nowrap">AI-native</span> consumer experiences.
         </p>
         <nav className="intro-links" aria-label="Elsewhere">
-          {LINKS.map((l) => (
+          {Object.values(LINKS).map((l) => (
             <a key={l.label} href={l.href}>
               {l.label}
             </a>
