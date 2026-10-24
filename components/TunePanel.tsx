@@ -33,8 +33,8 @@ const GROUPS: { title: string; fields: Field[] }[] = [
       { key: "--pitch", label: "pitch", min: -40, max: 20, step: 0.5, unit: "deg", to: "css" },
       { key: "--yaw", label: "yaw", min: -90, max: 90, step: 0.5, unit: "deg", to: "css" },
       { key: "--depth-k", label: "perspective", min: 0.5, max: 10, step: 0.05, to: "css" },
-      { key: "--po-x", label: "vanishing x", min: -100, max: 200, step: 1, unit: "%", to: "css" },
-      { key: "--po-y", label: "vanishing y", min: -100, max: 200, step: 1, unit: "%", to: "css" },
+      { key: "--po-x", label: "vanishing x", min: -1, max: 2, step: 0.01, to: "css" },
+      { key: "--po-y", label: "vanishing y", min: -1, max: 2, step: 0.01, to: "css" },
     ],
   },
   {

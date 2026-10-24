@@ -203,17 +203,16 @@ export function CardStack() {
       basePitch = parseFloat(root.getPropertyValue("--pitch")) || 0;
       const o = origin.current?.getBoundingClientRect();
       const r = spotRef.current?.getBoundingClientRect();
-      const sc = world.current?.parentElement?.getBoundingClientRect();
+      const wo = world.current;
+      const scene = wo?.parentElement;
       const w = cards.current[0]?.offsetWidth;
-      if (!o || !r || !sc || !w) return;
-      // the camera and the light, from the world's origin (the middle of the scene)
+      if (!o || !r || !wo || !scene || !w) return;
+      // the camera and the light, from the world's origin
       const num = (k: string) => parseFloat(root.getPropertyValue(k)) || 0;
       const depth = w * num("--depth-k");
-      const eye = new DOMPoint(
-        (num("--po-x") / 100 - 0.5) * sc.width,
-        (num("--po-y") / 100 - 0.5) * sc.height,
-        depth,
-      );
+      // the eye looks from the vanishing point, as laid out by CSS
+      const [px, py] = getComputedStyle(scene).perspectiveOrigin.split(" ").map(parseFloat);
+      const eye = new DOMPoint(px - wo.offsetLeft, py - wo.offsetTop, depth);
       const ox = w * num("--ox-k");
       const oy = w * num("--oy-k");
       const yaw = num("--yaw");

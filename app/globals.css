@@ -35,6 +35,12 @@ svg {
    * lib/scale.ts.
    */
   --u: min(calc(100vw / 1710), calc(100vh / 958));
+  /* that design, scaled, is a frame centred in the window; when the window is a
+     different shape, the spare room splits evenly around it */
+  --frame-w: calc(1710 * var(--u));
+  --frame-h: calc(958 * var(--u));
+  --frame-x: calc((100vw - var(--frame-w)) / 2);
+  --frame-y: calc((100vh - var(--frame-h)) / 2);
 
   /* the camera and the row; see CardStack */
   --card-w: calc(496 * var(--u));
@@ -45,22 +51,24 @@ svg {
   --ox-k: 0.48;
   --oy-k: 0.55;
   --depth-k: 2.6; /* perspective distance, in card widths */
-  --po-x: 61%; /* the vanishing point */
-  --po-y: 47%;
+  --po-x: 0.61; /* the vanishing point, as a fraction of the frame */
+  --po-y: 0.47;
+  /* the row and its vanishing point slide down together, to sit level with the spot */
+  --row-dy: calc(30 * var(--u));
   --ox: calc(var(--card-w) * var(--ox-k));
   --oy: calc(var(--card-w) * var(--oy-k));
   --depth: calc(var(--card-w) * var(--depth-k));
 
   /* the spot a pulled-out card lands in, with its write-up below */
   /* the floating navbar */
-  --nav-top: calc(44 * var(--u));
+  --nav-top: calc(var(--frame-y) + 44 * var(--u));
   --nav-h: calc(46 * var(--u));
   --nav-w: calc(96 * var(--u)); /* a small pill, centred: the logo and the menu button (the theme switch shows when open) */
   --nav-open-w: min(760 * var(--u), calc(100vw - 32 * var(--u))); /* room for the menu */
 
-  --spot-x: calc(44 * var(--u));
+  --spot-x: calc(var(--frame-x) + 44 * var(--u));
   --spot-y: calc(var(--intro-bottom, calc(200 * var(--u))) + 48 * var(--u)); /* --intro-bottom is set by CardStack */
-  --spot-w: min(547 * var(--u), calc(100vh - var(--spot-y) - 182 * var(--u))); /* leaves room for the write-up */
+  --spot-w: min(547 * var(--u), calc(var(--frame-y) + var(--frame-h) - var(--spot-y) - 182 * var(--u))); /* leaves room for the write-up */
 }
 
 /* dark mode: set by the navbar toggle, or the system until it is used (see app/layout.tsx) */
@@ -148,10 +156,10 @@ body {
 }
 
 .sky::before {
-  top: -38vh;
-  right: -18vw;
-  width: 78vw;
-  height: 92vh;
+  top: calc(var(--frame-y) - 0.38 * var(--frame-h));
+  right: calc(var(--frame-x) - 0.18 * var(--frame-w));
+  width: calc(0.78 * var(--frame-w));
+  height: calc(0.92 * var(--frame-h));
   background: radial-gradient(
     closest-side,
     color-mix(in srgb, var(--sky-tone) 90%, transparent),
@@ -162,10 +170,10 @@ body {
 }
 
 .sky::after {
-  top: -20vh;
-  right: 8vw;
-  width: 52vw;
-  height: 64vh;
+  top: calc(var(--frame-y) - 0.2 * var(--frame-h));
+  right: calc(var(--frame-x) + 0.08 * var(--frame-w));
+  width: calc(0.52 * var(--frame-w));
+  height: calc(0.64 * var(--frame-h));
   background: radial-gradient(
     closest-side,
     color-mix(in srgb, color-mix(in oklab, var(--sky-tone), #fff 60%) 80%, transparent),
@@ -177,13 +185,13 @@ body {
 
 @keyframes sky-drift-a {
   to {
-    transform: translate(-5vw, 6vh) scale(1.08);
+    transform: translate(calc(-0.05 * var(--frame-w)), calc(0.06 * var(--frame-h))) scale(1.08);
   }
 }
 
 @keyframes sky-drift-b {
   to {
-    transform: translate(7vw, -4vh) scale(0.94);
+    transform: translate(calc(0.07 * var(--frame-w)), calc(-0.04 * var(--frame-h))) scale(0.94);
   }
 }
 
@@ -212,7 +220,9 @@ body {
   inset: 0;
   overflow: hidden;
   perspective: var(--depth);
-  perspective-origin: var(--po-x) var(--po-y);
+  perspective-origin:
+    calc(var(--frame-x) + var(--frame-w) * var(--po-x))
+    calc(var(--frame-y) + var(--frame-h) * var(--po-y) + var(--row-dy));
   touch-action: none;
   cursor: grab;
 }
@@ -224,8 +234,8 @@ body {
 /* the ground: x runs along the row, -y is up */
 .world {
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: calc(var(--frame-x) + var(--frame-w) / 2);
+  top: calc(var(--frame-y) + var(--frame-h) / 2 + var(--row-dy));
   transform-style: preserve-3d;
 }
 
@@ -498,7 +508,7 @@ body {
 .intro {
   /* the first line (the name) shares its centre line with the navbar; 0.68em is half the line height */
   top: calc(var(--nav-top) + var(--nav-h) / 2 - 0.68em);
-  left: calc(44 * var(--u));
+  left: var(--spot-x);
   max-width: calc(540 * var(--u));
   font-size: calc(22 * var(--u));
   line-height: 1.36;
@@ -572,8 +582,8 @@ body {
 
 /* the hovered project, pinned to the corner so it swaps in place */
 .caption {
-  right: calc(44 * var(--u));
-  bottom: calc(40 * var(--u));
+  right: calc(var(--frame-x) + 44 * var(--u));
+  bottom: calc(var(--frame-y) + 40 * var(--u));
   width: calc(280 * var(--u));
   text-align: right;
   font-size: calc(13 * var(--u));
@@ -603,8 +613,11 @@ body {
     --ox-k: -0.65;
     --oy-k: 2;
     --depth-k: 2.4;
-    --po-x: 50%;
-    --po-y: 85%;
+    --po-x: 0.5;
+    --po-y: 0.85;
+    --row-dy: 0px;
+    --frame-w: 100vw;
+    --frame-h: 100vh;
 
     --spot-x: 20px;
     --nav-top: 12px;

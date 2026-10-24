@@ -35,7 +35,7 @@ const defaults = {
   shared: {
     /** overall scale: 1 makes Saturn's orbit about 0.9 of the page width */
     size: 1.28,
-    /** where the Sun sits, as a fraction of the page width and height */
+    /** where the Sun sits, as a fraction of the design frame's width and height (lib/scale.ts) */
     x: 0.74,
     y: 0.22,
     /** how far we look down onto the orbits (0 edge on, 1 from straight above) */
@@ -48,7 +48,7 @@ const defaults = {
     sun: 1,
     /** speed of everything, times */
     speed: 0.7,
-    /** the drawing fades in from the left so it stays clear of the text: from here (% of the width, invisible) ... */
+    /** the drawing fades in from the left so it stays clear of the text: from here (% of the design frame's width, invisible) ... */
     fadeFrom: 0,
     /** ... to here (fully shown) */
     fadeTo: 52,

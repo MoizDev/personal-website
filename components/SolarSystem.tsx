@@ -262,9 +262,11 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     zbuf.fill(Infinity);
     // big: Saturn's orbit is nearly the width of the page. The Sun sits in the
     // open band above the row of cards, and the outer orbits sweep down behind it.
+    // placed in the design frame (see lib/scale.ts), centred in the window like the rest of the page
+    const k = Math.min(W / DESIGN_W, H / DESIGN_H);
     const unit = Math.min(W / 1000, H / 560) * sh.size;
-    const cx = W * sh.x;
-    const cy = H * sh.y;
+    const cx = (W - DESIGN_W * k) / 2 + DESIGN_W * k * sh.x;
+    const cy = (H - DESIGN_H * k) / 2 + DESIGN_H * k * sh.y;
     const inkCss = paint(ink, L0);
     const colour = clamp01(L0.colour);
     const contrast = (v: number) => clamp01(0.5 + (v - 0.5) * L0.contrast);
@@ -473,8 +475,10 @@ export function SolarSystem() {
       sky.style.opacity = String(look.sky);
       sky.style.visibility = look.sky > 0 ? "" : "hidden";
       sky.style.setProperty("--sky-hue", String(look.skyHue));
-      canvas.style.setProperty("--fade-from", `${SOLAR.shared.fadeFrom}%`);
-      canvas.style.setProperty("--fade-to", `${SOLAR.shared.fadeTo}%`);
+      // across the design frame, not the window
+      const across = (pct: number) => `calc(var(--frame-x) + var(--frame-w) * ${pct / 100})`;
+      canvas.style.setProperty("--fade-from", across(SOLAR.shared.fadeFrom));
+      canvas.style.setProperty("--fade-to", across(SOLAR.shared.fadeTo));
     };
     readTheme();
     r.resize();
