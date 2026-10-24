@@ -23,7 +23,7 @@ svg {
   --fg: #161616;
   --ink-rgb: 22, 22, 22; /* the text colour, for translucent lines and fills */
   --paper-rgb: 255, 255, 255; /* the page colour, for frosted surfaces */
-  --tint: #e9f6ff; /* a wash of the logo's blue */
+  --tint-k: 9%; /* how much of the star's colour washes the logo card */
   --muted: rgba(var(--ink-rgb), 0.52);
   --soft: rgba(var(--ink-rgb), 0.74);
 
@@ -61,7 +61,7 @@ svg {
   --fg: #ececec;
   --ink-rgb: 236, 236, 236;
   --paper-rgb: 15, 15, 15;
-  --tint: #0d2433;
+  --tint-k: 16%;
 }
 
 html,
@@ -451,6 +451,13 @@ body {
   }
 }
 
+/* the star's colour, animatable so a backdrop can follow it */
+@property --hue {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #03a5fc;
+}
+
 /* the logo's star: a quarter turn, a pause, a new colour each turn */
 .star-spin {
   transform-box: fill-box;
@@ -474,6 +481,15 @@ body {
   47%, 58% { fill: #a855f7; }
   72%, 83% { fill: #f43f5e; }
   97%, 100% { fill: #03a5fc; }
+}
+
+/* the same colours as star-hue, for a backdrop that follows the star */
+@keyframes hue {
+  0%, 8% { --hue: #03a5fc; }
+  22%, 33% { --hue: #22c55e; }
+  47%, 58% { --hue: #a855f7; }
+  72%, 83% { --hue: #f43f5e; }
+  97%, 100% { --hue: #03a5fc; }
 }
 
 @media (prefers-reduced-motion: reduce) {
