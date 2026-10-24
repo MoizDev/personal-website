@@ -77,7 +77,7 @@ const slotOf = (j: number, p: number) => wrap(j - p + OUT, M) - OUT;
  * spot's bottom centre. `lead` is how far back the front of the row stands from
  * the origin, in px (--lead: phones stand the row behind the spot).
  */
-type Spot = { dx: number; dy: number; scale: number; lift: number; fade: number; yaw: number; lead: number };
+type Spot = { dx: number; dy: number; scale: number; lift: number; push: number; fade: number; yaw: number; lead: number };
 
 /** `drop` lifts the card off the ground, in card widths. */
 const rowTransform = (s: number, drop = 0) =>
@@ -87,13 +87,13 @@ const rowTransform = (s: number, drop = 0) =>
  * The world turns the row by (pitch, yaw). To face the camera a card undoes
  * that turn, then moves to the spot. `t` runs 0 (front of the row) to 1 (in the spot).
  */
-function flightTransform(t: number, spot: Spot, pitch: number, up = 0) {
+function flightTransform(t: number, spot: Spot, pitch: number, up = 0, near = 0) {
   const e = smooth(t);
   const scale = 1 + (spot.scale - 1) * e;
   return (
     `translate3d(${(spot.lead * (1 - e)).toFixed(2)}px, 0, 0) ` +
     `rotateY(${(-spot.yaw * e).toFixed(3)}deg) rotateX(${(-pitch * e).toFixed(3)}deg) ` +
-    `translate3d(${(spot.dx * e).toFixed(2)}px, ${(spot.dy * e - up).toFixed(2)}px, 0) ` +
+    `translate3d(${(spot.dx * e).toFixed(2)}px, ${(spot.dy * e - up).toFixed(2)}px, ${near.toFixed(2)}px) ` +
     `scale(${scale.toFixed(4)}) rotateY(${(-90 * (1 - e)).toFixed(3)}deg)`
   );
 }
@@ -103,10 +103,13 @@ function cardPose(s: number, n: number, spot: Spot | null, pitch: number) {
   if (s >= 0) return { transform: rowTransform(s), opacity: clamp((M - OUT - s) / FOG, 0, 1) };
   if (!spot) return { transform: rowTransform(s), opacity: 0 };
   if (s >= -1) return { transform: flightTransform(-s, spot, pitch), opacity: 1 };
-  // leaving: drift up out of the spot and fade
+  // leaving: drift up and toward the camera out of the spot, and fade. Coming
+  // forward keeps it in front of the next card, which turns as it flies in and
+  // would otherwise cut through it.
   const e = -1 - s;
   const opacity = 1 - smooth(clamp(e / spot.fade, 0, 1));
-  return { transform: flightTransform(1, spot, pitch, spot.lift * smooth(e)), opacity };
+  const near = spot.push * smooth(clamp(e * 2, 0, 1));
+  return { transform: flightTransform(1, spot, pitch, spot.lift * smooth(e), near), opacity };
 }
 
 const worldTransform = (pitch: number) =>
@@ -250,6 +253,7 @@ export function CardStack() {
         dy,
         scale: r.width / w,
         lift: r.height * num("--lift"),
+        push: r.width * num("--leave-near"),
         fade: num("--leave-fade") || 0.7,
         yaw: parseFloat(root.getPropertyValue("--yaw")) || 0,
         lead,

@@ -53,6 +53,7 @@ svg {
   --depth-k: 2.6; /* perspective distance, in card widths */
   --lift: 0.1; /* how far a card leaving the spot drifts up as it fades, in card heights */
   --leave-fade: 0.7; /* how far through leaving it has faded out, from 0 to 1 */
+  --leave-near: 0.6; /* how far it comes toward the camera as it leaves, in spot widths */
   --lead: 0; /* how far back the front of the row stands from the spot's plane, in slots */
   --po-x: 0.61; /* the vanishing point, as a fraction of the frame */
   --po-y: 0.47;
