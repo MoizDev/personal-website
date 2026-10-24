@@ -23,8 +23,10 @@ import "./Navbar.css";
 import { EMAIL, LINKS } from "@/lib/links";
 
 /** Send the row back to its opening view (CardStack listens for Home). */
-const toRow = () =>
+const toRow = () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
   window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
+};
 
 const BIG = [
   { label: "Work", onClick: toRow },

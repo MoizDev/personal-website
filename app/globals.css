@@ -66,8 +66,7 @@ svg {
 
 html,
 body {
-  height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
   overscroll-behavior: none;
   background: var(--bg);
   color: var(--fg);
@@ -88,9 +87,11 @@ body {
   outline-offset: 3px;
 }
 
+/* the first screen: the row of cards; the footer is below it */
 .home {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
 }

@@ -137,8 +137,9 @@ export function CardStack() {
     // The spot is laid out by CSS; measure it so cards can fly there.
     function measure() {
       // the spot sits below the intro, however tall its text wraps
-      const intro = document.querySelector(".intro")?.getBoundingClientRect();
-      if (intro) document.documentElement.style.setProperty("--intro-bottom", `${Math.round(intro.bottom)}px`);
+      const intro = document.querySelector<HTMLElement>(".intro");
+      if (intro)
+        document.documentElement.style.setProperty("--intro-bottom", `${intro.offsetTop + intro.offsetHeight}px`);
       const root = getComputedStyle(document.documentElement);
       basePitch = parseFloat(root.getPropertyValue("--pitch")) || 0;
       const o = origin.current?.getBoundingClientRect();
@@ -233,9 +234,13 @@ export function CardStack() {
     }
 
     function aim(target: number) {
-      m.target = Math.max(0, target); // nothing before the opening view
+      m.target = clamp(target, 0, N); // from the opening view to the last project
       kick();
     }
+
+    /** The last project is out and settled: further on, the page scrolls to the footer. */
+    const atEnd = () => m.target >= N && Math.abs(m.cur - N) < 0.05;
+    const scrolled = () => window.scrollY > 0;
 
     function push(by: number) {
       setHover(null); // the card under the pointer is about to slide away
@@ -253,19 +258,36 @@ export function CardStack() {
       aim(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
+    // The wheel moves the row while the page is at the top. Past the last project it
+    // scrolls the page instead, and back at the top it hands over to the row again.
+    // A gesture's momentum never crosses over: the handover waits for a pause.
+    let lastWheel = -Infinity;
+    let wheelWent: "row" | "page" = "row";
+    const PAUSE = 250;
+
     function onWheel(e: WheelEvent) {
       if (e.ctrlKey) return; // pinch zoom
-      e.preventDefault();
       const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
       const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      const fresh = e.timeStamp - lastWheel > PAUSE;
+      lastWheel = e.timeStamp;
+      if (scrolled() || (d > 0 && atEnd() && (fresh || wheelWent === "page"))) {
+        wheelWent = "page"; // the browser scrolls
+        return;
+      }
+      e.preventDefault();
+      if (wheelWent === "page" && !fresh) return; // momentum from scrolling up; let it die
+      wheelWent = "row";
       push(d * unit * MOTION.wheel);
       settleSoon();
     }
 
     function onKey(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (scrolled() && e.key !== "Home") return; // the page has the keys while it's scrolled
       if (e.key === "Home" || e.key === "Escape") {
         e.preventDefault();
+        if (e.key === "Home") window.scrollTo({ top: 0, behavior: "smooth" });
         setHover(null);
         aim(0);
         return;
@@ -275,18 +297,21 @@ export function CardStack() {
       let step = forward.includes(e.key) ? 1 : back.includes(e.key) ? -1 : 0;
       if (e.key === " ") step = e.shiftKey ? -1 : 1;
       if (!step) return;
+      if (step > 0 && m.target >= N) return; // past the last project: the page scrolls on
       e.preventDefault();
       setHover(null);
       aim(Math.round(m.target) + step);
     }
 
     // Dragging (touch or mouse) moves the row too, and a flick carries on.
-    let drag: { x: number; y: number; t: number; v: number; moved: number } | null = null;
+    // Past the last project (or with the page scrolled) a drag scrolls the page instead.
+    let drag: { x: number; y: number; t: number; v: number; moved: number; page: boolean } | null = null;
     let swallowClick = false;
 
     function onDown(e: PointerEvent) {
       if (e.button !== 0) return;
-      drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, v: 0, moved: 0 };
+      if (!(e.target as Element | null)?.closest(".home")) return; // the footer is the page's own
+      drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, v: 0, moved: 0, page: false };
       swallowClick = false;
       clearTimeout(snapTimer);
     }
@@ -302,14 +327,20 @@ export function CardStack() {
       drag.x = e.clientX;
       drag.y = e.clientY;
       drag.t = e.timeStamp;
-      if (drag.moved > 6) push(d);
+      if (drag.moved <= 6) return;
+      if (scrolled() || (d > 0 && atEnd())) {
+        drag.page = true;
+        window.scrollBy(0, -(Math.abs(dy) >= Math.abs(dx) ? dy : dx));
+        return;
+      }
+      push(d);
     }
 
     function onUp() {
       if (!drag) return;
       if (drag.moved > 6) {
         swallowClick = true;
-        push(clamp(drag.v * 0.25, -MAX_LEAD, MAX_LEAD));
+        if (!drag.page) push(clamp(drag.v * 0.25, -MAX_LEAD, MAX_LEAD));
       }
       drag = null;
       settleSoon();
