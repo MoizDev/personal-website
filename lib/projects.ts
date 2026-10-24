@@ -1,4 +1,14 @@
 import type { StaticImageData } from "next/image";
+import {
+  brickedLines,
+  factfulLines,
+  jazzbaLines,
+  scireLines,
+  watwikiLines,
+  weekloomLines,
+  wmojLines,
+  type LineArt,
+} from "@/components/CardLines";
 import bricked from "@/assets/projects/bricked-logo.png";
 import factful from "@/assets/projects/factful.webp";
 import jazzba from "@/assets/projects/jazzba.webp";
@@ -23,6 +33,8 @@ export type Project = {
   art: { kind: "shot"; src: StaticImageData } | { kind: "logo"; src: StaticImageData; tagline: string };
   /** the card's colour */
   tone: string;
+  /** the faint line drawing behind the card, its own for every project (see components/CardLines) */
+  lines: LineArt;
 };
 
 // Order is the order the cards come round in the stack.
@@ -37,6 +49,7 @@ export const PROJECTS: Project[] = [
     href: "https://factful.io/",
     art: { kind: "shot", src: factful },
     tone: "#2f6bff",
+    lines: factfulLines,
   },
   {
     name: "Bricked",
@@ -48,6 +61,7 @@ export const PROJECTS: Project[] = [
     href: "https://devpost.com/software/a-feuvb1",
     art: { kind: "logo", src: bricked, tagline: "Type an idea, get a LEGO model." },
     tone: "#ff4d2e",
+    lines: brickedLines,
   },
   {
     name: "Weekloom",
@@ -59,6 +73,7 @@ export const PROJECTS: Project[] = [
     href: "https://weekloom.com/",
     art: { kind: "shot", src: weekloom },
     tone: "#ffc021",
+    lines: weekloomLines,
   },
   {
     name: "WMOJ",
@@ -70,6 +85,7 @@ export const PROJECTS: Project[] = [
     href: "https://wmoj.ca/",
     art: { kind: "shot", src: wmoj },
     tone: "#22c55e",
+    lines: wmojLines,
   },
   {
     name: "WatWiki",
@@ -81,6 +97,7 @@ export const PROJECTS: Project[] = [
     href: "https://github.com/MoizDev/wat-wiki",
     art: { kind: "logo", src: watwiki, tagline: "Lectures in, class wiki out." },
     tone: "#8b5cf6",
+    lines: watwikiLines,
   },
   {
     name: "Scire",
@@ -92,6 +109,7 @@ export const PROJECTS: Project[] = [
     href: "https://app.tutoringapp.ca",
     art: { kind: "shot", src: scire },
     tone: "#ff5ca8",
+    lines: scireLines,
   },
   {
     name: "Jazzba",
@@ -103,5 +121,6 @@ export const PROJECTS: Project[] = [
     href: "https://jazzba.io/",
     art: { kind: "shot", src: jazzba },
     tone: "#ff8a1f",
+    lines: jazzbaLines,
   },
 ];

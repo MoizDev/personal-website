@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { MOTION } from "@/lib/motion";
+import { CardLines } from "@/components/CardLines";
 import { PROJECTS, type Project } from "@/lib/projects";
 
 /*
@@ -633,6 +634,7 @@ function MysteryFace({ j, front }: { j: number; front: boolean }) {
 function CardFace({ project: p, live }: { project: Project; live: boolean }) {
   return (
     <Body tone={p.tone}>
+      <CardLines art={p.lines} />
       {p.art.kind === "shot" ? (
         <Image
           className="card-shot"
