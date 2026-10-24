@@ -9,14 +9,22 @@
  * of cards behind it stays put.
  */
 
-import { useEffect, useId, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type SyntheticEvent,
+} from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import "./Navbar.css";
 import { EMAIL, LINKS } from "@/lib/links";
 
 /** Send the row back to its opening view (CardStack listens for Home). */
-const toRow = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
+const toRow = () =>
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
 
 const BIG = [
   { label: "Work", onClick: toRow },
@@ -24,7 +32,11 @@ const BIG = [
   { label: "Contact", href: LINKS.email.href },
 ];
 
-const SMALL = [LINKS.github, LINKS.linkedin, { label: EMAIL, href: LINKS.email.href }];
+const SMALL = [
+  LINKS.github,
+  LINKS.linkedin,
+  { label: EMAIL, href: LINKS.email.href },
+];
 
 const stop = (e: SyntheticEvent) => e.stopPropagation();
 
@@ -68,22 +80,57 @@ export function Navbar() {
 
   return (
     <>
-      <div className="nav-scrim" data-open={open} onClick={close} onPointerDown={stop} onWheel={stop} aria-hidden />
+      <div
+        className="nav-scrim"
+        data-open={open}
+        onClick={close}
+        onPointerDown={stop}
+        onWheel={stop}
+        aria-hidden
+      />
 
-      <nav className="nav" data-open={open} aria-label="Site" onPointerDown={stop} onWheel={stop}>
+      <nav
+        className="nav"
+        data-open={open}
+        aria-label="Site"
+        onPointerDown={stop}
+        onWheel={stop}
+      >
         <div className="nav-bar">
-          <Link
-            className="nav-home"
-            href="/"
-            aria-label="Moiz Hashmi, home"
-            onClick={(e) => {
-              e.preventDefault();
-              close();
-              toRow();
-            }}
-          >
-            <Logo className="nav-logo" />
-          </Link>
+          <div className="nav-left">
+            <Link
+              className="nav-home"
+              href="/"
+              aria-label="Moiz Hashmi, home"
+              onClick={(e) => {
+                e.preventDefault();
+                close();
+                toRow();
+              }}
+            >
+              <Logo className="nav-logo" />
+            </Link>
+
+            <button
+              type="button"
+              className="nav-theme"
+              onClick={toggleTheme}
+              aria-label="Switch light or dark mode"
+            >
+              {/* a circle, half filled: light and dark */}
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                />
+                <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
 
           <button
             ref={button}
@@ -99,7 +146,13 @@ export function Navbar() {
           </button>
         </div>
 
-        <div className="nav-panel" id={panelId} ref={panel} tabIndex={-1} inert={!open}>
+        <div
+          className="nav-panel"
+          id={panelId}
+          ref={panel}
+          tabIndex={-1}
+          inert={!open}
+        >
           <div className="nav-inner">
             <div className="nav-body">
               <ul className="nav-big">
@@ -132,13 +185,6 @@ export function Navbar() {
                     </a>
                   </li>
                 ))}
-                <li>
-                  <button type="button" className="nav-theme" onClick={toggleTheme}>
-                    {/* the label names the mode you'd switch to; CSS picks one */}
-                    <span className="nav-to-dark">Dark mode</span>
-                    <span className="nav-to-light">Light mode</span>
-                  </button>
-                </li>
               </ul>
             </div>
 

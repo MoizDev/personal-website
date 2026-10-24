@@ -47,6 +47,41 @@
   height: 15px;
 }
 
+/* the logo with the theme switch beside it */
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-theme {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.nav-theme:hover {
+  background: rgba(var(--ink-rgb), 0.05);
+}
+
+.nav-theme svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* the dark half swaps sides with the theme */
+:root[data-theme="dark"] .nav-theme svg {
+  transform: scaleX(-1);
+}
+
 /* two lines that cross into an X */
 .nav-toggle {
   position: relative;

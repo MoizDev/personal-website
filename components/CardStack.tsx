@@ -34,8 +34,14 @@ const OUT = 2;
  * The last FOG slots fade out so a fast scroll (flatter ground) shows a haze, not an end.
  */
 const FOG = 10;
-/** on load the row starts this many cards back and slides in */
-const START = -6;
+// On load the cards drop onto the ground one after another, front first,
+// then the front card flips out into the spot.
+const DROP = 1.4; // how high a card falls from, in card widths
+const DROP_MS = 620; // how long one card takes to land
+const STAGGER_MS = 55; // between one card starting to fall and the next
+const STAGGER_CAP = 14; // cards further back than this all fall with the last one (they're in the haze)
+const FLIP_AT_MS = 950; // when the front card flips out into the spot
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
 // Scroll. Positions are in cards, speeds in cards per second.
 // The row chases the scroll target on a critically damped spring, so it eases
@@ -54,8 +60,9 @@ const slotOf = (j: number, p: number) => wrap(j - p + OUT, M) - OUT;
 /** Where the spot is, measured from the page: px from the front card's foot to the spot's bottom centre. */
 type Spot = { dx: number; dy: number; scale: number; lift: number; yaw: number };
 
-const rowTransform = (s: number) =>
-  `translate3d(calc(var(--card-w) * var(--gap) * ${s.toFixed(4)}), 0, 0) rotateY(-90deg)`;
+/** `drop` lifts the card off the ground, in card widths. */
+const rowTransform = (s: number, drop = 0) =>
+  `translate3d(calc(var(--card-w) * var(--gap) * ${s.toFixed(4)}), calc(var(--card-w) * ${(-drop).toFixed(4)}), 0) rotateY(-90deg)`;
 
 /**
  * The world turns the row by (pitch, yaw). To face the camera a card undoes
@@ -85,13 +92,20 @@ function cardPose(s: number, n: number, spot: Spot | null, pitch: number) {
 const worldTransform = (pitch: number) =>
   `translate3d(var(--ox), var(--oy), 0) rotateX(calc(var(--pitch) + ${pitch.toFixed(3)}deg)) rotateY(var(--yaw))`;
 
-// Server render and first paint use the start pose. These objects never change,
-// so re-renders leave the per-frame inline styles alone.
-const INITIAL: CSSProperties[] = Array.from({ length: M }, (_, j) => {
-  const s = slotOf(j, START);
-  const p = cardPose(s, START + s, null, 0);
-  return { transform: p.transform, opacity: p.opacity, visibility: p.opacity < 0.01 ? "hidden" : undefined };
-});
+// Server render and first paint have every card up in the air, unseen, ready to drop.
+// These objects never change, so re-renders leave the per-frame inline styles alone.
+const INITIAL: CSSProperties[] = Array.from({ length: M }, (_, j) => ({
+  transform: rowTransform(slotOf(j, 0), DROP),
+  opacity: 0,
+  visibility: "hidden",
+}));
+
+/** How far card j still has to fall (card widths) and how faded in it is, `ms` into the load. */
+function dropOf(j: number, ms: number) {
+  const delay = Math.min(slotOf(j, 0), STAGGER_CAP) * STAGGER_MS;
+  const t = clamp((ms - delay) / DROP_MS, 0, 1);
+  return { drop: DROP * (1 - easeOut(t)), fade: clamp(t * 2.5, 0, 1) };
+}
 const INITIAL_WORLD: CSSProperties = { transform: worldTransform(0) };
 const HIDDEN: CSSProperties = { opacity: 0, visibility: "hidden" };
 
@@ -109,7 +123,11 @@ export function CardStack() {
 
   useEffect(() => {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const m = { cur: START, target: 0, vel: 0, pitch: 0, pitchVel: 0, last: 0, running: false };
+    const m = { cur: 0, target: 0, vel: 0, pitch: 0, pitchVel: 0, last: 0, running: false };
+    // the load-in: cards dropping onto the ground (skipped for reduced motion)
+    const introStart = performance.now();
+    const introEnd = reduce ? introStart : introStart + STAGGER_CAP * STAGGER_MS + DROP_MS;
+    let flipTimer = 0;
     let raf = 0;
     let snapTimer = 0;
     let shown = -2;
@@ -136,14 +154,20 @@ export function CardStack() {
       };
     }
 
-    function paint() {
+    function paint(now = performance.now()) {
       const pitch = basePitch + m.pitch;
+      const intro = now < introEnd ? now - introStart : -1;
       for (let j = 0; j < M; j++) {
         const el = cards.current[j];
         if (!el) continue;
         const s = slotOf(j, m.cur);
         slots.current[j] = s;
         const pose = cardPose(s, Math.round(m.cur + s), spot, pitch);
+        if (intro >= 0 && s >= 0) {
+          const d = dropOf(j, intro);
+          pose.transform = rowTransform(s, d.drop);
+          pose.opacity *= d.fade;
+        }
         el.style.transform = pose.transform;
         el.style.opacity = pose.opacity.toFixed(3);
         el.style.visibility = pose.opacity < 0.01 ? "hidden" : "";
@@ -188,8 +212,9 @@ export function CardStack() {
       m.pitchVel += (f * f * (want - m.pitch) - 2 * MOTION.pitchDamping * f * m.pitchVel) * dt;
       m.pitch += m.pitchVel * dt;
 
-      paint();
-      const still = m.cur === m.target && Math.abs(m.pitch) < 0.01 && Math.abs(m.pitchVel) < 0.01;
+      paint(now);
+      const still =
+        now >= introEnd && m.cur === m.target && Math.abs(m.pitch) < 0.01 && Math.abs(m.pitchVel) < 0.01;
       if (still) {
         m.pitch = 0;
         m.pitchVel = 0;
@@ -315,10 +340,13 @@ export function CardStack() {
     window.addEventListener("pointercancel", onUp);
     window.addEventListener("click", onClick, true);
     kick();
+    // once the front cards have landed, the first one flips out (unless the visitor already moved)
+    flipTimer = window.setTimeout(() => m.target === 0 && aim(1), reduce ? 0 : FLIP_AT_MS);
 
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(snapTimer);
+      clearTimeout(flipTimer);
       introSize.disconnect();
       document.documentElement.style.removeProperty("--intro-bottom");
       window.removeEventListener("resize", onResize);
