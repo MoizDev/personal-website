@@ -2,7 +2,6 @@ import { CardStack } from "@/components/CardStack";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import arion from "@/assets/arion.png";
-import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { LINKS } from "@/lib/links";
 
@@ -17,41 +16,38 @@ const TunePanel =
 
 export default function Home() {
   return (
-    <>
-      <main className="home">
-        <CardStack />
-        <Navbar />
+    <main className="home">
+      <CardStack />
+      <Navbar />
 
-        <header className="intro">
-          <h1 className="intro-name">Moiz Hashmi</h1>
-          <p className="intro-bio">
-            I’m a software engineer and student at the University of Waterloo.
-            Currently, I’m an engineer at{" "}
-            <a className="org" href="https://arion.nyc">
-              <Image
-                className="org-icon"
-                src={arion}
-                alt=""
-                width={44}
-                height={44}
-              />
-              <span>Arion.nyc</span>
+      <header className="intro">
+        <h1 className="intro-name">Moiz Hashmi</h1>
+        <p className="intro-bio">
+          I’m a software engineer and student at the University of Waterloo.
+          Currently, I’m an engineer at{" "}
+          <a className="org" href="https://arion.nyc">
+            <Image
+              className="org-icon"
+              src={arion}
+              alt=""
+              width={44}
+              height={44}
+            />
+            <span>Arion.nyc</span>
+          </a>
+          , building novel, <span className="nowrap">AI-native</span> consumer
+          experiences.
+        </p>
+        <nav className="intro-links" aria-label="Elsewhere">
+          {Object.values(LINKS).map((l) => (
+            <a key={l.label} href={l.href}>
+              {l.label}
             </a>
-            , building novel, <span className="nowrap">AI-native</span> consumer
-            experiences.
-          </p>
-          <nav className="intro-links" aria-label="Elsewhere">
-            {Object.values(LINKS).map((l) => (
-              <a key={l.label} href={l.href}>
-                {l.label}
-              </a>
-            ))}
-          </nav>
-        </header>
+          ))}
+        </nav>
+      </header>
 
-        <TunePanel />
-      </main>
-      <Footer />
-    </>
+      <TunePanel />
+    </main>
   );
 }

@@ -173,11 +173,6 @@ export function CardStack() {
         el.style.visibility = pose.opacity < 0.01 ? "hidden" : "";
       }
       if (world.current) world.current.style.transform = worldTransform(m.pitch);
-      // the row is on a card: take its box for the wheel, if it needs taking
-      if ((!rowBox || stale) && atRest()) {
-        rowBox = boxRow();
-        stale = false;
-      }
 
       // The write-up fades out as its card leaves and in as the next one lands.
       const k = Math.round(m.cur);
@@ -242,10 +237,6 @@ export function CardStack() {
       kick();
     }
 
-    /** The last project is out and settled: onward, the page scrolls to the footer. */
-    const atEnd = () => m.target >= N && Math.abs(m.cur - N) < 0.05;
-    const scrolled = () => window.scrollY > 0;
-
     // A scroll or drag settles on a card when it stops. Any deliberate nudge from
     // where it started (NUDGE of a card) goes at least one card that way, so a
     // gentle swipe moves on instead of springing back.
@@ -283,42 +274,10 @@ export function CardStack() {
       jump(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
-    // The row's box on the page: round the cards standing in it, padded a little.
-    // Taken with the row at rest, where it's the same whichever card is in front,
-    // so it doesn't shrink and shift while cards move. In page coordinates, so
-    // scrolling doesn't stale it.
-    let rowBox: { l: number; t: number; r: number; b: number } | null = null;
-    let stale = false; // the layout changed while the row was moving
-    function boxRow() {
-      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
-      for (let j = 0; j < M; j++) {
-        const el = cards.current[j];
-        // the front card counts until it's well on its way out
-        if (!el || slots.current[j] < -0.5 || el.style.visibility === "hidden") continue;
-        const box = el.getBoundingClientRect();
-        l = Math.min(l, box.left);
-        t = Math.min(t, box.top);
-        r = Math.max(r, box.right);
-        b = Math.max(b, box.bottom);
-      }
-      const pad = 24;
-      return { l: l - pad, t: t + window.scrollY - pad, r: r + pad, b: b + window.scrollY + pad };
-    }
-    const atRest = () => m.cur === Math.round(m.cur) && performance.now() >= introEnd;
-    function overRow(x: number, y: number) {
-      const box = rowBox ?? boxRow();
-      const py = y + window.scrollY;
-      return x >= box.l && x <= box.r && py >= box.t && py <= box.b;
-    }
-
-    // The wheel moves the row while the pointer is over it, and scrolls the page
-    // anywhere else, decided event by event so trackpad momentum can never strand
     function onWheel(e: WheelEvent) {
       if (e.ctrlKey) return; // pinch zoom
       const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
       const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-      // past the last project, onward goes to the page (and the footer)
-      if (!overRow(e.clientX, e.clientY) || (d > 0 && atEnd())) return; // the browser scrolls
       e.preventDefault();
       push(d * unit * MOTION.wheel);
       settleSoon();
@@ -326,10 +285,8 @@ export function CardStack() {
 
     function onKey(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (scrolled() && e.key !== "Home") return; // the page has the keys while it's scrolled
       if (e.key === "Home" || e.key === "Escape") {
         e.preventDefault();
-        if (e.key === "Home") window.scrollTo({ top: 0, behavior: "smooth" });
         setHover(null);
         jump(0);
         return;
@@ -339,25 +296,18 @@ export function CardStack() {
       let step = forward.includes(e.key) ? 1 : back.includes(e.key) ? -1 : 0;
       if (e.key === " ") step = e.shiftKey ? -1 : 1;
       if (!step) return;
-      if (step > 0 && m.target >= N) return; // past the last project: the page scrolls on
       e.preventDefault();
       setHover(null);
       jump(Math.round(m.target) + step);
     }
 
     // Dragging (touch or mouse) moves the row too, and a flick carries on.
-    // Like the wheel, it goes by where it starts: on the row it moves the row; elsewhere
-    // a touch drag scrolls the page (the scene blocks native touch scrolling) and a
-    // mouse drag does nothing.
-    let drag: { x: number; y: number; t: number; v: number; moved: number; page: boolean } | null = null;
+    let drag: { x: number; y: number; t: number; v: number; moved: number } | null = null;
     let swallowClick = false;
 
     function onDown(e: PointerEvent) {
       if (e.button !== 0) return;
-      if (!(e.target as Element | null)?.closest(".home")) return; // the footer is the page's own
-      const page = !overRow(e.clientX, e.clientY);
-      if (page && e.pointerType === "mouse") return;
-      drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, v: 0, moved: 0, page };
+      drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, v: 0, moved: 0 };
       swallowClick = false;
       clearTimeout(snapTimer);
     }
@@ -373,19 +323,14 @@ export function CardStack() {
       drag.x = e.clientX;
       drag.y = e.clientY;
       drag.t = e.timeStamp;
-      if (drag.moved <= 6) return;
-      if (drag.page) {
-        window.scrollBy(0, -(Math.abs(dy) >= Math.abs(dx) ? dy : dx));
-        return;
-      }
-      push(d);
+      if (drag.moved > 6) push(d);
     }
 
     function onUp() {
       if (!drag) return;
       if (drag.moved > 6) {
         swallowClick = true;
-        if (!drag.page) push(clamp(drag.v * 0.25, -MAX_LEAD, MAX_LEAD));
+        push(clamp(drag.v * 0.25, -MAX_LEAD, MAX_LEAD));
       }
       drag = null;
       settleSoon();
@@ -401,9 +346,6 @@ export function CardStack() {
     function onResize() {
       measure();
       paint();
-      // re-take the box at rest; mid-move, keep the last one until the row settles
-      if (atRest()) rowBox = boxRow();
-      else stale = true;
     }
 
     measure();

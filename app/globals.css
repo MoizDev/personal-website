@@ -64,14 +64,11 @@ svg {
   --tint-k: 16%;
 }
 
-/* on the root only: on body these would make it a scroll container that swallows the page's scrolling */
-html {
-  overflow-x: hidden;
-  overscroll-behavior: none;
-}
-
 html,
 body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-body), system-ui, sans-serif;
@@ -91,11 +88,9 @@ body {
   outline-offset: 3px;
 }
 
-/* the first screen: the row of cards; the footer is below it */
 .home {
-  position: relative;
-  height: 100vh;
-  overflow: hidden;
+  position: fixed;
+  inset: 0;
   user-select: none;
   -webkit-user-select: none;
 }
