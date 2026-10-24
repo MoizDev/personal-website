@@ -126,10 +126,10 @@ const HIDDEN: CSSProperties = { opacity: 0, visibility: "hidden" };
  * rest (GLINT, as a share of the card from its top left), LIGHT_FAR times as far
  * beyond the card as the eye is.
  */
-const GLINT = { x: 0.3, y: 0.18 };
+const GLINT = { x: 0.38, y: 0.2 };
 const LIGHT_FAR = 1.6;
 const LIGHT_R = 0.9; // the light's radius, in card widths
-const GLARE_R = 0.5; // the reflection's radius as drawn in CSS (.card-glare-light), in card widths
+const GLARE_R = 0.5; // the reflection's half-width as drawn in CSS (.card-glare-light), in card widths
 
 /**
  * Cards from the spot to this many slots into the row are built in 3D (thickness,
@@ -188,7 +188,7 @@ const EDGES = OUTLINE.map(([x, y], i) => {
     top: `${(y * 100).toFixed(3)}%`,
     width: `calc(${(len * 100).toFixed(3)}% + 0.5px)`,
     transform: `rotate(${((Math.atan2(y2 - y, x2 - x) * 180) / Math.PI).toFixed(2)}deg) rotateX(-90deg)`,
-    "--lit": `${(70 + 14 * up).toFixed(1)}%`,
+    "--lit": `${(90 + 8 * up).toFixed(1)}%`,
   } as CSSProperties;
   return <i key={i} className="card-edge" style={style} />;
 });

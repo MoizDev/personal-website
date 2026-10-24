@@ -129,7 +129,7 @@ body {
   transform-origin: 50% 100%;
   transform-style: preserve-3d;
   -webkit-user-drag: none;
-  --edge: calc(var(--card-w) * 0.012); /* the card's thickness */
+  --edge: calc(var(--card-w) * 0.034); /* the card's thickness */
   --ease: 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -172,12 +172,16 @@ body {
   background: var(--tone);
 }
 
-/* a strip of the slab's side, folded back from the outline; --lit is set per strip */
+/* a strip of the slab's side, folded back from the outline: a paler tint of the
+   card, catching light along its front edge and dimming toward the back; --lit
+   (set per strip) shades the sides facing down */
 .card-edge {
   position: absolute;
   height: var(--edge);
   transform-origin: 0 0;
-  background: color-mix(in oklab, color-mix(in srgb, var(--tone) 90%, var(--bg)) var(--lit), #000);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.14)),
+    color-mix(in oklab, color-mix(in srgb, var(--tone) 72%, #fff) var(--lit), #000);
   opacity: var(--fade, 1);
 }
 
@@ -202,8 +206,8 @@ body {
   transform: translate(calc(var(--px, 0) * -4.5%), calc(var(--py, 0) * -4.5%));
 }
 
-/* gloss: the reflection of a soft light, half a card across (GLARE_R in
-   CardStack), which moves it to where the light lands */
+/* gloss: the reflection of a softbox light; CardStack moves and sizes it to
+   where the light lands (it's drawn GLARE_R card widths to each side) */
 .card-glare {
   position: absolute;
   inset: 0;
@@ -218,14 +222,10 @@ body {
 
 .card-glare-light {
   position: absolute;
-  inset: -50%; /* room for the whole ellipse, centred on the card */
-  background: radial-gradient(
-    ellipse 37.5% 25% at 50% 50%,
-    rgba(255, 255, 255, 0.2),
-    rgba(255, 255, 255, 0.12) 30%,
-    rgba(255, 255, 255, 0.04) 65%,
-    transparent
-  );
+  inset: 36% 2%; /* a wide, soft-edged panel: the light's reflection, centred on the card */
+  border-radius: 22% / 50%;
+  background: linear-gradient(rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1));
+  filter: blur(calc(var(--card-w) * 0.012));
   transform: scale(0);
   will-change: transform;
 }
