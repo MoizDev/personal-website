@@ -543,7 +543,7 @@ function linkLabel(href: string) {
 const GREYS = [16, 24, 12, 30, 20, 26, 14, 22];
 const GLYPHS = "#%&@$*!/<>{}[]=+~^ABCDEFGHJKMNPRSTXYZ0123456789";
 const SCRAMBLE_FRAMES = 11; // characters shown before landing on ?
-const SCRAMBLE_FRAME_MS = 75; // how long each one shows (11 x 75ms: lands in about 0.8s)
+const SCRAMBLE_FRAME_MS = 56; // how long each one shows (11 x 56ms: lands in about 0.6s)
 
 /**
  * A grey card with a question mark. The first one, once it's at the front of
