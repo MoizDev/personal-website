@@ -1,12 +1,13 @@
+import Link from "next/link";
 import { Tangram } from "@/components/Tangram";
 
 export default function Home() {
   return (
     <main className="page">
       <header className="nav">
-        <a href="/" className="nav-name">
+        <Link href="/" className="nav-name">
           Moiz Hashmi
-        </a>
+        </Link>
         <nav aria-label="Main">
           <a href="#projects">projects</a>
           <a href="/resume.pdf">resume</a>
