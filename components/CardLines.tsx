@@ -190,31 +190,28 @@ export const watwikiLines: LineArt = () => {
   );
 };
 
-/** Scire, scheduling tutors: a clock face off the corner, and a month of sessions. */
-export const scireLines: LineArt = () => {
-  const [cx, cy, rad] = [100, 0, 30];
-  let ticks = "";
-  for (let i = 0; i <= 12; i++) {
-    const a = (90 + i * 7.5) * (Math.PI / 180);
-    const l = i % 3 === 0 ? 4 : 2;
-    ticks += `M${r(cx + Math.cos(a) * rad)} ${r(cy + Math.sin(a) * rad)}L${r(cx + Math.cos(a) * (rad - l))} ${r(cy + Math.sin(a) * (rad - l))}`;
-  }
-  const dots = [];
-  for (let row = 0; row < 4; row++)
-    for (let col = 0; col < 7; col++) {
-      const on = (row * 7 + col) % 5 === 2;
-      dots.push(<circle key={`${row}-${col}`} cx={58 + col * 5.5} cy={74 + row * 6} r={on ? 1.3 : 0.5} />);
-    }
+/** Dr. Rocket, a Racket IDE: a launch arc up the side, and the call tree its Visualizer draws. */
+export const drrocketLines: LineArt = () => {
+  const tree: [Pt, Pt][] = [
+    [[78, 70], [70, 80]],
+    [[78, 70], [86, 80]],
+    [[70, 80], [65, 90]],
+    [[70, 80], [75, 90]],
+    [[86, 80], [91, 90]],
+  ];
+  const nodes: Pt[] = [[78, 70], [70, 80], [86, 80], [65, 90], [75, 90], [91, 90]];
   return (
     <>
-      <path d={`M${cx - rad} 0A${rad} ${rad} 0 0 0 100 ${rad}`} />
-      <path d={`M${cx - rad - 8} 0A${rad + 8} ${rad + 8} 0 0 0 100 ${rad + 8}`} className="card-lines-faint" />
-      <path d={ticks} />
-      <path d="M100 0L82 14" />
+      <path d="M66 100C76 70 88 40 96 4" />
+      <path d="M60 100C70 70 82 40 90 4" className="card-lines-faint" />
       <Ruler from={[4, 96]} to={[4, 30]} n={22} />
-      {dots}
+      <path d={tree.map(([a, b]) => `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`).join("")} />
+      {nodes.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i === 0 ? 1.8 : 1.2} />
+      ))}
+      <Mark at={[96, 4]} ring={2.5} arm={6} />
       <Guide>
-        <path d="M56 70H96M56 97H96" />
+        <path d="M60 64H96M60 96H96" />
       </Guide>
     </>
   );

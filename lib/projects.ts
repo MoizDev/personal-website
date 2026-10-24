@@ -1,25 +1,25 @@
 import type { StaticImageData } from "next/image";
 import {
   brickedLines,
+  drrocketLines,
   factfulLines,
   jazzbaLines,
-  scireLines,
   watwikiLines,
   weekloomLines,
   wmojLines,
   type LineArt,
 } from "@/components/CardLines";
 import brickedLogo from "@/assets/logos/bricked.png";
+import drrocketLogo from "@/assets/logos/drrocket.svg";
 import factfulLogo from "@/assets/logos/factful.png";
 import jazzbaLogo from "@/assets/logos/jazzba.png";
-import scireLogo from "@/assets/logos/scire.png";
 import watwikiLogo from "@/assets/logos/watwiki.png";
 import weekloomLogo from "@/assets/logos/weekloom.svg";
 import wmojLogo from "@/assets/logos/wmoj.png";
 import bricked from "@/assets/projects/bricked.webp";
+import drrocket from "@/assets/projects/drrocket.webp";
 import factful from "@/assets/projects/factful.webp";
 import jazzba from "@/assets/projects/jazzba.webp";
-import scire from "@/assets/projects/scire.webp";
 import watwiki from "@/assets/projects/watwiki.webp";
 import weekloom from "@/assets/projects/weekloom.webp";
 import wmoj from "@/assets/projects/wmoj.webp";
@@ -49,19 +49,6 @@ export type Project = {
 // Order is the order the cards come round in the stack.
 export const PROJECTS: Project[] = [
   {
-    name: "Factful",
-    year: "2022",
-    kind: "Startup",
-    blurb: "Co-founded an AI startup that checks essay claims against real sources. Piloting with Seneca College.",
-    about:
-      "An AI edtech startup that checks the claims in an essay against real sources. Turned down a $750k VC offer; now piloting with Seneca College's 70,000 students.",
-    href: "https://factful.io/",
-    art: { kind: "shot", src: factful },
-    logo: factfulLogo,
-    tone: "#2f6bff",
-    lines: factfulLines,
-  },
-  {
     name: "Bricked",
     year: "2026",
     kind: "Hackathon",
@@ -73,6 +60,32 @@ export const PROJECTS: Project[] = [
     logo: brickedLogo,
     tone: "#ff4d2e",
     lines: brickedLines,
+  },
+  {
+    name: "Dr. Rocket",
+    year: "2026",
+    kind: "Project",
+    blurb: "A Racket IDE written in Rust, with a Visualizer that draws your program as it runs.",
+    about:
+      "Everything DrRacket does, at native speed: a Racket IDE written in Rust, with a stepper, a debugger and a Visualizer that draws your program as it runs. Free for macOS, Windows and Linux.",
+    href: "https://doctorocket.com/",
+    art: { kind: "shot", src: drrocket },
+    logo: drrocketLogo,
+    tone: "#1fa2ec",
+    lines: drrocketLines,
+  },
+  {
+    name: "Factful",
+    year: "2022",
+    kind: "Startup",
+    blurb: "Co-founded an AI startup that checks essay claims against real sources. Piloting with Seneca College.",
+    about:
+      "An AI edtech startup that checks the claims in an essay against real sources. Turned down a $750k VC offer; now piloting with Seneca College's 70,000 students.",
+    href: "https://factful.io/",
+    art: { kind: "shot", src: factful },
+    logo: factfulLogo,
+    tone: "#2f6bff",
+    lines: factfulLines,
   },
   {
     name: "Weekloom",
@@ -112,19 +125,6 @@ export const PROJECTS: Project[] = [
     logo: watwikiLogo,
     tone: "#8b5cf6",
     lines: watwikiLines,
-  },
-  {
-    name: "Scire",
-    year: "2025",
-    kind: "Project",
-    blurb: "A tutoring scheduler that grew from a school club into a tool for two school boards.",
-    about:
-      "A full-stack tutoring scheduler that grew from a school club into a tool serving two school boards.",
-    href: "https://app.tutoringapp.ca",
-    art: { kind: "shot", src: scire },
-    logo: scireLogo,
-    tone: "#ff5ca8",
-    lines: scireLines,
   },
   {
     name: "Jazzba",
