@@ -22,16 +22,21 @@ svg {
   --bg: #f3f2ee;
   --fg: #161616;
   --muted: rgba(22, 22, 22, 0.52);
+  --soft: rgba(22, 22, 22, 0.74);
 
   /* the camera and the row; see CardStack */
-  --card-w: min(30vw, 52vh);
+  --card-w: min(24vw, 42vh);
   --gap: 0.36; /* space between cards, in card widths */
   --yaw: 54deg; /* how the row turns away from you */
   --pitch: -6.5deg; /* how far you look down on the ground at rest */
-  --ox: calc(var(--card-w) * -0.62); /* where the focus card stands */
-  --oy: calc(var(--card-w) * 0.62);
+  --ox: calc(var(--card-w) * 0.04); /* where the front card stands */
+  --oy: calc(var(--card-w) * 0.14);
   --depth: calc(var(--card-w) * 2.6); /* perspective */
-  --leave: 4; /* slots a card stays visible after passing the front */
+
+  /* the spot a pulled-out card lands in, with its write-up below */
+  --spot-x: 44px;
+  --spot-y: 208px;
+  --spot-w: min(32vw, calc(100vh - 420px));
 }
 
 html,
@@ -97,7 +102,6 @@ body {
   width: var(--card-w);
   height: var(--card-w);
   transform-origin: 50% 100%;
-  will-change: transform, opacity;
   -webkit-user-drag: none;
 }
 
@@ -164,6 +168,74 @@ body {
   letter-spacing: -0.02em;
   color: #fff;
   pointer-events: none;
+}
+
+/* the world's origin, where the front card's foot stands; measured by CardStack */
+.world-origin {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* ---------- the spot ---------- */
+
+.spot {
+  position: absolute;
+  left: var(--spot-x);
+  top: var(--spot-y);
+  width: var(--spot-w);
+  aspect-ratio: 1;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.card-video {
+  object-fit: cover;
+}
+
+.detail {
+  position: absolute;
+  z-index: 2;
+  left: var(--spot-x);
+  top: calc(var(--spot-y) + var(--spot-w) + 22px);
+  width: var(--spot-w);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detail-name {
+  font-weight: 600;
+}
+
+.detail-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.detail-about {
+  margin-top: 6px;
+  color: var(--soft);
+}
+
+.detail-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 14px;
+  text-decoration: underline;
+  text-decoration-color: rgba(22, 22, 22, 0.25);
+  text-underline-offset: 4px;
+  transition: text-decoration-color 160ms ease;
+}
+
+.detail-link:hover {
+  text-decoration-color: currentColor;
 }
 
 /* ---------- overlay ---------- */
@@ -240,18 +312,45 @@ body {
 
 @media (max-width: 640px) {
   :root {
-    --card-w: 70vw;
+    --card-w: min(40vw, 22vh);
     --gap: 0.34;
-    --yaw: 62deg;
-    --pitch: -4.5deg;
-    --ox: calc(var(--card-w) * -0.3);
-    --oy: calc(var(--card-w) * 0.66);
-    --leave: 1;
+    --yaw: 54deg;
+    --pitch: -6deg;
+    --ox: calc(var(--card-w) * -0.65);
+    --oy: calc(var(--card-w) * 2);
     --depth: calc(var(--card-w) * 2.4);
+
+    --spot-x: 20px;
+    --spot-y: 24px;
+    --spot-w: min(calc(100vw - 40px), calc(66vh - 250px));
   }
 
-  /* dark fades so the text stays readable over the cards */
-  .home::before,
+  /* the row runs off to the right along the bottom, under the spot */
+  .scene {
+    perspective-origin: 50% 85%;
+  }
+
+  /* a pulled-out card takes the top of the screen, so the intro steps aside */
+  .intro {
+    transition: opacity 400ms ease;
+  }
+
+  :root[data-out] .intro {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  :root[data-out] .intro a {
+    pointer-events: none;
+  }
+
+  .detail {
+    width: auto;
+    right: 20px;
+    font-size: 14px;
+  }
+
+  /* a fade so the bottom of the row melts into the page */
   .home::after {
     content: "";
     position: absolute;
@@ -261,20 +360,16 @@ body {
     pointer-events: none;
   }
 
-  .home::before {
-    top: 0;
-    height: 230px;
-    background: linear-gradient(var(--bg) 62%, transparent);
-  }
-
   .home::after {
     bottom: 0;
-    height: 150px;
-    background: linear-gradient(transparent, var(--bg) 60%);
+    height: 90px;
+    background: linear-gradient(transparent, var(--bg) 75%);
   }
 
+  /* the intro sits just above the row, so the two read as one group */
   .intro {
-    top: 24px;
+    top: auto;
+    bottom: calc(34vh + 20px);
     left: 20px;
     right: 20px;
     font-size: 18px;
@@ -290,10 +385,11 @@ body {
 
 @media (max-width: 640px) and (max-height: 760px) {
   :root {
-    --card-w: min(58vw, 36vh);
+    --oy: calc(var(--card-w) * 1.75);
   }
 
   .intro {
+    bottom: calc(38vh + 20px);
     font-size: 16px;
   }
 }

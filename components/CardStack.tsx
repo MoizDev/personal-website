@@ -1,32 +1,38 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { PROJECTS, type Project } from "@/lib/projects";
 
 /*
- * A row of square cards standing on a ground plane, like dominoes.
+ * A row of square cards standing on a ground plane, running off into the
+ * distance. Scrolling pulls the front card out of the row: it turns to face
+ * you and settles, bigger, in the spot on the left with its write-up below.
+ * The next scroll sends it away and pulls out the next one.
  *
- *   X  runs along the row. Scrolling slides every card along X, nothing else.
+ *   X  runs along the row. Cards in the row only ever slide along X.
  *   Z  points up out of the ground. Hovering lifts a card along Z.
- *   The ground (the XY plane) is what moves with speed: speeding up pitches it
- *   down, slowing down springs it back up past rest, and it settles.
+ *   The ground pitches with speed: faster flattens it, stopping springs it back.
  *
  * In CSS terms the ground is the x/z plane of `.world`, "up" is -y, and the
  * camera angle is the world's rotateX (pitch) and rotateY (yaw).
+ *
+ * Position `p` counts cards pulled out. At p = 0 nothing is out (the opening
+ * view). Card n sits in slot s = n - p: s >= 0 is in the row, s in [-1, 0) is
+ * flying to the spot, s in [-2, -1) is leaving it.
  */
 
 const N = PROJECTS.length;
 const LOOPS = 7;
 /** card elements in the loop; the projects come round LOOPS times */
 const M = N * LOOPS;
+/** slots behind the front kept for cards flying to and from the spot */
+const OUT = 2;
 /**
  * The far end, where cards wrap round, sits off the top of the screen at rest.
  * The last FOG slots fade out so a fast scroll (flatter ground) shows a haze, not an end.
  */
 const FOG = 10;
-/** slots in front of the focus card, on their way out past the camera */
-const AHEAD = 4;
 /** on load the row starts this many cards back and slides in */
 const START = -6;
 
@@ -47,21 +53,40 @@ const PITCH_DAMPING = 0.5; // under 1, so it swings back a touch past rest
 
 const wrap = (v: number, m: number) => ((v % m) + m) % m;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const smooth = (t: number) => t * t * (3 - 2 * t);
 
-/** Slot of card j when the row is at `cur`. 0 is the focus card, bigger is further down the row. */
-const slotOf = (j: number, cur: number) => wrap(j - cur + AHEAD, M) - AHEAD;
+/** Slot of card element j when the row is at p. */
+const slotOf = (j: number, p: number) => wrap(j - p + OUT, M) - OUT;
+
+/** Where the spot is, measured from the page: px from the front card's foot to the spot's bottom centre. */
+type Spot = { dx: number; dy: number; scale: number; lift: number; yaw: number };
+
+const rowTransform = (s: number) =>
+  `translate3d(calc(var(--card-w) * var(--gap) * ${s.toFixed(4)}), 0, 0) rotateY(-90deg)`;
 
 /**
- * `leave` is how many slots a card stays visible after it passes the focus,
- * from the --leave CSS variable (narrow screens fade them sooner).
+ * The world turns the row by (pitch, yaw). To face the camera a card undoes
+ * that turn, then moves to the spot. `t` runs 0 (front of the row) to 1 (in the spot).
  */
-function cardPose(s: number, leave = AHEAD) {
-  const back = M - AHEAD - s; // distance to the far end, where cards wrap round
-  const opacity = clamp(back / FOG, 0, 1) * clamp((s + leave) / 0.6, 0, 1);
-  return {
-    transform: `translate3d(calc(var(--card-w) * var(--gap) * ${s.toFixed(4)}), 0, 0) rotateY(-90deg)`,
-    opacity,
-  };
+function flightTransform(t: number, spot: Spot, pitch: number, up = 0) {
+  const e = smooth(t);
+  const scale = 1 + (spot.scale - 1) * e;
+  return (
+    `rotateY(${(-spot.yaw * e).toFixed(3)}deg) rotateX(${(-pitch * e).toFixed(3)}deg) ` +
+    `translate3d(${(spot.dx * e).toFixed(2)}px, ${(spot.dy * e - up).toFixed(2)}px, 0) ` +
+    `scale(${scale.toFixed(4)}) rotateY(${(-90 * (1 - e)).toFixed(3)}deg)`
+  );
+}
+
+function cardPose(s: number, n: number, spot: Spot | null, pitch: number) {
+  if (n < 0) return { transform: rowTransform(s), opacity: 0 }; // before the first project
+  if (s >= 0) return { transform: rowTransform(s), opacity: clamp((M - OUT - s) / FOG, 0, 1) };
+  if (!spot) return { transform: rowTransform(s), opacity: 0 };
+  if (s >= -1) return { transform: flightTransform(-s, spot, pitch), opacity: 1 };
+  // leaving: drift up out of the spot and fade
+  const e = -1 - s;
+  const opacity = 1 - smooth(clamp(e / 0.7, 0, 1));
+  return { transform: flightTransform(1, spot, pitch, spot.lift * smooth(e)), opacity };
 }
 
 const worldTransform = (pitch: number) =>
@@ -70,26 +95,24 @@ const worldTransform = (pitch: number) =>
 // Server render and first paint use the start pose. These objects never change,
 // so re-renders leave the per-frame inline styles alone.
 const INITIAL: CSSProperties[] = Array.from({ length: M }, (_, j) => {
-  const p = cardPose(slotOf(j, START));
+  const s = slotOf(j, START);
+  const p = cardPose(s, START + s, null, 0);
   return { transform: p.transform, opacity: p.opacity, visibility: p.opacity < 0.01 ? "hidden" : undefined };
 });
 const INITIAL_WORLD: CSSProperties = { transform: worldTransform(0) };
+const HIDDEN: CSSProperties = { opacity: 0, visibility: "hidden" };
 
 export function CardStack() {
   const world = useRef<HTMLDivElement>(null);
+  const origin = useRef<HTMLDivElement>(null);
+  const spotRef = useRef<HTMLDivElement>(null);
+  const detail = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLAnchorElement | null)[]>([]);
+  const slots = useRef<Float64Array>(new Float64Array(M));
   const goTo = useRef<(j: number) => void>(() => {});
-  const [focus, setFocus] = useState(wrap(START, N));
+  /** the project number in the spot (counting round the loop), or -1 */
+  const [active, setActive] = useState(-1);
   const [hover, setHover] = useState<number | null>(null);
-  const [touch, setTouch] = useState(false);
-
-  useEffect(() => {
-    const q = matchMedia("(hover: none)");
-    const sync = () => setTouch(q.matches);
-    sync();
-    q.addEventListener("change", sync);
-    return () => q.removeEventListener("change", sync);
-  }, []);
 
   useEffect(() => {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -97,28 +120,55 @@ export function CardStack() {
     const glide = reduce ? 16 : GLIDE;
     let raf = 0;
     let snapTimer = 0;
-    let shownFocus = -1;
-    let leave = AHEAD;
+    let shown = -2;
+    let spot: Spot | null = null;
+    let basePitch = 0;
 
-    function readLeave() {
-      const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--leave"));
-      leave = Number.isFinite(v) ? clamp(v, 0.6, AHEAD) : AHEAD;
+    // The spot is laid out by CSS; measure it so cards can fly there.
+    function measure() {
+      const root = getComputedStyle(document.documentElement);
+      basePitch = parseFloat(root.getPropertyValue("--pitch")) || 0;
+      const o = origin.current?.getBoundingClientRect();
+      const r = spotRef.current?.getBoundingClientRect();
+      const w = cards.current[0]?.offsetWidth;
+      if (!o || !r || !w) return;
+      spot = {
+        dx: r.left + r.width / 2 - o.left,
+        dy: r.bottom - o.top,
+        scale: r.width / w,
+        lift: r.height * 0.1,
+        yaw: parseFloat(root.getPropertyValue("--yaw")) || 0,
+      };
     }
 
     function paint() {
+      const pitch = basePitch + m.pitch;
       for (let j = 0; j < M; j++) {
         const el = cards.current[j];
         if (!el) continue;
-        const p = cardPose(slotOf(j, m.cur), leave);
-        el.style.transform = p.transform;
-        el.style.opacity = p.opacity.toFixed(3);
-        el.style.visibility = p.opacity < 0.01 ? "hidden" : "";
+        const s = slotOf(j, m.cur);
+        slots.current[j] = s;
+        const pose = cardPose(s, Math.round(m.cur + s), spot, pitch);
+        el.style.transform = pose.transform;
+        el.style.opacity = pose.opacity.toFixed(3);
+        el.style.visibility = pose.opacity < 0.01 ? "hidden" : "";
       }
       if (world.current) world.current.style.transform = worldTransform(m.pitch);
-      const f = wrap(Math.round(m.cur), N);
-      if (f !== shownFocus) {
-        shownFocus = f;
-        setFocus(f);
+
+      // The write-up fades out as its card leaves and in as the next one lands.
+      const k = Math.round(m.cur);
+      const n = k - 1;
+      const settle = n >= 0 ? clamp(1 - Math.abs(m.cur - k) * 3.2, 0, 1) : 0;
+      if (detail.current) {
+        detail.current.style.opacity = settle.toFixed(3);
+        detail.current.style.transform = `translateY(${((1 - settle) * 10).toFixed(2)}px)`;
+        detail.current.style.visibility = settle < 0.01 ? "hidden" : "";
+      }
+      if (n !== shown) {
+        shown = n;
+        setActive(n);
+        // lets the page make room for a pulled-out card (phones hide the intro)
+        document.documentElement.toggleAttribute("data-out", n >= 0);
       }
     }
 
@@ -161,23 +211,25 @@ export function CardStack() {
       raf = requestAnimationFrame(tick);
     }
 
+    function aim(target: number) {
+      m.target = Math.max(0, target); // nothing before the opening view
+      kick();
+    }
+
     function push(by: number) {
       setHover(null); // the card under the pointer is about to slide away
-      m.target = clamp(m.target + by, m.cur - MAX_LEAD, m.cur + MAX_LEAD);
-      kick();
+      aim(clamp(m.target + by, m.cur - MAX_LEAD, m.cur + MAX_LEAD));
     }
 
     function settleSoon() {
       clearTimeout(snapTimer);
-      snapTimer = window.setTimeout(() => {
-        m.target = Math.round(m.target);
-        kick();
-      }, SNAP_DELAY);
+      snapTimer = window.setTimeout(() => aim(Math.round(m.target)), SNAP_DELAY);
     }
 
+    // Pull card j out into the spot.
     goTo.current = (j: number) => {
-      m.target = Math.round(m.cur + slotOf(j, m.cur));
-      kick();
+      setHover(null);
+      aim(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
     function onWheel(e: WheelEvent) {
@@ -191,6 +243,12 @@ export function CardStack() {
 
     function onKey(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "Home" || e.key === "Escape") {
+        e.preventDefault();
+        setHover(null);
+        aim(0);
+        return;
+      }
       const forward = ["ArrowDown", "ArrowRight", "PageDown", "j"];
       const back = ["ArrowUp", "ArrowLeft", "PageUp", "k"];
       let step = forward.includes(e.key) ? 1 : back.includes(e.key) ? -1 : 0;
@@ -198,11 +256,10 @@ export function CardStack() {
       if (!step) return;
       e.preventDefault();
       setHover(null);
-      m.target = Math.round(m.target) + step;
-      kick();
+      aim(Math.round(m.target) + step);
     }
 
-    // Dragging (touch or mouse) slides the row too, and a flick carries on.
+    // Dragging (touch or mouse) moves the row too, and a flick carries on.
     let drag: { x: number; y: number; t: number; v: number; moved: number } | null = null;
     let swallowClick = false;
 
@@ -237,7 +294,7 @@ export function CardStack() {
       settleSoon();
     }
 
-    function onClick(e: MouseEvent) {
+    function onClick(e: globalThis.MouseEvent) {
       if (!swallowClick) return;
       swallowClick = false;
       e.preventDefault();
@@ -245,11 +302,11 @@ export function CardStack() {
     }
 
     function onResize() {
-      readLeave();
+      measure();
       paint();
     }
 
-    readLeave();
+    measure();
     window.addEventListener("resize", onResize);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("keydown", onKey);
@@ -271,18 +328,26 @@ export function CardStack() {
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("click", onClick, true);
+      document.documentElement.removeAttribute("data-out");
     };
   }, []);
 
-  // Like the reference: the title shows for the card you point at. Touch
-  // screens can't point, so they show the card at the front instead.
-  const shownIndex = hover !== null ? hover % N : touch ? focus : null;
-  const shown = shownIndex === null ? null : PROJECTS[shownIndex];
+  const activeProject = active >= 0 ? PROJECTS[active % N] : null;
+  const activeEl = active >= 0 ? active % M : -1;
+  const hovered = hover !== null ? PROJECTS[hover % N] : null;
+
+  // A card in the row comes out when clicked; the card in the spot opens the project.
+  function onCardClick(e: MouseEvent, j: number) {
+    if (j === activeEl && slots.current[j] < 0) return;
+    e.preventDefault();
+    goTo.current(j);
+  }
 
   return (
     <>
       <div className="scene" aria-label="Projects">
         <div className="world" ref={world} style={INITIAL_WORLD}>
+          <div className="world-origin" ref={origin} />
           {Array.from({ length: M }, (_, j) => {
             const p = PROJECTS[j % N];
             const copy = j >= N;
@@ -302,23 +367,44 @@ export function CardStack() {
                 aria-hidden={copy || undefined}
                 tabIndex={copy ? -1 : undefined}
                 style={INITIAL[j]}
-                onPointerEnter={(e) => e.pointerType === "mouse" && setHover(j)}
+                onClick={(e) => onCardClick(e, j)}
+                onPointerEnter={(e) => e.pointerType === "mouse" && slots.current[j] >= 0 && setHover(j)}
                 onPointerLeave={() => setHover((h) => (h === j ? null : h))}
                 onFocus={(e) => e.currentTarget.matches(":focus-visible") && goTo.current(j)}
               >
-                <CardFace project={p} />
+                <CardFace project={p} live={j === activeEl} />
               </a>
             );
           })}
         </div>
       </div>
 
-      <div className="caption" aria-live="polite">
-        {shown && (
+      {/* where a pulled-out card lands; laid out by CSS, measured by the effect */}
+      <div className="spot" ref={spotRef} aria-hidden />
+
+      <div className="detail" ref={detail} style={HIDDEN} aria-live="polite">
+        {activeProject && (
           <>
-            <p className="caption-name">{shown.name}</p>
+            <p className="detail-head">
+              <span className="detail-name">{activeProject.name}</span>
+              <span className="detail-meta">
+                {activeProject.kind} &middot; {activeProject.year}
+              </span>
+            </p>
+            <p className="detail-about">{activeProject.about}</p>
+            <a className="detail-link" href={activeProject.href} target="_blank" rel="noreferrer">
+              {linkLabel(activeProject.href)} <span aria-hidden>&#8599;</span>
+            </a>
+          </>
+        )}
+      </div>
+
+      <div className="caption" aria-live="polite">
+        {hovered && (
+          <>
+            <p className="caption-name">{hovered.name}</p>
             <p className="caption-blurb">
-              {shown.year} &middot; {shown.blurb}
+              {hovered.year} &middot; {hovered.blurb}
             </p>
           </>
         )}
@@ -327,7 +413,13 @@ export function CardStack() {
   );
 }
 
-function CardFace({ project: p }: { project: Project }) {
+/** "https://github.com/MoizDev/wat-wiki" -> "github.com/MoizDev/wat-wiki" */
+function linkLabel(href: string) {
+  const u = new URL(href);
+  return (u.host.replace(/^www\./, "") + u.pathname).replace(/\/$/, "");
+}
+
+function CardFace({ project: p, live }: { project: Project; live: boolean }) {
   return (
     <div className="card-face" style={{ "--tone": p.tone } as CSSProperties}>
       {p.art.kind === "shot" ? (
@@ -344,6 +436,9 @@ function CardFace({ project: p }: { project: Project }) {
           <Image className="card-logo-mark" src={p.art.src} alt="" draggable={false} loading="eager" />
           <span className="card-logo-tag">{p.art.tagline}</span>
         </div>
+      )}
+      {live && p.video && (
+        <video className="card-shot card-video" src={p.video} autoPlay muted loop playsInline aria-hidden />
       )}
       <span className="card-name">{p.name}</span>
     </div>
