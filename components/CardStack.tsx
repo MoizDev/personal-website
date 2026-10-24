@@ -553,10 +553,9 @@ export function CardStack() {
   );
 }
 
-/** "https://github.com/MoizDev/wat-wiki" -> "github.com/MoizDev/wat-wiki" */
+/** Just the site: "https://github.com/MoizDev/wat-wiki" -> "github.com" */
 function linkLabel(href: string) {
-  const u = new URL(href);
-  return (u.host.replace(/^www\./, "") + u.pathname).replace(/\/$/, "");
+  return new URL(href).host.replace(/^www\./, "");
 }
 
 /** Shades of grey for the mystery cards, as a share of the text colour over the page. */
