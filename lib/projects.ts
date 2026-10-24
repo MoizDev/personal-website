@@ -84,9 +84,9 @@ export const PROJECTS: Project[] = [
     name: "Quartermaster",
     year: "2026",
     kind: "Project",
-    blurb: "A macOS terminal app where one agent runs a crew of coding agents, each on its own git branch.",
+    blurb: "An AI-native development environment: one agent runs a crew of coding agents in parallel and ships their work as pull requests.",
     about:
-      "A macOS terminal app where you talk to one agent, the Quartermaster. It hands the work to a crew of coding agents, each in its own git worktree, and ships their results as pull requests once you approve.",
+      "An AI-native development environment. You talk to one agent, the Quartermaster, and it runs a crew of coding agents in parallel, each on its own branch, then ships their work as pull requests once you approve.",
     href: "https://github.com/Adham-Aly/quartermaster",
     art: { kind: "shot", src: quartermaster },
     logo: quartermasterLogo,
