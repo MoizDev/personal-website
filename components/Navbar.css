@@ -72,6 +72,22 @@
   background: rgba(var(--ink-rgb), 0.05);
 }
 
+/* the switch only shows with the menu open; closed, it takes no room */
+.nav:not([data-open="true"]) .nav-theme {
+  width: 0;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.nav-theme {
+  overflow: hidden;
+  transition:
+    width 400ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 300ms ease,
+    visibility 300ms,
+    background-color 160ms ease;
+}
+
 .nav-theme svg {
   width: 17px;
   height: 17px;
