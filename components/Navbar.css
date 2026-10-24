@@ -203,8 +203,8 @@
   margin: 16px 0;
   border-radius: 14px;
   /* a wash of the star's colour, changing with it (keyframes in globals.css) */
-  background: color-mix(in srgb, var(--hue) var(--tint-k), var(--bg));
-  animation: hue 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  background-color: color-mix(in srgb, #03a5fc var(--tint-k), var(--bg));
+  animation: star-wash 7s cubic-bezier(0.65, 0, 0.35, 1) infinite;
   color: var(--fg);
 }
 

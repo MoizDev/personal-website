@@ -451,13 +451,6 @@ body {
   }
 }
 
-/* the star's colour, animatable so a backdrop can follow it */
-@property --hue {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #03a5fc;
-}
-
 /* the logo's star: a quarter turn, a pause, a new colour each turn */
 .star-spin {
   transform-box: fill-box;
@@ -483,13 +476,14 @@ body {
   97%, 100% { fill: #03a5fc; }
 }
 
-/* the same colours as star-hue, for a backdrop that follows the star */
-@keyframes hue {
-  0%, 8% { --hue: #03a5fc; }
-  22%, 33% { --hue: #22c55e; }
-  47%, 58% { --hue: #a855f7; }
-  72%, 83% { --hue: #f43f5e; }
-  97%, 100% { --hue: #03a5fc; }
+/* a wash of star-hue's colours, for a backdrop that changes with the star;
+   same duration and easing, so the two stay in step */
+@keyframes star-wash {
+  0%, 8% { background-color: color-mix(in srgb, #03a5fc var(--tint-k), var(--bg)); }
+  22%, 33% { background-color: color-mix(in srgb, #22c55e var(--tint-k), var(--bg)); }
+  47%, 58% { background-color: color-mix(in srgb, #a855f7 var(--tint-k), var(--bg)); }
+  72%, 83% { background-color: color-mix(in srgb, #f43f5e var(--tint-k), var(--bg)); }
+  97%, 100% { background-color: color-mix(in srgb, #03a5fc var(--tint-k), var(--bg)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
