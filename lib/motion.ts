@@ -1,22 +1,24 @@
-/**
- * How the row moves. A plain object rather than constants so the dev panel can
- * tune it while the page runs; nothing else writes to it.
- */
-export const MOTION = {
+/** How the row moves. */
+const defaults = {
   /** spring frequency of the row (rad/s); lower glides longer */
-  glide: 4.2,
+  glide: 10.8,
   /** cards per wheel pixel */
   wheel: 0.0026,
   /** cards per dragged pixel */
   drag: 0.007,
   /** how far the ground pitches per card/s of speed (degrees) */
-  pitchPerSpeed: 0.75,
+  pitchPerSpeed: 0.8,
   /** the most the ground pitches (degrees) */
   maxPitch: 4.5,
   /** spring frequency of the pitch (rad/s) */
   pitchFreq: 4,
-  /** under 1, so the ground swings back a touch past rest */
-  pitchDamping: 0.5,
+  /** 1 settles without swinging past rest; under 1 overshoots a little */
+  pitchDamping: 1,
 };
 
-export type MotionKey = keyof typeof MOTION;
+export type MotionKey = keyof typeof defaults;
+
+export const MOTION_DEFAULTS: Readonly<Record<MotionKey, number>> = Object.freeze(defaults);
+
+/** The live values. The dev panel writes here; MOTION_DEFAULTS stays as shipped. */
+export const MOTION: Record<MotionKey, number> = { ...defaults };

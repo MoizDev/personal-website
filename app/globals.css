@@ -27,14 +27,14 @@ svg {
   /* the camera and the row; see CardStack */
   --card-w: min(24vw, 42vh);
   --gap: 0.36; /* space between cards, in card widths */
-  --yaw: 54deg; /* how the row turns away from you */
-  --pitch: -6.5deg; /* how far you look down on the ground at rest */
+  --yaw: 61deg; /* how the row turns away from you */
+  --pitch: -0.5deg; /* how far you look down on the ground at rest */
   /* where the front card stands, in card widths from the centre */
-  --ox-k: 0.04;
-  --oy-k: 0.14;
+  --ox-k: 0.41;
+  --oy-k: 0.3;
   --depth-k: 2.6; /* perspective distance, in card widths */
-  --po-x: 50%; /* the vanishing point */
-  --po-y: -10%;
+  --po-x: 56%; /* the vanishing point */
+  --po-y: 32%;
   --ox: calc(var(--card-w) * var(--ox-k));
   --oy: calc(var(--card-w) * var(--oy-k));
   --depth: calc(var(--card-w) * var(--depth-k));

@@ -6,11 +6,12 @@
  * MOTION), are kept per breakpoint in localStorage, and the changed ones are
  * listed at the bottom so they can be copied or screenshotted.
  *
- * Rendered only when NODE_ENV is development (see app/page.tsx).
+ * Off by default. Start the dev server with NEXT_PUBLIC_TUNE=1 to show it
+ * (see app/page.tsx); production builds never include it.
  */
 
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
-import { MOTION, type MotionKey } from "@/lib/motion";
+import { MOTION, MOTION_DEFAULTS, type MotionKey } from "@/lib/motion";
 import "./TunePanel.css";
 
 type Field = {
@@ -67,7 +68,6 @@ const GROUPS: { title: string; fields: Field[] }[] = [
 ];
 
 const FIELDS = GROUPS.flatMap((g) => g.fields);
-const MOTION_DEFAULTS = { ...MOTION };
 
 type Values = Record<string, number>;
 
