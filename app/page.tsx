@@ -16,8 +16,10 @@ const TunePanel =
     : () => null;
 
 // Sliders for the solar system in the background, development only. "]" hides it.
+// Hidden for now: set SHOW_SOLAR to true to bring it back.
+const SHOW_SOLAR = false;
 const SolarPanel =
-  process.env.NODE_ENV === "development"
+  SHOW_SOLAR && process.env.NODE_ENV === "development"
     ? dynamic(() => import("@/components/SolarPanel").then((m) => m.SolarPanel))
     : () => null;
 
