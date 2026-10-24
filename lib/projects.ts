@@ -9,6 +9,13 @@ import {
   wmojLines,
   type LineArt,
 } from "@/components/CardLines";
+import brickedLogo from "@/assets/logos/bricked.png";
+import factfulLogo from "@/assets/logos/factful.png";
+import jazzbaLogo from "@/assets/logos/jazzba.png";
+import scireLogo from "@/assets/logos/scire.png";
+import watwikiLogo from "@/assets/logos/watwiki.png";
+import weekloomLogo from "@/assets/logos/weekloom.svg";
+import wmojLogo from "@/assets/logos/wmoj.png";
 import bricked from "@/assets/projects/bricked.webp";
 import factful from "@/assets/projects/factful.webp";
 import jazzba from "@/assets/projects/jazzba.webp";
@@ -31,6 +38,8 @@ export type Project = {
   video?: string;
   /** a screenshot that fills the card, or a logo for a typeset card */
   art: { kind: "shot"; src: StaticImageData } | { kind: "logo"; src: StaticImageData; tagline: string };
+  /** the project's mark, all white, shown beside the name on the card */
+  logo: StaticImageData;
   /** the card's colour */
   tone: string;
   /** the faint line drawing behind the card, its own for every project (see components/CardLines) */
@@ -48,6 +57,7 @@ export const PROJECTS: Project[] = [
       "An AI edtech startup that checks the claims in an essay against real sources. Turned down a $750k VC offer; now piloting with Seneca College's 70,000 students.",
     href: "https://factful.io/",
     art: { kind: "shot", src: factful },
+    logo: factfulLogo,
     tone: "#2f6bff",
     lines: factfulLines,
   },
@@ -60,6 +70,7 @@ export const PROJECTS: Project[] = [
       "Type an idea and get a LEGO model you can actually build, brick by brick. Won Hack the North 2026.",
     href: "https://devpost.com/software/a-feuvb1",
     art: { kind: "shot", src: bricked },
+    logo: brickedLogo,
     tone: "#ff4d2e",
     lines: brickedLines,
   },
@@ -72,6 +83,7 @@ export const PROJECTS: Project[] = [
       "A to-do list laid out like a Gantt chart, so your whole week fits on one screen. Grew to 30,000 users with zero marketing spend.",
     href: "https://weekloom.com/",
     art: { kind: "shot", src: weekloom },
+    logo: weekloomLogo,
     tone: "#ffc021",
     lines: weekloomLines,
   },
@@ -84,6 +96,7 @@ export const PROJECTS: Project[] = [
       "An online judge that compiles and grades C++ and Python submissions in Docker sandboxes, for 200+ students at once.",
     href: "https://wmoj.ca/",
     art: { kind: "shot", src: wmoj },
+    logo: wmojLogo,
     tone: "#22c55e",
     lines: wmojLines,
   },
@@ -96,6 +109,7 @@ export const PROJECTS: Project[] = [
       "AI agents that turn lecture recordings into a shared, linked wiki for each class.",
     href: "https://github.com/MoizDev/wat-wiki",
     art: { kind: "shot", src: watwiki },
+    logo: watwikiLogo,
     tone: "#8b5cf6",
     lines: watwikiLines,
   },
@@ -108,6 +122,7 @@ export const PROJECTS: Project[] = [
       "A full-stack tutoring scheduler that grew from a school club into a tool serving two school boards.",
     href: "https://app.tutoringapp.ca",
     art: { kind: "shot", src: scire },
+    logo: scireLogo,
     tone: "#ff5ca8",
     lines: scireLines,
   },
@@ -120,6 +135,7 @@ export const PROJECTS: Project[] = [
       "Rewrote the backend services and API layer of a legacy warehouse platform that moves thousands of SKUs a day.",
     href: "https://jazzba.io/",
     art: { kind: "shot", src: jazzba },
+    logo: jazzbaLogo,
     tone: "#ff8a1f",
     lines: jazzbaLines,
   },

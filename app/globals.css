@@ -281,6 +281,14 @@ body {
   pointer-events: none;
 }
 
+/* the project's mark, in white, sitting just above the name */
+.card-name-logo {
+  display: block;
+  width: auto;
+  height: 0.62em;
+  margin: 0 0 0.24em 0.04em;
+}
+
 /* past the last project: grey cards, each with a question mark that now and then
    scrambles through random characters (see MysteryFace) */
 .card-mystery {

@@ -653,7 +653,10 @@ function CardFace({ project: p, live }: { project: Project; live: boolean }) {
       {live && p.video && (
         <video className="card-shot card-video" src={p.video} autoPlay muted loop playsInline aria-hidden />
       )}
-      <span className="card-name">{p.name}</span>
+      <span className="card-name">
+        <Image className="card-name-logo" src={p.logo} alt="" draggable={false} loading="eager" />
+        {p.name}
+      </span>
     </Body>
   );
 }
