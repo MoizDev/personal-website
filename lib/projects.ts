@@ -9,11 +9,11 @@ import {
   wmojLines,
   type LineArt,
 } from "@/components/CardLines";
-import bricked from "@/assets/projects/bricked-logo.png";
+import bricked from "@/assets/projects/bricked.webp";
 import factful from "@/assets/projects/factful.webp";
 import jazzba from "@/assets/projects/jazzba.webp";
 import scire from "@/assets/projects/scire.webp";
-import watwiki from "@/assets/projects/watwiki-logo.png";
+import watwiki from "@/assets/projects/watwiki.webp";
 import weekloom from "@/assets/projects/weekloom.webp";
 import wmoj from "@/assets/projects/wmoj.webp";
 
@@ -59,7 +59,7 @@ export const PROJECTS: Project[] = [
     about:
       "Type an idea and get a LEGO model you can actually build, brick by brick. Won Hack the North 2026.",
     href: "https://devpost.com/software/a-feuvb1",
-    art: { kind: "logo", src: bricked, tagline: "Type an idea, get a LEGO model." },
+    art: { kind: "shot", src: bricked },
     tone: "#ff4d2e",
     lines: brickedLines,
   },
@@ -95,7 +95,7 @@ export const PROJECTS: Project[] = [
     about:
       "AI agents that turn lecture recordings into a shared, linked wiki for each class.",
     href: "https://github.com/MoizDev/wat-wiki",
-    art: { kind: "logo", src: watwiki, tagline: "Lectures in, class wiki out." },
+    art: { kind: "shot", src: watwiki },
     tone: "#8b5cf6",
     lines: watwikiLines,
   },

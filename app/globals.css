@@ -236,11 +236,11 @@ body {
 
 .card-shot {
   position: absolute;
-  left: 8%;
-  top: 14%;
-  width: 84%;
+  left: 4%;
+  top: 6%;
+  width: 92%;
   height: auto;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
   border-radius: calc(var(--card-w) * 0.014);
   box-shadow: 0 calc(var(--card-w) * 0.02) calc(var(--card-w) * 0.06) rgba(0, 0, 0, 0.28);

@@ -74,20 +74,20 @@ export const factfulLines: LineArt = () => (
     <Ruler from={[96, 4]} to={[96, 96]} n={30} flip />
     <path d="M44 100A56 56 0 0 1 100 44" />
     <path d="M70 100A30 30 0 0 1 100 70" className="card-lines-faint" />
-    <circle cx="76" cy="76" r="11" />
-    <path d="M68.5 77l5 5 9-11" />
-    <Mark at={[76, 76]} ring={1} arm={15} />
+    <circle cx="77" cy="81" r="9" />
+    <path d="M71 82l4 4 7.5-9" />
+    <Mark at={[77, 81]} ring={1} arm={13} />
     <Guide>
       <path d="M20 20L100 100" />
     </Guide>
-    <Dim from={[65, 92]} to={[87, 92]} />
+    <Dim from={[68, 95]} to={[86, 95]} bar={1.5} />
   </>
 );
 
 /** Bricked, LEGO: a 2 x 2 brick in isometric, its studs, sized up on two sides. */
 export const brickedLines: LineArt = () => {
   // the brick's top face corners, and how far it stands
-  const [cx, cy, w, h] = [78, 74, 14, 8];
+  const [cx, cy, w, h] = [78, 78, 13, 7];
   const top: Pt[] = [
     [cx, cy - w / 2],
     [cx + w * 0.87, cy],
@@ -124,21 +124,21 @@ export const weekloomLines: LineArt = () => {
   return (
     <>
       <Ruler from={[4, 4]} to={[96, 4]} n={28} />
-      <path d={days.map((x) => `M${x} 66v26`).join("")} className="card-lines-faint" />
+      <path d={days.map((x) => `M${x} 71v24`).join("")} className="card-lines-faint" />
       {[
-        [62, 68, 12],
-        [67, 73, 20],
-        [72, 78, 10],
-        [77, 83, 15],
-        [67, 88, 8],
+        [62, 73, 12],
+        [67, 77.5, 20],
+        [72, 82, 10],
+        [77, 86.5, 15],
+        [67, 91, 8],
       ].map(([x, y, w]) => (
-        <rect key={y} x={x} y={y} width={w} height="3" rx="1.5" />
+        <rect key={y} x={x} y={y} width={w} height="2.6" rx="1.3" />
       ))}
       <Guide>
-        <path d="M79.5 64V96" />
+        <path d="M79.5 71V97" />
       </Guide>
-      <Mark at={[79.5, 64]} ring={1.2} arm={4} />
-      <Dim from={[67, 96]} to={[87, 96]} bar={1.2} />
+      <Mark at={[79.5, 71]} ring={1.2} arm={4} />
+      <Dim from={[67, 97]} to={[87, 97]} bar={1.2} />
     </>
   );
 };
@@ -147,17 +147,17 @@ export const weekloomLines: LineArt = () => {
 export const wmojLines: LineArt = () => (
   <>
     <Ruler from={[96, 4]} to={[96, 96]} n={30} flip />
-    <rect x="56" y="64" width="34" height="26" rx="2" />
-    <rect x="60" y="68" width="26" height="18" rx="1.5" className="card-lines-faint" />
-    <path d="M67 73l-4 4 4 4M79 73l4 4-4 4M74.5 72.5l-3 9" />
+    <rect x="58" y="72" width="32" height="20" rx="2" />
+    <rect x="61.5" y="75" width="25" height="14" rx="1.5" className="card-lines-faint" />
+    <path d="M68 78.5l-3.5 3.5 3.5 3.5M80 78.5l3.5 3.5-3.5 3.5M75.5 78l-3 8" />
     <Guide>
-      <path d="M56 64L36 44M90 64L100 54" />
+      <path d="M58 72L44 70M90 72L100 70" />
     </Guide>
     <path d="M8 4h86" className="card-lines-faint" />
     {[0, 1, 2, 3, 4, 5, 6].map((i) => (
       <circle key={i} cx={58 + i * 5} cy="96" r="1" />
     ))}
-    <Dim from={[56, 60]} to={[90, 60]} bar={1.5} />
+    
   </>
 );
 
@@ -168,23 +168,23 @@ export const watwikiLines: LineArt = () => {
     return `M${6 + i * 2.4} ${r(10 - a)}v${r(a * 2)}`;
   }).join("");
   const nodes: Pt[] = [
-    [68, 70],
-    [84, 62],
-    [92, 80],
-    [78, 90],
-    [60, 86],
+    [68, 78],
+    [84, 72],
+    [92, 86],
+    [78, 94],
+    [60, 91],
   ];
   return (
     <>
       <path d={wave} />
       <Ruler from={[4, 18]} to={[96, 18]} n={46} len={1} />
-      <path d="M68 70L84 62L92 80L78 90L68 70L92 80M60 86L68 70M60 86L78 90" className="card-lines-faint" />
+      <path d="M68 78L84 72L92 86L78 94L68 78L92 86M60 91L68 78M60 91L78 94" className="card-lines-faint" />
       {nodes.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y} r={i === 0 ? 2.4 : 1.4} />
       ))}
       <Mark at={nodes[0]} ring={4} arm={8} />
       <Guide>
-        <path d="M96 10Q96 50 68 70" />
+        <path d="M98 30Q98 66 68 78" />
       </Guide>
     </>
   );
@@ -203,7 +203,7 @@ export const scireLines: LineArt = () => {
   for (let row = 0; row < 4; row++)
     for (let col = 0; col < 7; col++) {
       const on = (row * 7 + col) % 5 === 2;
-      dots.push(<circle key={`${row}-${col}`} cx={58 + col * 5.5} cy={70 + row * 6} r={on ? 1.3 : 0.5} />);
+      dots.push(<circle key={`${row}-${col}`} cx={58 + col * 5.5} cy={74 + row * 6} r={on ? 1.3 : 0.5} />);
     }
   return (
     <>
@@ -214,7 +214,7 @@ export const scireLines: LineArt = () => {
       <Ruler from={[4, 96]} to={[4, 30]} n={22} />
       {dots}
       <Guide>
-        <path d="M56 66H96M56 94H96" />
+        <path d="M56 70H96M56 97H96" />
       </Guide>
     </>
   );
@@ -232,18 +232,18 @@ export const jazzbaLines: LineArt = () => {
   return (
     <>
       <path d={code} />
-      <rect x="54" y="74" width="12" height="10" rx="0.6" />
-      <rect x="68" y="70" width="12" height="14" rx="0.6" />
-      <path d="M54 79h12M60 74v5M68 77h12M74 70v7" className="card-lines-faint" />
+      <rect x="54" y="77" width="12" height="9" rx="0.6" />
+      <rect x="68" y="74.5" width="12" height="11.5" rx="0.6" />
+      <path d="M54 81.5h12M60 77v4.5M68 80h12M74 74.5v5.5" className="card-lines-faint" />
       <path d="M48 86H90" />
       {[52, 60, 68, 76, 84].map((x) => (
         <circle key={x} cx={x} cy="89" r="2" className="card-lines-faint" />
       ))}
       <Guide>
-        <path d="M48 93H90M84 74h6" />
+        <path d="M48 93H90M82 78h8" />
       </Guide>
-      <path d="M86 74l4 0l-1.5 -1.5M90 74l-1.5 1.5" />
-      <Dim from={[54, 66]} to={[80, 66]} bar={1.5} />
+      <path d="M88.5 76.5L90 78l-1.5 1.5" />
+      <Dim from={[54, 71]} to={[80, 71]} bar={1.2} />
     </>
   );
 };
