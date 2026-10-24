@@ -48,22 +48,28 @@ type Planet = {
 };
 
 const PLANETS: Planet[] = [
-  { orbit: 92, r: 9, period: 31, phase: 2.4, look: "plain", tint: { dark: [150, 140, 130], light: [87, 83, 78] } }, // Mercury
-  { orbit: 132, r: 15, period: 64, phase: 5.75, look: "plain", tint: { dark: [222, 160, 70], light: [180, 83, 9] } }, // Venus
-  { orbit: 184, r: 25, period: 105, phase: 3.55, look: "earth", tint: { dark: [59, 130, 246], light: [29, 78, 216] } }, // Earth
-  { orbit: 236, r: 13, period: 168, phase: 3.2, look: "plain", tint: { dark: [214, 88, 48], light: [185, 28, 28] } }, // Mars
-  { orbit: 340, r: 40, period: 420, phase: 5.05, look: "jupiter", tint: { dark: [196, 140, 90], light: [146, 64, 14] } }, // Jupiter
-  { orbit: 450, r: 30, period: 728, phase: 3.62, look: "saturn", tint: { dark: [214, 178, 110], light: [161, 98, 7] } }, // Saturn
+  { orbit: 92, r: 9, period: 31, phase: 2.4, look: "plain", tint: { dark: [150, 140, 130], light: [120, 113, 108] } }, // Mercury
+  { orbit: 132, r: 15, period: 64, phase: 5.75, look: "plain", tint: { dark: [222, 160, 70], light: [217, 119, 6] } }, // Venus
+  { orbit: 184, r: 25, period: 105, phase: 3.55, look: "earth", tint: { dark: [59, 130, 246], light: [37, 99, 235] } }, // Earth
+  { orbit: 236, r: 13, period: 168, phase: 3.2, look: "plain", tint: { dark: [214, 88, 48], light: [220, 38, 38] } }, // Mars
+  { orbit: 340, r: 40, period: 420, phase: 5.05, look: "jupiter", tint: { dark: [196, 140, 90], light: [180, 83, 9] } }, // Jupiter
+  { orbit: 450, r: 30, period: 728, phase: 3.62, look: "saturn", tint: { dark: [214, 178, 110], light: [202, 138, 4] } }, // Saturn
 ];
 
 const SUN_R = 46;
 
 /** The colours that aren't a planet's own, per theme. */
-type Palette = { sun: Rgb; sunEdge: Rgb; land: Rgb; city: Rgb; jupiterLight: Rgb; alpha: number; weight: number };
+type Palette = {
+  sun: Rgb;
+  sunEdge: Rgb;
+  land: Rgb;
+  city: Rgb;
+  jupiterLight: Rgb;
+};
 const PALETTES: Record<"dark" | "light", Palette> = {
-  dark: { sun: [245, 150, 20], sunEdge: [234, 88, 12], land: [34, 160, 80], city: [250, 200, 80], jupiterLight: [236, 214, 180], alpha: 1, weight: 400 },
-  // on white, light tints and thin glyphs wash out, so: deeper colours, bolder type, more opacity
-  light: { sun: [234, 88, 12], sunEdge: [194, 50, 12], land: [21, 128, 61], city: [202, 138, 4], jupiterLight: [217, 119, 6], alpha: 1.4, weight: 600 },
+  dark: { sun: [245, 150, 20], sunEdge: [234, 88, 12], land: [34, 160, 80], city: [250, 200, 80], jupiterLight: [236, 214, 180] },
+  // the same hues, a step deeper, so they stand off white as the others do off black
+  light: { sun: [245, 140, 10], sunEdge: [224, 80, 12], land: [22, 163, 74], city: [202, 138, 4], jupiterLight: [245, 158, 11] },
 };
 const MOON = { orbit: 40, r: 6, period: 9 };
 const BELT = { from: 268, to: 298, count: 320, period: 280 };
@@ -142,7 +148,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.font = `${pal.weight} ${FONT}px ${FONT_FAMILY}`;
+    ctx.font = `${FONT}px ${FONT_FAMILY}`;
     ctx.textBaseline = "top";
     cw = ctx.measureText("M").width || FONT * 0.6;
     chh = Math.round(FONT * 1.2);
@@ -156,7 +162,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     ink = rgb;
     theme = dark ? "dark" : "light";
     pal = PALETTES[theme];
-    ctx.font = `${pal.weight} ${FONT}px ${FONT_FAMILY}`;
+    ctx.font = `${FONT}px ${FONT_FAMILY}`;
   }
 
   /** Put a character in a cell if it's empty (for orbits, the belt, stars and glow). */
@@ -232,6 +238,9 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     const cy = Math.min(Math.max(H * 0.17, 110), 170);
     const inkCss = css(ink);
 
+    /** A cell on a body, from how bright that spot is (0 to 1), its colour and opacity. */
+    const body = (v: number, hue: Rgb, alpha: number): Cell => ({ ch: ramp(v), color: css(hue), alpha });
+
     // world (x, z) on the plane of the orbits -> screen and depth
     const project = (x: number, z: number) => ({ sx: cx + x, sy: cy + z * S, d: -z * C });
     const sunLight = (x: number, z: number): [number, number, number] => {
@@ -247,7 +256,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     sphere(cx, cy, 0, sunR, null, (wx, wy, wz, _lit, nz) => {
       const boil = noise3(wx * 3.2 + t * 0.35, wy * 3.2 - t * 0.2, wz * 3.2);
       const v = 0.38 + nz * 0.42 + (boil - 0.5) * 0.5;
-      return { ch: ramp(v), color: css(mix(pal.sunEdge, pal.sun, clamp01(nz * 1.2))), alpha: 0.55 + nz * 0.4 };
+      return body(v, mix(pal.sunEdge, pal.sun, clamp01(nz * 1.2)), 0.55 + nz * 0.4);
     });
 
     /* the planets */
@@ -278,14 +287,14 @@ function makeRenderer(canvas: HTMLCanvasElement) {
           if (lit < 0.03 && land && !ice && hash3(Math.floor(rx * 40), Math.floor(wy * 40), Math.floor(rz * 40)) > 0.8) {
             return { ch: ".", color: css(pal.city), alpha: 0.7 };
           }
-          return { ch: ramp(shade), color: css(col), alpha: 0.45 + lit * 0.55 };
+          return body(shade, col, 0.45 + lit * 0.55);
         }
         if (p.look === "jupiter") {
           const band = Math.sin(wy * 13 + noise3(wx * 3, wy * 3, wz * 3 + t * 0.05) * 2);
           const col = mix(tint, pal.jupiterLight, band * 0.5 + 0.5);
-          return { ch: ramp(shade * (0.82 + band * 0.18)), color: css(col), alpha: 0.45 + lit * 0.55 };
+          return body(shade * (0.82 + band * 0.18), col, 0.45 + lit * 0.55);
         }
-        return { ch: ramp(shade), color: css(tint), alpha: 0.45 + lit * 0.55 };
+        return body(shade, tint, 0.45 + lit * 0.55);
       });
 
       if (p.look === "earth") {
@@ -293,11 +302,9 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const mx = x + Math.cos(ma) * MOON.orbit * unit;
         const mz = z + Math.sin(ma) * MOON.orbit * unit;
         const m = project(mx, mz);
-        sphere(m.sx, m.sy, m.d, MOON.r * unit, sunLight(mx, mz), (_x, _y, _z, lit) => ({
-          ch: ramp(0.2 + lit * 0.8),
-          color: inkCss,
-          alpha: 0.4 + lit * 0.5,
-        }));
+        sphere(m.sx, m.sy, m.d, MOON.r * unit, sunLight(mx, mz), (_x, _y, _z, lit) =>
+          body(0.2 + lit * 0.8, ink, 0.4 + lit * 0.5),
+        );
       }
     }
 
@@ -351,7 +358,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
       for (let i = 0; i < cols; i++) {
         const c = cells[j * cols + i];
         if (!c || c.ch === " ") continue;
-        ctx.globalAlpha = Math.min(1, c.alpha * pal.alpha);
+        ctx.globalAlpha = c.alpha;
         ctx.fillStyle = c.color;
         ctx.fillText(c.ch, i * cw, j * chh);
       }
