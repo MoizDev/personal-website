@@ -33,7 +33,7 @@ export default function Home() {
       <header className="intro">
         <h1 className="intro-name">Moiz Hashmi</h1>
         <p className="intro-bio">
-          I’m a software engineer and student at the University of Waterloo.
+          I’m a computer science student at the University of Waterloo.
           Currently, I’m an engineer at{" "}
           <a className="org" href="https://arion.nyc">
             <Image
