@@ -12,6 +12,7 @@ import {
 } from "react";
 import { MOTION } from "@/lib/motion";
 import { designPx, PHONE_QUERY } from "@/lib/scale";
+import { playWhoop, unlockSound } from "@/lib/sound";
 import { CardLines } from "@/components/CardLines";
 import { PROJECTS, type Project } from "@/lib/projects";
 
@@ -193,6 +194,8 @@ export function CardStack() {
     let raf = 0;
     let snapTimer = 0;
     let shown = -2;
+    /** the visitor has moved the row (the load's own flip-out makes no sound) */
+    let moved = false;
     let spot: Spot | null = null;
     let view: View | null = null;
     let basePitch = 0;
@@ -285,6 +288,7 @@ export function CardStack() {
         detail.current.style.visibility = settle < 0.01 ? "hidden" : "";
       }
       if (n !== shown) {
+        if (moved) playWhoop();
         shown = n;
         setActive(n);
         // lets the page make room for a pulled-out card (phones hide the intro)
@@ -353,6 +357,7 @@ export function CardStack() {
     let anchor: number | null = null; // the card the scroll or drag started from
 
     function push(by: number) {
+      moved = true;
       setHover(null); // the card under the pointer is about to slide away
       anchor ??= Math.round(m.target);
       aim(clamp(m.target + by, m.cur - MAX_LEAD, m.cur + MAX_LEAD));
@@ -367,6 +372,7 @@ export function CardStack() {
 
     /** Go straight to a card (keys, clicks), dropping any scroll in progress. */
     function jump(target: number) {
+      moved = true;
       clearTimeout(snapTimer);
       anchor = null;
       aim(target);
@@ -393,6 +399,7 @@ export function CardStack() {
     }
 
     function onKey(e: KeyboardEvent) {
+      unlockSound();
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "Home" || e.key === "Escape") {
         e.preventDefault();
@@ -415,6 +422,7 @@ export function CardStack() {
     let swallowClick = false;
 
     function onDown(e: PointerEvent) {
+      unlockSound();
       if (e.button !== 0) return;
       drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, v: 0, moved: 0 };
       swallowClick = false;
