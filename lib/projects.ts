@@ -51,6 +51,19 @@ export type Project = {
 // Order is the order the cards come round in the stack.
 export const PROJECTS: Project[] = [
   {
+    name: "Dr. Rocket",
+    year: "2026",
+    kind: "Project",
+    blurb: "A Racket IDE written in Rust, with a Visualizer that draws your program as it runs.",
+    about:
+      "Everything DrRacket does, at native speed: a Racket IDE written in Rust, with a stepper, a debugger and a Visualizer that draws your program as it runs. Free for macOS, Windows and Linux.",
+    href: "https://doctorocket.com/",
+    art: { kind: "shot", src: drrocket },
+    logo: drrocketLogo,
+    tone: "#1fa2ec",
+    lines: drrocketLines,
+  },
+  {
     name: "Bricked",
     year: "2026",
     kind: "Hackathon",
@@ -63,19 +76,6 @@ export const PROJECTS: Project[] = [
     badge: { title: "Winner", detail: "Hack the North 2026" },
     tone: "#ff4d2e",
     lines: brickedLines,
-  },
-  {
-    name: "Dr. Rocket",
-    year: "2026",
-    kind: "Project",
-    blurb: "A Racket IDE written in Rust, with a Visualizer that draws your program as it runs.",
-    about:
-      "Everything DrRacket does, at native speed: a Racket IDE written in Rust, with a stepper, a debugger and a Visualizer that draws your program as it runs. Free for macOS, Windows and Linux.",
-    href: "https://doctorocket.com/",
-    art: { kind: "shot", src: drrocket },
-    logo: drrocketLogo,
-    tone: "#1fa2ec",
-    lines: drrocketLines,
   },
   {
     name: "Factful",
