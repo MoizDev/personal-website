@@ -258,8 +258,24 @@ export function CardStack() {
       aim(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
-    // The wheel moves the row while the page is at the top. Past the last project it
-    // scrolls the page instead, and back at the top it hands over to the row again.
+    /** Whether (x, y) is over the row: the box round the cards standing in it, padded a little. */
+    function overRow(x: number, y: number) {
+      let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+      for (let j = 0; j < M; j++) {
+        const el = cards.current[j];
+        if (!el || slots.current[j] < 0 || el.style.visibility === "hidden") continue;
+        const box = el.getBoundingClientRect();
+        l = Math.min(l, box.left);
+        t = Math.min(t, box.top);
+        r = Math.max(r, box.right);
+        b = Math.max(b, box.bottom);
+      }
+      const pad = 24;
+      return x >= l - pad && x <= r + pad && y >= t - pad && y <= b + pad;
+    }
+
+    // The wheel moves the row only with the pointer over it; anywhere else the page
+    // scrolls as normal. Past the last project the page scrolls on from the row too.
     // A gesture's momentum never crosses over: the handover waits for a pause.
     let lastWheel = -Infinity;
     let wheelWent: "row" | "page" = "row";
@@ -271,7 +287,7 @@ export function CardStack() {
       const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       const fresh = e.timeStamp - lastWheel > PAUSE;
       lastWheel = e.timeStamp;
-      if (scrolled() || (d > 0 && atEnd() && (fresh || wheelWent === "page"))) {
+      if (!overRow(e.clientX, e.clientY) || (d > 0 && atEnd() && (fresh || wheelWent === "page"))) {
         wheelWent = "page"; // the browser scrolls
         return;
       }
