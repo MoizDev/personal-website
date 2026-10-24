@@ -127,25 +127,107 @@ body {
   width: var(--card-w);
   height: var(--card-w);
   transform-origin: 50% 100%;
+  transform-style: preserve-3d;
   -webkit-user-drag: none;
+  --edge: calc(var(--card-w) * 0.012); /* the card's thickness */
+  --ease: 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+/* Near the front (data-deep) or under the pointer, a card is a thin slab: a flat
+   face with its edges folded back in 3D (see Body in CardStack). The face and
+   edges each take the card's --fade, since opacity on a parent would flatten
+   the slab. Further back it's one flat layer, without edges or gloss. */
 .card-face {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: calc(var(--card-w) * 0.022);
-  background: var(--tone);
-  opacity: 0.9;
-  transition:
-    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 300ms ease;
+  transition: transform var(--ease);
 }
 
-/* hover lifts the card straight up off the ground */
+.card[data-deep] .card-face,
 .card[data-hover="true"] .card-face {
-  transform: translateY(-22%);
-  opacity: 1;
+  transform-style: preserve-3d;
+}
+
+.card:not([data-deep], [data-hover="true"]) :is(.card-edge, .card-glare) {
+  display: none;
+}
+
+/* hover lifts the card straight up off the ground and leans it toward the pointer */
+.card[data-hover="true"] .card-face {
+  transform: translateY(-22%) rotateX(calc(var(--py, 0) * -5deg)) rotateY(calc(var(--px, 0) * 5deg));
+}
+
+.card-front {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: calc(var(--card-w) * 0.022);
+  background: color-mix(in srgb, var(--tone) 90%, var(--bg));
+  opacity: var(--fade, 1);
+  transition: background-color 300ms ease;
+}
+
+.card[data-hover="true"] .card-front {
+  background: var(--tone);
+}
+
+/* a strip of the slab's side, folded back from the outline; --lit is set per strip */
+.card-edge {
+  position: absolute;
+  height: var(--edge);
+  transform-origin: 0 0;
+  background: color-mix(in oklab, color-mix(in srgb, var(--tone) 90%, var(--bg)) var(--lit), #000);
+  opacity: var(--fade, 1);
+}
+
+/* Parallax: as the card leans, what's printed on it slides against the plate,
+   the nearer layers further, as if they stood off it. */
+.card-shot,
+.card-logo,
+.card-name,
+.card-mystery {
+  transition: transform var(--ease);
+}
+
+.card[data-hover="true"] .card-shot {
+  transform: translate(calc(var(--px, 0) * -2%), calc(var(--py, 0) * -2%)) scale(1.03);
+}
+
+.card[data-hover="true"] .card-logo {
+  transform: translate(calc(var(--px, 0) * -3%), calc(var(--py, 0) * -3%)) scale(1.04);
+}
+
+.card[data-hover="true"] .card-name {
+  transform: translate(calc(var(--px, 0) * -4.5%), calc(var(--py, 0) * -4.5%));
+}
+
+/* gloss: the reflection of a soft light, half a card across (GLARE_R in
+   CardStack), which moves it to where the light lands */
+.card-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: transform var(--ease);
+}
+
+/* tilting the card swings the reflection the other way */
+.card[data-hover="true"] .card-glare {
+  transform: translate(calc(var(--px, 0) * -18%), calc(var(--py, 0) * -18%));
+}
+
+.card-glare-light {
+  position: absolute;
+  inset: -50%; /* room for the whole ellipse, centred on the card */
+  background: radial-gradient(
+    ellipse 37.5% 25% at 50% 50%,
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.12) 30%,
+    rgba(255, 255, 255, 0.04) 65%,
+    transparent
+  );
+  transform: scale(0);
+  will-change: transform;
 }
 
 .card-shot {
@@ -197,12 +279,11 @@ body {
 
 /* past the last project: grey cards, each with a question mark that now and then
    scrambles through random characters (see MysteryFace) */
-.card-face-mystery {
+.card-mystery {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
-}
-
-.card-mystery {
   font-family: var(--font-display), Georgia, serif;
   font-size: calc(var(--card-w) * 0.42);
   line-height: 1;
