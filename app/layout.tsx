@@ -20,9 +20,17 @@ export const metadata: Metadata = {
   description: "Computer Science at the University of Waterloo. A row of projects, one card each.",
 };
 
+// Runs before first paint so the page never flashes the wrong theme:
+// the saved choice, else the system's.
+const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
+    // suppressHydrationWarning: the theme script sets data-theme before React hydrates
+    <html lang="en" className={`${sans.variable} ${serif.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

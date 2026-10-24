@@ -10,10 +10,10 @@
   overscroll-behavior: contain;
   padding: 10px 12px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(var(--paper-rgb), 0.92);
   box-shadow:
-    0 0 0 1px rgba(22, 22, 22, 0.08),
-    0 8px 30px rgba(22, 22, 22, 0.12);
+    0 0 0 1px rgba(var(--ink-rgb), 0.08),
+    0 8px 30px rgba(var(--ink-rgb), 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   font-size: 11px;
@@ -62,12 +62,12 @@
 .tune-copy {
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(22, 22, 22, 0.06);
+  background: rgba(var(--ink-rgb), 0.06);
 }
 
 .tune-actions button:hover,
 .tune-copy:hover {
-  background: rgba(22, 22, 22, 0.12);
+  background: rgba(var(--ink-rgb), 0.12);
 }
 
 .tune button:disabled {
@@ -124,7 +124,7 @@
   margin-top: 14px;
   padding: 8px;
   border-radius: 6px;
-  background: rgba(22, 22, 22, 0.05);
+  background: rgba(var(--ink-rgb), 0.05);
   font: 10.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: pre-wrap;
   user-select: text;
