@@ -64,10 +64,14 @@ svg {
   --tint-k: 16%;
 }
 
-html,
-body {
+/* on the root only: on body these would make it a scroll container that swallows the page's scrolling */
+html {
   overflow-x: hidden;
   overscroll-behavior: none;
+}
+
+html,
+body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-body), system-ui, sans-serif;
