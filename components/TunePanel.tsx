@@ -102,6 +102,7 @@ function readDefaults(): Values {
     if (f.to === "motion") out[f.key] = MOTION_DEFAULTS[f.key as MotionKey];
     else if (f.key === "--card-w") out[f.key] = document.querySelector<HTMLElement>(".card")?.offsetWidth ?? 200;
     else if (f.key === "--spot-w") out[f.key] = document.querySelector<HTMLElement>(".spot")?.offsetWidth ?? 300;
+    else if (f.key === "--spot-y") out[f.key] = document.querySelector<HTMLElement>(".spot")?.offsetTop ?? 200;
     else out[f.key] = parseFloat(css.getPropertyValue(f.key)) || 0;
   }
   return out;

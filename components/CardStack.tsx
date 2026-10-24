@@ -118,6 +118,9 @@ export function CardStack() {
 
     // The spot is laid out by CSS; measure it so cards can fly there.
     function measure() {
+      // the spot sits below the intro, however tall its text wraps
+      const intro = document.querySelector(".intro")?.getBoundingClientRect();
+      if (intro) document.documentElement.style.setProperty("--intro-bottom", `${Math.round(intro.bottom)}px`);
       const root = getComputedStyle(document.documentElement);
       basePitch = parseFloat(root.getPropertyValue("--pitch")) || 0;
       const o = origin.current?.getBoundingClientRect();
@@ -300,6 +303,9 @@ export function CardStack() {
     }
 
     measure();
+    const introSize = new ResizeObserver(onResize);
+    const introEl = document.querySelector(".intro");
+    if (introEl) introSize.observe(introEl);
     window.addEventListener("resize", onResize);
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("keydown", onKey);
@@ -313,6 +319,8 @@ export function CardStack() {
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(snapTimer);
+      introSize.disconnect();
+      document.documentElement.style.removeProperty("--intro-bottom");
       window.removeEventListener("resize", onResize);
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKey);

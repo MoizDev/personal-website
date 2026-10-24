@@ -41,8 +41,8 @@ svg {
 
   /* the spot a pulled-out card lands in, with its write-up below */
   --spot-x: 44px;
-  --spot-y: 208px;
-  --spot-w: min(32vw, calc(100vh - 420px));
+  --spot-y: calc(var(--intro-bottom, 200px) + 48px); /* --intro-bottom is set by CardStack */
+  --spot-w: min(32vw, calc(100vh - var(--spot-y) - 212px)); /* leaves room for the write-up */
 }
 
 html,
