@@ -51,6 +51,9 @@ svg {
   --ox-k: 0.48;
   --oy-k: 0.55;
   --depth-k: 2.6; /* perspective distance, in card widths */
+  --lift: 0.1; /* how far a card leaving the spot drifts up as it fades, in card heights */
+  --leave-fade: 0.7; /* how far through leaving it has faded out, from 0 to 1 */
+  --lead: 0; /* how far back the front of the row stands from the spot's plane, in slots */
   --po-x: 0.61; /* the vanishing point, as a fraction of the frame */
   --po-y: 0.47;
   /* the row and its vanishing point slide down together, to sit level with the spot */
@@ -108,6 +111,9 @@ body {
 .home {
   position: fixed;
   inset: 0;
+  /* a swipe anywhere moves the row (CardStack), so the browser mustn't take it
+     for a scroll and cancel the drag; pinching to zoom still works */
+  touch-action: pinch-zoom;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -288,6 +294,7 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
+  opacity: var(--fade, 1); /* the badge, outside the plate, fades with it */
   transition: transform var(--ease);
 }
 
@@ -306,7 +313,6 @@ body {
   overflow: hidden;
   border-radius: calc(var(--card-w) * 0.022);
   background: color-mix(in srgb, var(--tone) 90%, var(--bg));
-  opacity: var(--fade, 1);
   transition: background-color 300ms ease;
 }
 
@@ -707,34 +713,101 @@ body {
 /* ---------- phones ---------- */
 
 /* a screen taller than wide; zooming never changes that, so it can't flip the layout */
+/*
+ * Phones: a deck. The card in the spot stands at the front, filling the width,
+ * and the rest of the row runs straight back behind it into the distance toward
+ * the top of the screen. Swiping up flicks the front card away and pulls the
+ * next one forward. The write-up (or, before any card is out, the intro) sits
+ * in a band kept for it under the card.
+ */
 @media (max-aspect-ratio: 3/4) {
   :root {
     --u: 1px;
-    --card-w: min(40vw, 22vh);
-    --gap: 0.34;
-    --yaw: 54deg;
-    --pitch: -6deg;
-    --ox-k: -0.65;
-    --oy-k: 2;
-    --depth-k: 2.4;
-    --po-x: 0.5;
-    --po-y: 0.85;
-    --row-dy: 0px;
     --frame-w: 100vw;
-    --frame-h: 100vh;
+    --frame-h: 100dvh;
 
-    --spot-x: 20px;
     --nav-top: 12px;
     --nav-h: 48px;
     --nav-open-w: calc(100vw - 24px);
 
-    --spot-y: calc(var(--nav-top) + var(--nav-h) + 20px);
-    --spot-w: min(calc(100vw - 40px), calc(66vh - 310px));
+    /* the band under the card for the write-up or the intro (the longest fits at 375px wide) */
+    --text-h: 180px;
+    /* the least room left above the card for the deck */
+    --deck-h: 90px;
+    --spot-w: min(
+      calc(100vw - 40px),
+      calc(100dvh - var(--nav-top) - var(--nav-h) - var(--deck-h) - var(--text-h) - 40px)
+    );
+    --spot-x: calc((100vw - var(--spot-w)) / 2);
+    --spot-y: calc(100dvh - 20px - var(--text-h) - 20px - var(--spot-w));
+
+    /* the row: the same size cards as the spot, standing in a line straight back from it */
+    --card-w: var(--spot-w);
+    --gap: 0.3;
+    /* far enough back that a row card leaning toward you (the ground pitches as
+       it moves, see MOTION.maxPitch) never cuts through the card in the spot */
+    --lead: 1.2;
+    --yaw: 82deg;
+    /* a card leaving the spot is flicked up and away over the deck */
+    --lift: 1.1;
+    --leave-fade: 1;
+    --pitch: -11deg;
+    --ox-k: 0;
+    --oy-k: 0;
+    --depth-k: 2.2;
   }
 
-  /* a pulled-out card takes the top of the screen, so the intro steps aside */
+  /* the front of the row stands at the foot of the spot, and runs back toward
+     a vanishing point up under the navbar */
+  .world {
+    left: 50%;
+    top: calc(var(--spot-y) + var(--spot-w));
+  }
+
+  /* the far end of the deck melts away under the navbar */
+  .scene {
+    perspective-origin: 56% calc(var(--nav-top) + var(--nav-h) + 30px);
+    -webkit-mask-image: linear-gradient(transparent calc(var(--nav-top) + var(--nav-h) - 10px), #000 calc(var(--spot-y) - 10px));
+    mask-image: linear-gradient(transparent calc(var(--nav-top) + var(--nav-h) - 10px), #000 calc(var(--spot-y) - 10px));
+  }
+
+  /* the card fills the width, so the badge only peeks past its edge */
+  .card-badge {
+    transform: translateX(4px) rotate(-4deg) scale(0.6);
+  }
+
+  .card-badge[data-live="true"] {
+    transform: translateX(10px) rotate(-4deg);
+  }
+
+  .detail,
   .intro {
-    transition: opacity 400ms ease;
+    top: calc(var(--spot-y) + var(--spot-w) + 20px);
+    left: 20px;
+    right: 20px;
+    width: auto;
+    max-width: none;
+  }
+
+  .detail {
+    font-size: 15px;
+  }
+
+  .detail-meta {
+    font-size: 13px;
+  }
+
+  .detail-link {
+    font-size: 14px;
+  }
+
+  .intro {
+    font-size: 17px;
+  }
+
+  /* the intro shows until a card is pulled out, then gives its place to the write-up */
+  .intro {
+    transition: opacity 300ms ease;
   }
 
   :root[data-out] .intro {
@@ -745,47 +818,30 @@ body {
   :root[data-out] .intro a {
     pointer-events: none;
   }
+}
+
+/* short phones (an iPhone SE with Safari's bars showing): smaller text and a
+   shallower deck, so the card keeps its size */
+@media (max-aspect-ratio: 3/4) and (max-height: 640px) {
+  :root {
+    --text-h: 150px;
+    --deck-h: 50px;
+  }
+
+  .intro {
+    font-size: 15px;
+  }
 
   .detail {
-    width: auto;
-    right: 20px;
     font-size: 14px;
   }
 
-  /* a fade so the bottom of the row melts into the page */
-  .home::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 1;
-    pointer-events: none;
+  .detail-about {
+    margin-top: 4px;
   }
 
-  .home::after {
-    bottom: 0;
-    height: 90px;
-    background: linear-gradient(transparent, var(--bg) 75%);
-  }
-
-  /* the intro sits just above the row, so the two read as one group */
-  .intro {
-    top: auto;
-    bottom: calc(34vh + 20px);
-    left: 20px;
-    right: 20px;
-    font-size: 18px;
-  }
-}
-
-@media (max-aspect-ratio: 3/4) and (max-height: 760px) {
-  :root {
-    --oy-k: 1.75;
-  }
-
-  .intro {
-    bottom: calc(38vh + 20px);
-    font-size: 16px;
+  .detail-link {
+    margin-top: 8px;
   }
 }
 

@@ -72,12 +72,16 @@ const smooth = (t: number) => t * t * (3 - 2 * t);
 /** Slot of card element j when the row is at p. */
 const slotOf = (j: number, p: number) => wrap(j - p + OUT, M) - OUT;
 
-/** Where the spot is, measured from the page: px from the front card's foot to the spot's bottom centre. */
-type Spot = { dx: number; dy: number; scale: number; lift: number; yaw: number };
+/**
+ * Where the spot is, measured from the page: px from the world's origin to the
+ * spot's bottom centre. `lead` is how far back the front of the row stands from
+ * the origin, in px (--lead: phones stand the row behind the spot).
+ */
+type Spot = { dx: number; dy: number; scale: number; lift: number; fade: number; yaw: number; lead: number };
 
 /** `drop` lifts the card off the ground, in card widths. */
 const rowTransform = (s: number, drop = 0) =>
-  `translate3d(calc(var(--card-w) * var(--gap) * ${s.toFixed(4)}), calc(var(--card-w) * ${(-drop).toFixed(4)}), 0) rotateY(-90deg)`;
+  `translate3d(calc(var(--card-w) * var(--gap) * (${s.toFixed(4)} + var(--lead))), calc(var(--card-w) * ${(-drop).toFixed(4)}), 0) rotateY(-90deg)`;
 
 /**
  * The world turns the row by (pitch, yaw). To face the camera a card undoes
@@ -87,6 +91,7 @@ function flightTransform(t: number, spot: Spot, pitch: number, up = 0) {
   const e = smooth(t);
   const scale = 1 + (spot.scale - 1) * e;
   return (
+    `translate3d(${(spot.lead * (1 - e)).toFixed(2)}px, 0, 0) ` +
     `rotateY(${(-spot.yaw * e).toFixed(3)}deg) rotateX(${(-pitch * e).toFixed(3)}deg) ` +
     `translate3d(${(spot.dx * e).toFixed(2)}px, ${(spot.dy * e - up).toFixed(2)}px, 0) ` +
     `scale(${scale.toFixed(4)}) rotateY(${(-90 * (1 - e)).toFixed(3)}deg)`
@@ -100,7 +105,7 @@ function cardPose(s: number, n: number, spot: Spot | null, pitch: number) {
   if (s >= -1) return { transform: flightTransform(-s, spot, pitch), opacity: 1 };
   // leaving: drift up out of the spot and fade
   const e = -1 - s;
-  const opacity = 1 - smooth(clamp(e / 0.7, 0, 1));
+  const opacity = 1 - smooth(clamp(e / spot.fade, 0, 1));
   return { transform: flightTransform(1, spot, pitch, spot.lift * smooth(e)), opacity };
 }
 
@@ -147,7 +152,7 @@ const GLARE_R = 0.5; // the reflection's half-width as drawn in CSS (.card-glare
 const DEEP = 4;
 
 /** What the glare needs from the layout, in px, from the world's origin. */
-type View = { cw: number; gap: number; ox: number; oy: number; yaw: number; eye: DOMPoint; light: DOMPoint };
+type View = { cw: number; gap: number; lead: number; ox: number; oy: number; yaw: number; eye: DOMPoint; light: DOMPoint };
 
 /**
  * Move a card's reflection (`light`, its .card-glare-light) to where the light
@@ -224,21 +229,30 @@ export function CardStack() {
       const ox = w * num("--ox-k");
       const oy = w * num("--oy-k");
       const yaw = num("--yaw");
-      // the front card at rest, and the light bounced off it into the eye from GLINT
-      const front = new DOMMatrix().translate(ox, oy).rotate(basePitch, 0, 0).rotate(0, yaw, 0).rotate(0, -90, 0);
+      const lead = w * num("--gap") * num("--lead");
+      // The light bounces into the eye from GLINT on the card it's set for: the
+      // front of the row at rest, or on phones, where the row stands back behind
+      // the spot (lead), the card in the spot.
+      const dx = r.left + r.width / 2 - o.left;
+      const dy = r.bottom - o.top;
+      const front = lead
+        ? new DOMMatrix().translate(ox + dx, oy + dy).scale(r.width / w)
+        : new DOMMatrix().translate(ox, oy).rotate(basePitch, 0, 0).rotate(0, yaw, 0).rotate(0, -90, 0);
       const e = front.inverse().transformPoint(eye);
       const gx = (GLINT.x - 0.5) * w;
       const gy = (GLINT.y - 1) * w;
       const light = front.transformPoint(
         new DOMPoint(gx + (gx - e.x) * LIGHT_FAR, gy + (gy - e.y) * LIGHT_FAR, e.z * LIGHT_FAR),
       );
-      view = { cw: w, gap: w * num("--gap"), ox, oy, yaw, eye, light };
+      view = { cw: w, gap: w * num("--gap"), lead, ox, oy, yaw, eye, light };
       spot = {
-        dx: r.left + r.width / 2 - o.left,
-        dy: r.bottom - o.top,
+        dx,
+        dy,
         scale: r.width / w,
-        lift: r.height * 0.1,
+        lift: r.height * num("--lift"),
+        fade: num("--leave-fade") || 0.7,
         yaw: parseFloat(root.getPropertyValue("--yaw")) || 0,
+        lead,
       };
     }
 
@@ -279,7 +293,7 @@ export function CardStack() {
         if (!deep || hidden || !light || !view || !wm) continue;
         const mat =
           s >= 0
-            ? wm.translate(view.gap * s, -drop * view.cw).rotate(0, -90, 0)
+            ? wm.translate(view.gap * s + view.lead, -drop * view.cw).rotate(0, -90, 0)
             : wm.multiply(new DOMMatrix(pose.transform));
         glare(light, mat, view);
       }
@@ -347,8 +361,8 @@ export function CardStack() {
     /**
      * The first position the row can rest at. On desktop a card is always in
      * the spot, so it's 1 (the opening view, 0, is only passed through on load).
-     * Phones hide the intro while a card is out, so there the opening view stays
-     * reachable to show it.
+     * Phones show the intro where a card's write-up goes, so they open on 0
+     * (the deck, with nothing pulled out yet) and can come back to it.
      */
     const first = () => (matchMedia(PHONE_QUERY).matches ? 0 : 1);
 
@@ -487,7 +501,7 @@ export function CardStack() {
     window.addEventListener("click", onClick, true);
     kick();
     // once the front cards have landed, the first one flips out (unless the visitor already moved)
-    flipTimer = window.setTimeout(() => m.target < 1 && aim(1), reduce ? 0 : FLIP_AT_MS);
+    if (first() === 1) flipTimer = window.setTimeout(() => m.target < 1 && aim(1), reduce ? 0 : FLIP_AT_MS);
 
     return () => {
       cancelAnimationFrame(raf);
