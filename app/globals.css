@@ -129,14 +129,11 @@ body {
   transform-origin: 50% 100%;
   transform-style: preserve-3d;
   -webkit-user-drag: none;
-  --edge: calc(var(--card-w) * 0.034); /* the card's thickness */
   --ease: 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Near the front (data-deep) or under the pointer, a card is a thin slab: a flat
-   face with its edges folded back in 3D (see Body in CardStack). The face and
-   edges each take the card's --fade, since opacity on a parent would flatten
-   the slab. Further back it's one flat layer, without edges or gloss. */
+/* Near the front (data-deep) or under the pointer, a card carries the gloss and
+   fades through --fade on its face. Further back it fades as a whole, without gloss. */
 .card-face {
   position: relative;
   width: 100%;
@@ -144,12 +141,7 @@ body {
   transition: transform var(--ease);
 }
 
-.card[data-deep] .card-face,
-.card[data-hover="true"] .card-face {
-  transform-style: preserve-3d;
-}
-
-.card:not([data-deep], [data-hover="true"]) :is(.card-edge, .card-glare) {
+.card:not([data-deep], [data-hover="true"]) .card-glare {
   display: none;
 }
 
@@ -170,19 +162,6 @@ body {
 
 .card[data-hover="true"] .card-front {
   background: var(--tone);
-}
-
-/* a strip of the slab's side, folded back from the outline: a paler tint of the
-   card, catching light along its front edge and dimming toward the back; --lit
-   (set per strip) shades the sides facing down */
-.card-edge {
-  position: absolute;
-  height: var(--edge);
-  transform-origin: 0 0;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.14)),
-    color-mix(in oklab, color-mix(in srgb, var(--tone) 72%, #fff) var(--lit), #000);
-  opacity: var(--fade, 1);
 }
 
 /* Parallax: as the card leans, what's printed on it slides against the plate,

@@ -162,37 +162,6 @@ function glare(light: HTMLElement, mat: DOMMatrix, view: View) {
   light.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${((LIGHT_R * t) / GLARE_R).toFixed(3)})`;
 }
 
-/*
- * Thickness: the card's rounded outline, each corner cut into two straight
- * pieces, with a thin strip folded back from every piece. Strips facing up
- * catch more light than those facing down.
- */
-const RADIUS = 0.022; // the corner radius, in card widths (matches .card-front)
-const OUTLINE = [
-  [RADIUS, RADIUS, 180],
-  [1 - RADIUS, RADIUS, 270],
-  [1 - RADIUS, 1 - RADIUS, 0],
-  [RADIUS, 1 - RADIUS, 90],
-].flatMap(([cx, cy, a0]) =>
-  [0, 45, 90].map((da) => {
-    const a = ((a0 + da) * Math.PI) / 180;
-    return [cx + RADIUS * Math.cos(a), cy + RADIUS * Math.sin(a)];
-  }),
-);
-const EDGES = OUTLINE.map(([x, y], i) => {
-  const [x2, y2] = OUTLINE[(i + 1) % OUTLINE.length];
-  const len = Math.hypot(x2 - x, y2 - y);
-  const up = (x2 - x) / len; // the outward normal's upward share: 1 on top, -1 underneath
-  const style = {
-    left: `${(x * 100).toFixed(3)}%`,
-    top: `${(y * 100).toFixed(3)}%`,
-    width: `calc(${(len * 100).toFixed(3)}% + 0.5px)`,
-    transform: `rotate(${((Math.atan2(y2 - y, x2 - x) * 180) / Math.PI).toFixed(2)}deg) rotateX(-90deg)`,
-    "--lit": `${(90 + 8 * up).toFixed(1)}%`,
-  } as CSSProperties;
-  return <i key={i} className="card-edge" style={style} />;
-});
-
 export function CardStack() {
   const world = useRef<HTMLDivElement>(null);
   const origin = useRef<HTMLDivElement>(null);
@@ -688,15 +657,14 @@ function CardFace({ project: p, live }: { project: Project; live: boolean }) {
 }
 
 /**
- * A card as a thin slab: its edges in 3D, and its face, one flat layer holding
- * what's printed on it and the gloss. (Printed layers as separate 3D planes sit
- * too close together for the browser to sort, so they cut through each other;
- * the hover parallax slides them within the face instead.)
+ * A card: one flat layer holding what's printed on it and the gloss. (Printed
+ * layers as separate 3D planes sit too close together for the browser to sort,
+ * so they cut through each other; the hover parallax slides them within the
+ * face instead.)
  */
 function Body({ tone, children }: { tone: string; children: ReactNode }) {
   return (
     <div className="card-face" style={{ "--tone": tone } as CSSProperties}>
-      {EDGES}
       <div className="card-front">
         {children}
         <div className="card-glare">
