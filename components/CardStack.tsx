@@ -47,8 +47,13 @@ const FOG = 10;
 // then the front card flips out into the spot.
 const DROP = 1.4; // how high a card falls from, in card widths
 const DROP_MS = 620; // how long one card takes to land
-const STAGGER_MS = 55; // between one card starting to fall and the next
-const STAGGER_CAP = 14; // cards further back than this all fall with the last one (they're in the haze)
+const STAGGER_MS = 55; // between the front card starting to fall and the next
+// each gap after that is this much of the one before, so the wave runs the whole
+// row (no card falls in a clump) yet the far end still lands soon after the front
+const STAGGER_EASE = 0.95;
+/** when the card in a slot starts to fall; it never reaches STAGGER_MS / (1 - STAGGER_EASE) */
+const dropDelay = (slot: number) => (STAGGER_MS * (1 - STAGGER_EASE ** slot)) / (1 - STAGGER_EASE);
+const DROP_END = STAGGER_MS / (1 - STAGGER_EASE) + DROP_MS; // the last card is down by then
 const FLIP_AT_MS = 950; // when the front card flips out into the spot
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
@@ -111,7 +116,7 @@ const INITIAL: CSSProperties[] = Array.from({ length: M }, (_, j) => ({
 
 /** How far card j still has to fall (card widths) and how faded in it is, `ms` into the load. */
 function dropOf(j: number, ms: number) {
-  const delay = Math.min(slotOf(j, 0), STAGGER_CAP) * STAGGER_MS;
+  const delay = dropDelay(slotOf(j, 0));
   const t = clamp((ms - delay) / DROP_MS, 0, 1);
   return { drop: DROP * (1 - easeOut(t)), fade: clamp(t * 2.5, 0, 1) };
 }
@@ -183,7 +188,7 @@ export function CardStack() {
     const m = { cur: 0, target: 0, vel: 0, pitch: 0, pitchVel: 0, last: 0, running: false };
     // the load-in: cards dropping onto the ground (skipped for reduced motion)
     const introStart = performance.now();
-    const introEnd = reduce ? introStart : introStart + STAGGER_CAP * STAGGER_MS + DROP_MS;
+    const introEnd = reduce ? introStart : introStart + DROP_END;
     let flipTimer = 0;
     let raf = 0;
     let snapTimer = 0;
