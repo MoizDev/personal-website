@@ -1,5 +1,12 @@
 import { CardStack } from "@/components/CardStack";
 
+const LINKS = [
+  { label: "Resume", href: "/resume.pdf" },
+  { label: "GitHub", href: "https://github.com/MoizDev" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/in/moiz-ahmed-hashmi-a36670213/" },
+  { label: "Email", href: "mailto:hashmoiz1546@gmail.com" },
+];
+
 export default function Home() {
   return (
     <main className="home">
@@ -11,22 +18,14 @@ export default function Home() {
           studies Computer Science at the University of Waterloo. He co-founded Factful and won Hack the North
           2026 with Bricked.
         </p>
-      </header>
-
-      <footer className="bar">
-        <p className="bar-copy">&copy;2026 Moiz Hashmi</p>
-        <nav className="bar-nav" aria-label="Main">
-          <a href="#" aria-current="page">
-            Work
-          </a>
-          <a href="/resume.pdf">Resume</a>
-          <a href="https://github.com/MoizDev">GitHub</a>
-          <a href="https://www.linkedin.com/in/moiz-ahmed-hashmi-a36670213/">LinkedIn</a>
+        <nav className="intro-links" aria-label="Elsewhere">
+          {LINKS.map((l) => (
+            <a key={l.label} href={l.href}>
+              {l.label}
+            </a>
+          ))}
         </nav>
-        <a className="bar-mail" href="mailto:hashmoiz1546@gmail.com">
-          hashmoiz1546@gmail.com
-        </a>
-      </footer>
+      </header>
     </main>
   );
 }

@@ -18,16 +18,16 @@ svg {
 }
 
 :root {
-  --bg: #000;
-  --fg: #f4f3ef;
-  --muted: rgba(244, 243, 239, 0.56);
-  --pill: rgba(28, 28, 28, 0.72);
+  color-scheme: light;
+  --bg: #f3f2ee;
+  --fg: #161616;
+  --muted: rgba(22, 22, 22, 0.52);
 
   /* the camera and the row; see CardStack */
   --card-w: min(30vw, 52vh);
   --gap: 0.36; /* space between cards, in card widths */
   --yaw: 54deg; /* how the row turns away from you */
-  --pitch: -15deg; /* how far you look down on the ground at rest */
+  --pitch: -6.5deg; /* how far you look down on the ground at rest */
   --ox: calc(var(--card-w) * -0.62); /* where the focus card stands */
   --oy: calc(var(--card-w) * 0.62);
   --depth: calc(var(--card-w) * 2.6); /* perspective */
@@ -49,8 +49,8 @@ body {
 }
 
 ::selection {
-  background: rgba(244, 243, 239, 0.9);
-  color: #000;
+  background: var(--fg);
+  color: var(--bg);
 }
 
 :focus-visible {
@@ -72,7 +72,7 @@ body {
   inset: 0;
   overflow: hidden;
   perspective: var(--depth);
-  perspective-origin: 50% 40%;
+  perspective-origin: 50% -10%;
   touch-action: none;
   cursor: grab;
 }
@@ -169,15 +169,13 @@ body {
 /* ---------- overlay ---------- */
 
 .intro,
-.bar,
 .caption {
   position: absolute;
   z-index: 2;
   pointer-events: none;
 }
 
-.intro a,
-.bar a {
+.intro a {
   pointer-events: auto;
 }
 
@@ -198,78 +196,43 @@ body {
 }
 
 .intro-name {
-  font-family: var(--font-display), Georgia, serif;
-  font-style: italic;
+  font-weight: 600;
 }
 
-.caption {
-  right: 44px;
-  bottom: 104px;
-  width: 300px;
-}
-
-.caption-name {
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 30px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.caption-year {
-  font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 15px;
-  letter-spacing: 0;
-  color: var(--muted);
-  vertical-align: 0.35em;
-}
-
-.caption-blurb {
-  margin-top: 10px;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--muted);
-}
-
-.bar {
-  left: 44px;
-  right: 44px;
-  bottom: 32px;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  font-size: 15px;
-}
-
-.bar-nav {
+.intro-links {
   display: flex;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 999px;
-  background: var(--pill);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  gap: 18px;
+  margin-top: 14px;
+  font-size: 14px;
+  letter-spacing: 0;
 }
 
-.bar-nav a {
-  padding: 8px 16px;
-  border-radius: 999px;
-  transition: background-color 160ms ease;
-}
-
-.bar-nav a:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.bar-nav a[aria-current="page"] {
-  box-shadow: inset 0 0 0 1.5px var(--fg);
-}
-
-.bar-mail {
-  justify-self: end;
+.intro-links a {
+  color: var(--muted);
   transition: color 160ms ease;
 }
 
-.bar-mail:hover {
+.intro-links a:hover {
+  color: var(--fg);
+}
+
+/* the hovered project, pinned to the corner so it swaps in place */
+.caption {
+  right: 44px;
+  bottom: 40px;
+  width: 280px;
+  text-align: right;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.caption-name {
+  font-weight: 600;
+}
+
+.caption-blurb {
+  margin-top: 2px;
+  font-weight: 400;
   color: var(--muted);
 }
 
@@ -280,9 +243,9 @@ body {
     --card-w: 70vw;
     --gap: 0.34;
     --yaw: 62deg;
-    --pitch: -12deg;
+    --pitch: -4.5deg;
     --ox: calc(var(--card-w) * -0.3);
-    --oy: calc(var(--card-w) * 0.42);
+    --oy: calc(var(--card-w) * 0.66);
     --leave: 1;
     --depth: calc(var(--card-w) * 2.4);
   }
@@ -300,14 +263,14 @@ body {
 
   .home::before {
     top: 0;
-    height: 190px;
-    background: linear-gradient(#000 45%, transparent);
+    height: 230px;
+    background: linear-gradient(var(--bg) 62%, transparent);
   }
 
   .home::after {
     bottom: 0;
-    height: 230px;
-    background: linear-gradient(transparent, #000 60%);
+    height: 150px;
+    background: linear-gradient(transparent, var(--bg) 60%);
   }
 
   .intro {
@@ -320,29 +283,8 @@ body {
   .caption {
     left: 20px;
     right: 20px;
-    bottom: 84px;
+    bottom: 28px;
     width: auto;
-  }
-
-  .caption-name {
-    font-size: 24px;
-  }
-
-  .bar {
-    left: 12px;
-    right: 12px;
-    bottom: 16px;
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .bar-copy,
-  .bar-mail {
-    display: none;
-  }
-
-  .bar-nav a {
-    padding: 8px 13px;
   }
 }
 

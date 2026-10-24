@@ -17,26 +17,33 @@ import { PROJECTS, type Project } from "@/lib/projects";
  */
 
 const N = PROJECTS.length;
-const LOOPS = 4;
+const LOOPS = 7;
 /** card elements in the loop; the projects come round LOOPS times */
 const M = N * LOOPS;
+/**
+ * The far end, where cards wrap round, sits off the top of the screen at rest.
+ * The last FOG slots fade out so a fast scroll (flatter ground) shows a haze, not an end.
+ */
+const FOG = 10;
 /** slots in front of the focus card, on their way out past the camera */
 const AHEAD = 4;
 /** on load the row starts this many cards back and slides in */
 const START = -6;
 
-// Scroll. Speeds are in cards per second.
-const FOLLOW = 5.5; // how quickly the row catches up with the scroll target
+// Scroll. Positions are in cards, speeds in cards per second.
+// The row chases the scroll target on a critically damped spring, so it eases
+// in and out of every move instead of jumping to speed.
+const GLIDE = 4.2; // spring frequency (rad/s); lower glides longer
 const WHEEL = 0.0026; // cards per wheel pixel
 const DRAG = 0.007; // cards per dragged pixel
 const MAX_LEAD = 5; // how far the target may run ahead of the row, in cards
 const SNAP_DELAY = 180; // ms of quiet before settling on a card
 
-// Ground pitch. A slightly bouncy spring chases a target set by speed.
-const PITCH_PER_SPEED = 1.6; // degrees per card/s
-const MAX_PITCH = 13;
-const STIFFNESS = 55;
-const DAMPING = 6.5; // under critical (2 * sqrt(STIFFNESS)), so it overshoots a little
+// Ground pitch. A soft, slightly bouncy spring chases a target set by speed.
+const PITCH_PER_SPEED = 0.75; // degrees per card/s
+const MAX_PITCH = 4.5;
+const PITCH_FREQ = 4; // rad/s
+const PITCH_DAMPING = 0.5; // under 1, so it swings back a touch past rest
 
 const wrap = (v: number, m: number) => ((v % m) + m) % m;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -50,7 +57,7 @@ const slotOf = (j: number, cur: number) => wrap(j - cur + AHEAD, M) - AHEAD;
  */
 function cardPose(s: number, leave = AHEAD) {
   const back = M - AHEAD - s; // distance to the far end, where cards wrap round
-  const opacity = clamp(back / 3, 0, 1) * clamp((s + leave) / 0.6, 0, 1);
+  const opacity = clamp(back / FOG, 0, 1) * clamp((s + leave) / 0.6, 0, 1);
   return {
     transform: `translate3d(calc(var(--card-w) * var(--gap) * ${s.toFixed(4)}), 0, 0) rotateY(-90deg)`,
     opacity,
@@ -87,6 +94,7 @@ export function CardStack() {
   useEffect(() => {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const m = { cur: START, target: 0, vel: 0, pitch: 0, pitchVel: 0, last: 0, running: false };
+    const glide = reduce ? 16 : GLIDE;
     let raf = 0;
     let snapTimer = 0;
     let shownFocus = -1;
@@ -122,13 +130,16 @@ export function CardStack() {
         return;
       }
 
-      const prev = m.cur;
-      m.cur += (m.target - m.cur) * (1 - Math.exp(-dt * (reduce ? 14 : FOLLOW)));
-      if (Math.abs(m.target - m.cur) < 5e-4) m.cur = m.target;
-      m.vel = (m.cur - prev) / dt;
+      m.vel += (glide * glide * (m.target - m.cur) - 2 * glide * m.vel) * dt;
+      m.cur += m.vel * dt;
+      if (Math.abs(m.target - m.cur) < 5e-4 && Math.abs(m.vel) < 5e-3) {
+        m.cur = m.target;
+        m.vel = 0;
+      }
 
       const want = reduce ? 0 : clamp(m.vel * PITCH_PER_SPEED, -MAX_PITCH, MAX_PITCH);
-      m.pitchVel += (STIFFNESS * (want - m.pitch) - DAMPING * m.pitchVel) * dt;
+      const f = PITCH_FREQ;
+      m.pitchVel += (f * f * (want - m.pitch) - 2 * PITCH_DAMPING * f * m.pitchVel) * dt;
       m.pitch += m.pitchVel * dt;
 
       paint();
@@ -305,10 +316,10 @@ export function CardStack() {
       <div className="caption" aria-live="polite">
         {shown && (
           <>
-            <p className="caption-name">
-              {shown.name} <span className="caption-year">{shown.year}</span>
+            <p className="caption-name">{shown.name}</p>
+            <p className="caption-blurb">
+              {shown.year} &middot; {shown.blurb}
             </p>
-            <p className="caption-blurb">{shown.blurb}</p>
           </>
         )}
       </div>

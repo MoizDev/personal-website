@@ -12,8 +12,7 @@ const sans = Google_Sans({
 const serif = Libre_Baskerville({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
