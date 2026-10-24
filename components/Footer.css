@@ -8,7 +8,7 @@
   -webkit-user-select: none;
 }
 
-/* the line above the panel: a note at each end, the flowers between */
+/* the line above the panel, where the flowers stand */
 .footer-top {
   position: relative;
   display: flex;
@@ -138,7 +138,7 @@
   letter-spacing: -0.05em;
   text-align: center;
   white-space: nowrap;
-  color: color-mix(in srgb, var(--fg) 6%, var(--bg));
+  color: var(--bg); /* the page colour: white in light mode */
 }
 
 @media (max-width: 640px) {

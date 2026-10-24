@@ -223,7 +223,6 @@ export function Footer() {
   return (
     <footer className="footer" ref={ref} data-shown={shown}>
       <div className="footer-top">
-        <span>Waterloo, Ontario</span>
         <div className="footer-flowers" aria-hidden>
           {CLUSTERS.map((c, i) => (
             <svg
@@ -238,7 +237,6 @@ export function Footer() {
             </svg>
           ))}
         </div>
-        <span>&copy; Moiz Hashmi</span>
       </div>
 
       <div className="footer-panel">
