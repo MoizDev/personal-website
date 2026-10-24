@@ -337,6 +337,7 @@ body {
   vertical-align: -0.17em;
   border-radius: 24%;
   box-shadow: 0 0 0 1px rgba(var(--ink-rgb), 0.12);
+  filter: invert(1);
 }
 
 .nowrap {
