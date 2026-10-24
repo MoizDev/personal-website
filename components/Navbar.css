@@ -47,6 +47,11 @@
   height: 15px;
 }
 
+/* in the bar the mark is all ink, star included */
+.nav-logo .logo-star {
+  fill: currentColor;
+}
+
 /* the logo with the theme switch beside it */
 .nav-left {
   display: flex;
@@ -99,16 +104,22 @@
 }
 
 /* two lines that cross into an X */
-.nav-toggle {
+/* the menu button: a tile in the colour of the project in the spot (CardStack
+   sets --project-tone), or in ink back at the row */
+.nav .nav-toggle {
   position: relative;
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  transition: background-color 160ms ease;
+  color: var(--project-tone-ink, var(--bg));
+  background: var(--project-tone, rgb(var(--ink-rgb)));
+  transition:
+    background-color 420ms ease,
+    filter 160ms ease;
 }
 
 .nav .nav-toggle:hover {
-  background: rgba(var(--ink-rgb), 0.05);
+  filter: brightness(1.08);
 }
 
 .nav-toggle span {

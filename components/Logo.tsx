@@ -3,7 +3,7 @@ export function Logo({ className, spin = false }: { className?: string; /** turn
   return (
     <svg className={className} viewBox="0 0 398.88 303.7" aria-hidden focusable="false">
       <path
-        className={spin ? "star-spin" : undefined}
+        className={spin ? "logo-star star-spin" : "logo-star"}
         fill="#03a5fc"
         d="M132,244.8l-13.89,9.09c-12.22,8-22.66,18.44-30.66,30.66l-9.09,13.89c-4.59,7.02-14.87,7.02-19.47,0l-9.09-13.89c-8-12.22-18.44-22.66-30.66-30.66l-13.89-9.09c-7.02-4.59-7.02-14.87,0-19.47l13.89-9.09c12.22-8,22.66-18.44,30.66-30.66l9.09-13.89c4.59-7.02,14.87-7.02,19.47,0l9.09,13.89c8,12.22,18.44,22.66,30.66,30.66l13.89,9.09c7.02,4.59,7.02,14.87,0,19.47Z"
       />
