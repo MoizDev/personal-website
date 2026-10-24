@@ -412,11 +412,11 @@ body {
   position: absolute;
   left: 8%;
   bottom: 7%;
-  font-family: var(--font-card), ui-monospace, monospace;
-  font-size: calc(var(--card-w) * 0.09);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: calc(var(--card-w) * 0.1);
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   color: #fff;
   pointer-events: none;
 }

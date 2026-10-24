@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Google_Sans, Libre_Baskerville } from "next/font/google";
-import localFont from "next/font/local";
 import "./globals.css";
 
 const sans = Google_Sans({
@@ -16,13 +15,6 @@ const serif = Libre_Baskerville({
   weight: "400",
 });
 
-// Paper Mono (paper.design/mono, SIL Open Font License), for the names on the cards
-const mono = localFont({
-  src: "../assets/fonts/PaperMono-Variable.woff2",
-  variable: "--font-card",
-  weight: "100 800",
-});
-
 export const metadata: Metadata = {
   title: "Moiz Hashmi",
   description: "Computer Science at the University of Waterloo. A row of projects, one card each.",
@@ -35,7 +27,7 @@ const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t!=="light"&&t!
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: the theme script sets data-theme before React hydrates
-    <html lang="en" className={`${sans.variable} ${serif.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${sans.variable} ${serif.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
