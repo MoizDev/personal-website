@@ -27,8 +27,17 @@ svg {
   --muted: rgba(var(--ink-rgb), 0.52);
   --soft: rgba(var(--ink-rgb), 0.74);
 
+  /*
+   * One pixel of the desktop design (laid out on a 1710 x 958 screen), scaled
+   * so the whole layout fits the window as one piece: zooming (cmd +/-) or a
+   * different screen size doesn't rearrange anything. Desktop sizes are all
+   * written in it. Phones use plain pixels (see below). Kept in step with
+   * lib/scale.ts.
+   */
+  --u: min(calc(100vw / 1710), calc(100vh / 958));
+
   /* the camera and the row; see CardStack */
-  --card-w: min(29vw, 52vh); /* 497px at 1710x958 */
+  --card-w: calc(496 * var(--u));
   --gap: 0.36; /* space between cards, in card widths */
   --yaw: 61deg; /* how the row turns away from you */
   --pitch: -0.5deg; /* how far you look down on the ground at rest */
@@ -44,14 +53,14 @@ svg {
 
   /* the spot a pulled-out card lands in, with its write-up below */
   /* the floating navbar */
-  --nav-top: 14px;
-  --nav-h: 46px;
-  --nav-w: 96px; /* a small pill, centred: the logo and the menu button (the theme switch shows when open) */
-  --nav-open-w: min(760px, calc(100vw - 32px)); /* room for the menu */
+  --nav-top: calc(14 * var(--u));
+  --nav-h: calc(46 * var(--u));
+  --nav-w: calc(96 * var(--u)); /* a small pill, centred: the logo and the menu button (the theme switch shows when open) */
+  --nav-open-w: min(760 * var(--u), calc(100vw - 32 * var(--u))); /* room for the menu */
 
-  --spot-x: 44px;
-  --spot-y: calc(var(--intro-bottom, 200px) + 48px); /* --intro-bottom is set by CardStack */
-  --spot-w: min(32vw, calc(100vh - var(--spot-y) - 212px)); /* leaves room for the write-up */
+  --spot-x: calc(44 * var(--u));
+  --spot-y: calc(var(--intro-bottom, calc(200 * var(--u))) + 48 * var(--u)); /* --intro-bottom is set by CardStack */
+  --spot-w: min(547 * var(--u), calc(100vh - var(--spot-y) - 212 * var(--u))); /* leaves room for the write-up */
 }
 
 /* dark mode: set by the navbar toggle, or the system until it is used (see app/layout.tsx) */
@@ -84,8 +93,8 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--fg);
-  outline-offset: 3px;
+  outline: calc(2 * var(--u)) solid var(--fg);
+  outline-offset: calc(3 * var(--u));
 }
 
 .home {
@@ -134,7 +143,7 @@ body {
   content: "";
   position: absolute;
   border-radius: 50%;
-  filter: blur(70px);
+  filter: blur(calc(70 * var(--u)));
   will-change: transform;
 }
 
@@ -190,7 +199,7 @@ body {
   visibility: hidden;
 }
 
-@media (max-width: 900px) {
+@media (max-aspect-ratio: 3/4) {
   .solar {
     display: none;
   }
@@ -295,7 +304,7 @@ body {
   height: 100%;
   fill: none;
   stroke: #fff;
-  stroke-width: 1.1;
+  stroke-width: calc(1.1 * var(--u));
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0.32;
@@ -432,9 +441,9 @@ body {
   position: absolute;
   z-index: 2;
   left: var(--spot-x);
-  top: calc(var(--spot-y) + var(--spot-w) + 22px);
+  top: calc(var(--spot-y) + var(--spot-w) + 22 * var(--u));
   width: var(--spot-w);
-  font-size: 15px;
+  font-size: calc(15 * var(--u));
   line-height: 1.5;
 }
 
@@ -442,7 +451,7 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: calc(16 * var(--u));
 }
 
 .detail-name {
@@ -450,22 +459,22 @@ body {
 }
 
 .detail-meta {
-  font-size: 13px;
+  font-size: calc(13 * var(--u));
   color: var(--muted);
 }
 
 .detail-about {
-  margin-top: 6px;
+  margin-top: calc(6 * var(--u));
   color: var(--soft);
 }
 
 .detail-link {
   display: inline-block;
-  margin-top: 12px;
-  font-size: 14px;
+  margin-top: calc(12 * var(--u));
+  font-size: calc(14 * var(--u));
   text-decoration: underline;
   text-decoration-color: rgba(var(--ink-rgb), 0.25);
-  text-underline-offset: 4px;
+  text-underline-offset: calc(4 * var(--u));
   transition: text-decoration-color 160ms ease;
 }
 
@@ -489,9 +498,9 @@ body {
 .intro {
   /* the first line (the name) shares its centre line with the navbar; 0.68em is half the line height */
   top: calc(var(--nav-top) + var(--nav-h) / 2 - 0.68em);
-  left: 44px;
-  max-width: 540px;
-  font-size: 22px;
+  left: calc(44 * var(--u));
+  max-width: calc(540 * var(--u));
+  font-size: calc(22 * var(--u));
   line-height: 1.36;
   letter-spacing: -0.01em;
 }
@@ -510,8 +519,8 @@ body {
 .intro-bio a {
   text-decoration: underline;
   text-decoration-color: rgba(var(--ink-rgb), 0.25);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
+  text-decoration-thickness: calc(1 * var(--u));
+  text-underline-offset: calc(4 * var(--u));
   transition: text-decoration-color 160ms ease;
 }
 
@@ -531,7 +540,7 @@ body {
   margin-right: 0.28em;
   vertical-align: -0.17em;
   border-radius: 24%;
-  box-shadow: 0 0 0 1px rgba(var(--ink-rgb), 0.12);
+  box-shadow: 0 0 0 calc(1 * var(--u)) rgba(var(--ink-rgb), 0.12);
   filter: invert(1);
 }
 
@@ -546,9 +555,9 @@ body {
 
 .intro-links {
   display: flex;
-  gap: 18px;
-  margin-top: 14px;
-  font-size: 14px;
+  gap: calc(18 * var(--u));
+  margin-top: calc(14 * var(--u));
+  font-size: calc(14 * var(--u));
   letter-spacing: 0;
 }
 
@@ -563,11 +572,11 @@ body {
 
 /* the hovered project, pinned to the corner so it swaps in place */
 .caption {
-  right: 44px;
-  bottom: 40px;
-  width: 280px;
+  right: calc(44 * var(--u));
+  bottom: calc(40 * var(--u));
+  width: calc(280 * var(--u));
   text-align: right;
-  font-size: 13px;
+  font-size: calc(13 * var(--u));
   line-height: 1.45;
 }
 
@@ -576,15 +585,17 @@ body {
 }
 
 .caption-blurb {
-  margin-top: 2px;
+  margin-top: calc(2 * var(--u));
   font-weight: 400;
   color: var(--muted);
 }
 
 /* ---------- phones ---------- */
 
-@media (max-width: 640px) {
+/* a screen taller than wide; zooming never changes that, so it can't flip the layout */
+@media (max-aspect-ratio: 3/4) {
   :root {
+    --u: 1px;
     --card-w: min(40vw, 22vh);
     --gap: 0.34;
     --yaw: 54deg;
@@ -657,7 +668,7 @@ body {
   }
 }
 
-@media (max-width: 640px) and (max-height: 760px) {
+@media (max-aspect-ratio: 3/4) and (max-height: 760px) {
   :root {
     --oy-k: 1.75;
   }

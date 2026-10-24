@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { MOTION } from "@/lib/motion";
+import { designPx } from "@/lib/scale";
 import { CardLines } from "@/components/CardLines";
 import { PROJECTS, type Project } from "@/lib/projects";
 
@@ -412,7 +413,8 @@ export function CardStack() {
       if (!drag) return;
       const dx = e.clientX - drag.x;
       const dy = e.clientY - drag.y;
-      const d = -(Math.abs(dy) >= Math.abs(dx) ? dy : dx) * MOTION.drag;
+      // in design pixels, so the row keeps pace with the pointer at any size or zoom
+      const d = (-(Math.abs(dy) >= Math.abs(dx) ? dy : dx) / designPx()) * MOTION.drag;
       const dt = Math.max((e.timeStamp - drag.t) / 1000, 1 / 240);
       drag.v = drag.v * 0.6 + (d / dt) * 0.4;
       drag.moved += Math.hypot(dx, dy);
@@ -652,7 +654,7 @@ function CardFace({ project: p, live }: { project: Project; live: boolean }) {
           className="card-shot"
           src={p.art.src}
           alt=""
-          sizes="(max-width: 640px) 60vw, 30vw"
+          sizes="(max-aspect-ratio: 3/4) 60vw, 30vw"
           loading="eager"
           draggable={false}
         />

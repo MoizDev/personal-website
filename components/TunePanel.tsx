@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useState, type SyntheticEvent } from "react";
 import { MOTION, MOTION_DEFAULTS, type MotionKey } from "@/lib/motion";
+import { PHONE_QUERY } from "@/lib/scale";
 import "./TunePanel.css";
 
 type Field = {
@@ -71,7 +72,7 @@ const FIELDS = GROUPS.flatMap((g) => g.fields);
 
 type Values = Record<string, number>;
 
-const breakpoint = () => (matchMedia("(max-width: 640px)").matches ? "phone" : "desktop");
+const breakpoint = () => (matchMedia(PHONE_QUERY).matches ? "phone" : "desktop");
 const storeKey = (bp: string) => `tune:${bp}`;
 const OPEN_KEY = "tune:open";
 
@@ -144,7 +145,7 @@ export function TunePanel() {
 
   // Load the overrides for the current breakpoint, and again whenever it changes.
   useEffect(() => {
-    const mq = matchMedia("(max-width: 640px)");
+    const mq = matchMedia(PHONE_QUERY);
     const sync = () => {
       const b = breakpoint();
       const d = readDefaults();

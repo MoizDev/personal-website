@@ -18,6 +18,7 @@
 
 import { useEffect, useRef } from "react";
 import { SOLAR, SOLAR_EVENT, type ThemeLook } from "@/lib/solar";
+import { DESIGN_H, DESIGN_W } from "@/lib/scale";
 
 /*
  * Size, place, tilt, colour, contrast and weight all come from SOLAR
@@ -152,18 +153,21 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   }));
 
   const look = () => (dark ? SOLAR.dark : SOLAR.light);
-  const fontFor = () => `${look().weight} ${SOLAR.shared.cell}px ${FONT_FAMILY}`;
+  /** the character cell in CSS px: SOLAR's size is in design pixels, so the grid scales with the page */
+  const cellPx = () => Math.max(1, SOLAR.shared.cell * Math.min(W / DESIGN_W, H / DESIGN_H));
+  const fontFor = () => `${look().weight} ${cellPx().toFixed(2)}px ${FONT_FAMILY}`;
 
   /** Lay out the grid of cells for the canvas's size and the current font. */
   function layout() {
-    const size = SOLAR.shared.cell;
+    const size = cellPx();
     font = fontFor();
     ctx.font = font;
     ctx.textBaseline = "top";
     cw = ctx.measureText("M").width || size * 0.6;
-    chh = Math.max(1, Math.round(size * 1.2));
-    cols = Math.ceil(W / cw);
-    rows = Math.ceil(H / chh);
+    chh = size * 1.2;
+    // hidden (phones) or not laid out yet: an empty grid
+    cols = W > 0 ? Math.ceil(W / cw) : 0;
+    rows = H > 0 ? Math.ceil(H / chh) : 0;
     cells = new Array(cols * rows).fill(null);
     zbuf = new Float32Array(cols * rows);
   }
