@@ -20,12 +20,15 @@ import {
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import "./Navbar.css";
-import { EMAIL, LINKS } from "@/lib/links";
+import { EMAIL, LINKS, newTab } from "@/lib/links";
 
 /** Send the row back to its first card (CardStack listens for Home). */
 const toRow = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
 
-const BIG = [
+/** The menu's big items: a link, or a button that does something on the page. */
+type BigItem = { label: string; href: string } | { label: string; onClick: () => void };
+
+const BIG: BigItem[] = [
   { label: "Work", onClick: toRow },
   { label: "Resume", href: LINKS.resume.href },
   { label: "Contact", href: LINKS.email.href },
@@ -158,7 +161,7 @@ export function Navbar() {
                 {BIG.map((l, i) => (
                   <li key={l.label} style={{ "--i": i } as CSSProperties}>
                     {"href" in l ? (
-                      <a href={l.href} onClick={close}>
+                      <a href={l.href} {...newTab(l.href)} onClick={close}>
                         {l.label}
                       </a>
                     ) : (
@@ -179,7 +182,7 @@ export function Navbar() {
               <ul className="nav-small">
                 {SMALL.map((l) => (
                   <li key={l.label}>
-                    <a href={l.href} onClick={close}>
+                    <a href={l.href} {...newTab(l.href)} onClick={close}>
                       {l.label}
                     </a>
                   </li>

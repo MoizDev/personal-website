@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import arion from "@/assets/arion.png";
 import { Navbar } from "@/components/Navbar";
-import { LINKS } from "@/lib/links";
+import { LINKS, newTab } from "@/lib/links";
 import { SolarSystem } from "@/components/SolarSystem";
 
 // Sliders for the scene, for development only. Behind a dynamic import in a
@@ -35,7 +35,7 @@ export default function Home() {
         <p className="intro-bio">
           I’m a computer science student at the University of Waterloo.
           Currently, I’m an engineer at{" "}
-          <a className="org" href="https://arion.nyc">
+          <a className="org" href="https://arion.nyc" {...newTab("https://arion.nyc")}>
             <Image
               className="org-icon"
               src={arion}
@@ -50,7 +50,7 @@ export default function Home() {
         </p>
         <nav className="intro-links" aria-label="Elsewhere">
           {Object.values(LINKS).map((l) => (
-            <a key={l.label} href={l.href}>
+            <a key={l.label} href={l.href} {...newTab(l.href)}>
               {l.label}
             </a>
           ))}
