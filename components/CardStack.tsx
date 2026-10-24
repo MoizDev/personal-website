@@ -262,6 +262,13 @@ export function CardStack() {
         el.style.transform = pose.transform;
         const hidden = pose.opacity < 0.01;
         el.style.visibility = hidden ? "hidden" : "";
+        // The row is a loop, so projects already pulled out come back round at the far
+        // end. There they're plain grey like the mystery cards, and can't be clicked.
+        const ghost = j < N && Math.round(m.cur + s) >= M;
+        if (ghost !== el.hasAttribute("data-ghost")) {
+          el.toggleAttribute("data-ghost", ghost);
+          el.inert = ghost;
+        }
         const deep = s >= -OUT && s < DEEP;
         if (deep !== el.hasAttribute("data-deep")) el.toggleAttribute("data-deep", deep);
         // A 3D card fades layer by layer: opacity on the card itself would flatten it.

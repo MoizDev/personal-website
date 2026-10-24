@@ -314,6 +314,16 @@ body {
   background: var(--tone);
 }
 
+/* a project come back round at the far end of the row: blank grey, like the
+   mystery cards around it (CardStack sets data-ghost) */
+.card[data-ghost] .card-front {
+  background: color-mix(in srgb, var(--fg) 20%, var(--bg));
+}
+
+.card[data-ghost] .card-front > * {
+  visibility: hidden;
+}
+
 /* Parallax: as the card leans, what's printed on it slides against the plate,
    the nearer layers further, as if they stood off it. */
 .card-shot,
