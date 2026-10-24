@@ -40,6 +40,8 @@ export type Project = {
   art: { kind: "shot"; src: StaticImageData } | { kind: "logo"; src: StaticImageData; tagline: string };
   /** the project's mark, all white, shown beside the name on the card */
   logo: StaticImageData;
+  /** a badge sticking out of the card's right side while it's in the spot, like an award */
+  badge?: { title: string; detail: string };
   /** the card's colour */
   tone: string;
   /** the faint line drawing behind the card, its own for every project (see components/CardLines) */
@@ -58,6 +60,7 @@ export const PROJECTS: Project[] = [
     href: "https://devpost.com/software/a-feuvb1",
     art: { kind: "shot", src: bricked },
     logo: brickedLogo,
+    badge: { title: "Winner", detail: "Hack the North 2026" },
     tone: "#ff4d2e",
     lines: brickedLines,
   },

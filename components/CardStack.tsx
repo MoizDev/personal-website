@@ -640,7 +640,17 @@ function MysteryFace({ j, front }: { j: number; front: boolean }) {
 
 function CardFace({ project: p, live }: { project: Project; live: boolean }) {
   return (
-    <Body tone={p.tone}>
+    <Body
+      tone={p.tone}
+      outside={
+        p.badge && (
+          <span className="card-badge" data-live={live}>
+            <span className="card-badge-title">{p.badge.title}</span>
+            <span className="card-badge-detail">{p.badge.detail}</span>
+          </span>
+        )
+      }
+    >
       <CardLines art={p.lines} />
       {p.art.kind === "shot" ? (
         <Image
@@ -669,12 +679,13 @@ function CardFace({ project: p, live }: { project: Project; live: boolean }) {
 }
 
 /**
- * A card: one flat layer holding what's printed on it and the gloss. (Printed
+ * A card: one flat layer holding what's printed on it and the gloss, plus
+ * anything that sticks out past its edge (`outside`, not clipped by the plate). (Printed
  * layers as separate 3D planes sit too close together for the browser to sort,
  * so they cut through each other; the hover parallax slides them within the
  * face instead.)
  */
-function Body({ tone, children }: { tone: string; children: ReactNode }) {
+function Body({ tone, children, outside }: { tone: string; children: ReactNode; outside?: ReactNode }) {
   return (
     <div className="card-face" style={{ "--tone": tone } as CSSProperties}>
       <div className="card-front">
@@ -683,6 +694,7 @@ function Body({ tone, children }: { tone: string; children: ReactNode }) {
           <div className="card-glare-light" />
         </div>
       </div>
+      {outside}
     </div>
   );
 }

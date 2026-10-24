@@ -439,6 +439,54 @@ body {
   margin: 0 0 0.24em 0.04em;
 }
 
+/* an award badge sticking out of the right side, shown while the card is in
+   the spot (data-live); it pops on once the card has landed */
+.card-badge {
+  position: absolute;
+  top: 71%;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28em;
+  padding: 0.85em 1.1em 0.8em;
+  border-radius: calc(var(--card-w) * 0.016);
+  background: #fff;
+  color: var(--tone);
+  font-size: calc(var(--card-w) * 0.026);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    0 calc(var(--card-w) * 0.012) calc(var(--card-w) * 0.035) rgba(0, 0, 0, 0.18),
+    0 0 0 calc(var(--card-w) * 0.002) rgba(0, 0, 0, 0.04);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(42%) rotate(-4deg) scale(0.6);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.card-badge[data-live="true"] {
+  opacity: 1;
+  transform: translateX(62%) rotate(-4deg);
+  transition:
+    opacity 260ms ease 420ms,
+    transform 520ms cubic-bezier(0.3, 1.5, 0.5, 1) 420ms;
+}
+
+.card-badge-title {
+  font-size: 1.55em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.card-badge-detail {
+  font-weight: 600;
+  color: color-mix(in srgb, var(--tone) 70%, #111);
+}
+
 /* past the last project: grey cards, each with a question mark that now and then
    scrambles through random characters (see MysteryFace) */
 .card-mystery {
