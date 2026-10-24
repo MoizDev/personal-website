@@ -174,6 +174,11 @@ export function CardStack() {
         el.style.visibility = pose.opacity < 0.01 ? "hidden" : "";
       }
       if (world.current) world.current.style.transform = worldTransform(m.pitch);
+      // the row is on a card: take its box for the wheel, if it needs taking
+      if ((!rowBox || stale) && atRest()) {
+        rowBox = boxRow();
+        stale = false;
+      }
 
       // The write-up fades out as its card leaves and in as the next one lands.
       const k = Math.round(m.cur);
@@ -220,7 +225,6 @@ export function CardStack() {
         m.pitch = 0;
         m.pitchVel = 0;
         paint();
-        if (atRest()) rowBox = boxRow();
         m.running = false;
         return;
       }
@@ -243,20 +247,41 @@ export function CardStack() {
     const atEnd = () => m.target >= N && Math.abs(m.cur - N) < 0.05;
     const scrolled = () => window.scrollY > 0;
 
+    // A scroll or drag settles on a card when it stops. Any deliberate nudge from
+    // where it started (NUDGE of a card) goes at least one card that way, so a
+    // gentle swipe moves on instead of springing back.
+    const NUDGE = 0.08;
+    let anchor: number | null = null; // the card the scroll or drag started from
+
     function push(by: number) {
       setHover(null); // the card under the pointer is about to slide away
+      anchor ??= Math.round(m.target);
       aim(clamp(m.target + by, m.cur - MAX_LEAD, m.cur + MAX_LEAD));
+    }
+
+    function settle() {
+      const from = anchor ?? Math.round(m.target);
+      const off = m.target - from;
+      anchor = null;
+      aim(Math.abs(off) < NUDGE ? from : from + Math.sign(off) * Math.max(1, Math.round(Math.abs(off))));
+    }
+
+    /** Go straight to a card (keys, clicks), dropping any scroll in progress. */
+    function jump(target: number) {
+      clearTimeout(snapTimer);
+      anchor = null;
+      aim(target);
     }
 
     function settleSoon() {
       clearTimeout(snapTimer);
-      snapTimer = window.setTimeout(() => aim(Math.round(m.target)), SNAP_DELAY);
+      snapTimer = window.setTimeout(settle, SNAP_DELAY);
     }
 
     // Pull card j out into the spot.
     goTo.current = (j: number) => {
       setHover(null);
-      aim(Math.round(m.cur + slotOf(j, m.cur)) + 1);
+      jump(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
     // The row's box on the page: round the cards standing in it, padded a little.
@@ -264,11 +289,13 @@ export function CardStack() {
     // so it doesn't shrink and shift while cards move. In page coordinates, so
     // scrolling doesn't stale it.
     let rowBox: { l: number; t: number; r: number; b: number } | null = null;
+    let stale = false; // the layout changed while the row was moving
     function boxRow() {
       let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
       for (let j = 0; j < M; j++) {
         const el = cards.current[j];
-        if (!el || slots.current[j] < 0 || el.style.visibility === "hidden") continue;
+        // the front card counts until it's well on its way out
+        if (!el || slots.current[j] < -0.5 || el.style.visibility === "hidden") continue;
         const box = el.getBoundingClientRect();
         l = Math.min(l, box.left);
         t = Math.min(t, box.top);
@@ -305,7 +332,7 @@ export function CardStack() {
         e.preventDefault();
         if (e.key === "Home") window.scrollTo({ top: 0, behavior: "smooth" });
         setHover(null);
-        aim(0);
+        jump(0);
         return;
       }
       const forward = ["ArrowDown", "ArrowRight", "PageDown", "j"];
@@ -316,7 +343,7 @@ export function CardStack() {
       if (step > 0 && m.target >= N) return; // past the last project: the page scrolls on
       e.preventDefault();
       setHover(null);
-      aim(Math.round(m.target) + step);
+      jump(Math.round(m.target) + step);
     }
 
     // Dragging (touch or mouse) moves the row too, and a flick carries on.
@@ -372,7 +399,9 @@ export function CardStack() {
     function onResize() {
       measure();
       paint();
-      rowBox = atRest() ? boxRow() : null;
+      // re-take the box at rest; mid-move, keep the last one until the row settles
+      if (atRest()) rowBox = boxRow();
+      else stale = true;
     }
 
     measure();
