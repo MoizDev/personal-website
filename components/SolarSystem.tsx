@@ -408,7 +408,9 @@ function makeRenderer(canvas: HTMLCanvasElement) {
       }
     }
 
-    /* the Sun's glow: a steady halo of dots thinning outward, each one breathing slowly */
+    /* the Sun's glow: a steady halo of dots thinning outward, each one breathing slowly.
+       Light, whatever the theme: the light theme's darkening is left off it so it shines white. */
+    const glowCss = dark ? paint(mix(DAY, SUN, colour), L0) : css(mix(DAY, SUN, colour));
     const glow = sunR * 2;
     for (let j = Math.floor((cy - glow) / chh); j <= Math.floor((cy + glow) / chh); j++) {
       for (let i = Math.floor((cx - glow) / cw); i <= Math.floor((cx + glow) / cw); i++) {
@@ -417,7 +419,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const k = 2 - dist;
         if (hash3(i, j, 3) > k * k * 0.9) continue;
         const breathe = 0.6 + 0.4 * Math.sin(t * 1.3 + hash3(i, j, 4) * 6.28);
-        fill(i, j, k > 0.7 ? ":" : "·", paint(mix(DAY, SUN, colour), L0), (0.12 + k * 0.45) * breathe * L0.glow);
+        fill(i, j, k > 0.7 ? ":" : "·", glowCss, (0.12 + k * 0.45) * breathe * L0.glow);
       }
     }
 
