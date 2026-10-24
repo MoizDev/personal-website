@@ -469,7 +469,7 @@ export function CardStack() {
                   aria-hidden
                   style={INITIAL[j]}
                 >
-                  <MysteryFace j={j} />
+                  <MysteryFace j={j} front={j === N && active === N - 1} />
                 </div>
               );
             const p = PROJECTS[j];
@@ -542,33 +542,39 @@ function linkLabel(href: string) {
 /** Shades of grey for the mystery cards, as a share of the text colour over the page. */
 const GREYS = [16, 24, 12, 30, 20, 26, 14, 22];
 const GLYPHS = "#%&@$*!/<>{}[]=+~^ABCDEFGHJKMNPRSTXYZ0123456789";
+const SCRAMBLE_FRAMES = 14; // characters shown before landing on ?
+const SCRAMBLE_FRAME_MS = 110; // how long each one shows
+const SCRAMBLE_REST_MS = 4000; // on ? between scrambles
 
 /**
- * A grey card whose mark every so often scrambles through random characters
- * and lands back on a question mark.
+ * A grey card with a question mark. The first one, once it's at the front of
+ * the row (the last project is out), scrambles through random characters and
+ * lands back on the question mark, every few seconds while it stays there.
  */
-function MysteryFace({ j }: { j: number }) {
+function MysteryFace({ j, front }: { j: number; front: boolean }) {
   const mark = useRef<HTMLSpanElement>(null);
   const tone = `color-mix(in srgb, var(--fg) ${GREYS[j % GREYS.length]}%, var(--bg))`;
 
   useEffect(() => {
     const el = mark.current;
-    if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!el || !front || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let timer = 0;
     const scramble = (frames: number) => {
       if (frames <= 0) {
         el.textContent = "?";
-        // rest a few seconds, each card on its own beat
-        timer = window.setTimeout(() => scramble(8 + Math.floor(Math.random() * 8)), 2500 + Math.random() * 5000);
+        timer = window.setTimeout(() => scramble(SCRAMBLE_FRAMES), SCRAMBLE_REST_MS);
         return;
       }
       el.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-      timer = window.setTimeout(() => scramble(frames - 1), 45 + Math.random() * 35);
+      timer = window.setTimeout(() => scramble(frames - 1), SCRAMBLE_FRAME_MS);
     };
-    // the first scramble as the cards land, staggered back along the row
-    timer = window.setTimeout(() => scramble(12), 600 + (j - N) * 70 + Math.random() * 300);
-    return () => clearTimeout(timer);
-  }, [j]);
+    // let the row settle first, so it's seen
+    timer = window.setTimeout(() => scramble(SCRAMBLE_FRAMES), 700);
+    return () => {
+      clearTimeout(timer);
+      el.textContent = "?";
+    };
+  }, [front]);
 
   return (
     <div className="card-face card-face-mystery" style={{ "--tone": tone } as CSSProperties}>
