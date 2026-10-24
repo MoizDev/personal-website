@@ -494,8 +494,7 @@ body {
 
 /* ---------- overlay ---------- */
 
-.intro,
-.caption {
+.intro {
   position: absolute;
   z-index: 2;
   pointer-events: none;
@@ -580,26 +579,6 @@ body {
   color: var(--fg);
 }
 
-/* the hovered project, pinned to the corner so it swaps in place */
-.caption {
-  right: calc(var(--frame-x) + 44 * var(--u));
-  bottom: calc(var(--frame-y) + 40 * var(--u));
-  width: calc(280 * var(--u));
-  text-align: right;
-  font-size: calc(13 * var(--u));
-  line-height: 1.45;
-}
-
-.caption-name {
-  font-weight: 600;
-}
-
-.caption-blurb {
-  margin-top: calc(2 * var(--u));
-  font-weight: 400;
-  color: var(--muted);
-}
-
 /* ---------- phones ---------- */
 
 /* a screen taller than wide; zooming never changes that, so it can't flip the layout */
@@ -671,13 +650,6 @@ body {
     left: 20px;
     right: 20px;
     font-size: 18px;
-  }
-
-  .caption {
-    left: 20px;
-    right: 20px;
-    bottom: 28px;
-    width: auto;
   }
 }
 

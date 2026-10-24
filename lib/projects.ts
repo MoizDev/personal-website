@@ -29,7 +29,7 @@ export type Project = {
   year: string;
   /** what it was: Startup, Project, Hackathon, Work */
   kind: string;
-  /** one line, for the hover caption */
+  /** one line, read out by screen readers on the card */
   blurb: string;
   /** a few sentences, for when the card is pulled out of the row */
   about: string;

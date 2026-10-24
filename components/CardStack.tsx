@@ -493,7 +493,6 @@ export function CardStack() {
     }
   }, [activeProject]);
   const activeEl = active >= 0 ? active % M : -1;
-  const hovered = hover !== null ? PROJECTS[hover % N] : null;
 
   // A hovered card leans toward the pointer: where it is over the card, from -1 to 1 each way.
   function tilt(e: ReactPointerEvent<HTMLElement>) {
@@ -580,16 +579,6 @@ export function CardStack() {
         )}
       </div>
 
-      <div className="caption" aria-live="polite">
-        {hovered && (
-          <>
-            <p className="caption-name">{hovered.name}</p>
-            <p className="caption-blurb">
-              {hovered.year} &middot; {hovered.blurb}
-            </p>
-          </>
-        )}
-      </div>
     </>
   );
 }
