@@ -132,51 +132,12 @@ function dropOf(j: number, ms: number) {
 const INITIAL_WORLD: CSSProperties = { transform: worldTransform(0) };
 const HIDDEN: CSSProperties = { opacity: 0, visibility: "hidden" };
 
-/*
- * Glare: the cards are glossy and a soft light hangs in the room, fixed to the
- * camera. Each frame we find where that light's reflection lands on every card
- * (mirror the eye in the card's plane, aim at the light), so a card turning out
- * of the row sweeps the highlight across itself.
- *
- * The light is placed by where its reflection should sit on the front card at
- * rest (GLINT, as a share of the card from its top left), LIGHT_FAR times as far
- * beyond the card as the eye is.
- */
-const GLINT = { x: 0.38, y: 0.2 };
-const LIGHT_FAR = 1.6;
-const LIGHT_R = 0.9; // the light's radius, in card widths
-const GLARE_R = 0.5; // the reflection's half-width as drawn in CSS (.card-glare-light), in card widths
-
 /**
  * Cards from the spot to this many slots into the row are built in 3D (thickness,
- * parting layers, glare); the rest are flat, which keeps the GPU's layer count
+ * parting layers); the rest are flat, which keeps the GPU's layer count
  * down. Further back only a sliver of each card shows past the ones in front.
  */
 const DEEP = 4;
-
-/** What the glare needs from the layout, in px, from the world's origin. */
-type View = { cw: number; gap: number; lead: number; ox: number; oy: number; yaw: number; eye: DOMPoint; light: DOMPoint };
-
-/**
- * Move a card's reflection (`light`, its .card-glare-light) to where the light
- * lands, for a card whose full transform (world and card) is `mat`. A transform,
- * so the browser moves it without repainting.
- */
-function glare(light: HTMLElement, mat: DOMMatrix, view: View) {
-  const inv = mat.inverse();
-  const e = inv.transformPoint(view.eye);
-  const l = inv.transformPoint(view.light);
-  // the eye or the light is behind the card: no reflection
-  if (e.z <= 0 || l.z <= 0) {
-    light.style.transform = "scale(0)";
-    return;
-  }
-  const t = e.z / (e.z + l.z);
-  // card coordinates run from its foot: x in [-w/2, w/2], y in [-w, 0]; the light starts centred
-  const dx = e.x + t * (l.x - e.x);
-  const dy = e.y + t * (l.y - e.y) + view.cw / 2;
-  light.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${((LIGHT_R * t) / GLARE_R).toFixed(3)})`;
-}
 
 export function CardStack() {
   const world = useRef<HTMLDivElement>(null);
@@ -184,8 +145,6 @@ export function CardStack() {
   const spotRef = useRef<HTMLDivElement>(null);
   const detail = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLElement | null)[]>([]);
-  /** each card's reflection, moved by the glare */
-  const lights = useRef<(HTMLElement | null)[]>([]);
   const slots = useRef<Float64Array>(new Float64Array(M));
   const goTo = useRef<(j: number) => void>(() => {});
   /** the project number in the spot (counting round the loop), or -1 */
@@ -205,9 +164,7 @@ export function CardStack() {
     /** the visitor has moved the row (the load's own flip-out makes no sound) */
     let moved = false;
     let spot: Spot | null = null;
-    let view: View | null = null;
     let basePitch = 0;
-    lights.current = cards.current.map((c) => c?.querySelector<HTMLElement>(".card-glare-light") ?? null);
 
     // The spot is laid out by CSS; measure it so cards can fly there.
     function measure() {
@@ -219,35 +176,12 @@ export function CardStack() {
       basePitch = parseFloat(root.getPropertyValue("--pitch")) || 0;
       const o = origin.current?.getBoundingClientRect();
       const r = spotRef.current?.getBoundingClientRect();
-      const wo = world.current;
-      const scene = wo?.parentElement;
       const w = cards.current[0]?.offsetWidth;
-      if (!o || !r || !wo || !scene || !w) return;
-      // the camera and the light, from the world's origin
+      if (!o || !r || !w) return;
       const num = (k: string) => parseFloat(root.getPropertyValue(k)) || 0;
-      const depth = w * num("--depth-k");
-      // the eye looks from the vanishing point, as laid out by CSS
-      const [px, py] = getComputedStyle(scene).perspectiveOrigin.split(" ").map(parseFloat);
-      const eye = new DOMPoint(px - wo.offsetLeft, py - wo.offsetTop, depth);
-      const ox = w * num("--ox-k");
-      const oy = w * num("--oy-k");
-      const yaw = num("--yaw");
       const lead = w * num("--gap") * num("--lead");
-      // The light bounces into the eye from GLINT on the card it's set for: the
-      // front of the row at rest, or on phones, where the row stands back behind
-      // the spot (lead), the card in the spot.
       const dx = r.left + r.width / 2 - o.left;
       const dy = r.bottom - o.top;
-      const front = lead
-        ? new DOMMatrix().translate(ox + dx, oy + dy).scale(r.width / w)
-        : new DOMMatrix().translate(ox, oy).rotate(basePitch, 0, 0).rotate(0, yaw, 0).rotate(0, -90, 0);
-      const e = front.inverse().transformPoint(eye);
-      const gx = (GLINT.x - 0.5) * w;
-      const gy = (GLINT.y - 1) * w;
-      const light = front.transformPoint(
-        new DOMPoint(gx + (gx - e.x) * LIGHT_FAR, gy + (gy - e.y) * LIGHT_FAR, e.z * LIGHT_FAR),
-      );
-      view = { cw: w, gap: w * num("--gap"), lead, ox, oy, yaw, eye, light };
       spot = {
         dx,
         dy,
@@ -263,18 +197,15 @@ export function CardStack() {
     function paint(now = performance.now()) {
       const pitch = basePitch + m.pitch;
       const intro = now < introEnd ? now - introStart : -1;
-      const wm = view && new DOMMatrix().translate(view.ox, view.oy).rotate(pitch, 0, 0).rotate(0, view.yaw, 0);
       for (let j = 0; j < M; j++) {
         const el = cards.current[j];
         if (!el) continue;
         const s = slotOf(j, m.cur);
         slots.current[j] = s;
         const pose = cardPose(s, Math.round(m.cur + s), spot, pitch);
-        let drop = 0;
         if (intro >= 0 && s >= 0) {
           const d = dropOf(j, intro);
-          drop = d.drop;
-          pose.transform = rowTransform(s, drop);
+          pose.transform = rowTransform(s, d.drop);
           pose.opacity *= d.fade;
         }
         el.style.transform = pose.transform;
@@ -293,13 +224,6 @@ export function CardStack() {
         const fade = pose.opacity.toFixed(3);
         el.style.opacity = deep ? "" : fade;
         el.style.setProperty("--fade", deep ? fade : "1");
-        const light = lights.current[j];
-        if (!deep || hidden || !light || !view || !wm) continue;
-        const mat =
-          s >= 0
-            ? wm.translate(view.gap * s + view.lead, -drop * view.cw).rotate(0, -90, 0)
-            : wm.multiply(new DOMMatrix(pose.transform));
-        glare(light, mat, view);
       }
       if (world.current) world.current.style.transform = worldTransform(m.pitch);
 
@@ -731,9 +655,6 @@ function Body({ tone, children, outside }: { tone: string; children: ReactNode; 
     <div className="card-face" style={{ "--tone": tone } as CSSProperties}>
       <div className="card-front">
         {children}
-        <div className="card-glare">
-          <div className="card-glare-light" />
-        </div>
       </div>
       {outside}
     </div>
