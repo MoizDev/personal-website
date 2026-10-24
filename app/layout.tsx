@@ -18,7 +18,7 @@ const serif = Libre_Baskerville({
 
 export const metadata: Metadata = {
   title: "Moiz Hashmi",
-  description: "Computer Science at the University of Waterloo. Seven projects, seven tangram pieces.",
+  description: "Computer Science at the University of Waterloo. A row of projects, one card each.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
