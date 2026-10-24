@@ -163,7 +163,7 @@
 .nav-inner {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: calc(32 * var(--u));
+  gap: calc(24 * var(--u));
   min-height: 0;
   overflow: hidden;
   margin: 0 calc(14 * var(--u));
@@ -260,7 +260,7 @@
 .nav-card {
   display: grid;
   place-items: center;
-  width: min(300 * var(--u), calc(var(--nav-open-w) * 0.42), calc(100vh - 140 * var(--u)));
+  width: min(380 * var(--u), calc(var(--nav-open-w) * 0.62), calc(100vh - 140 * var(--u)));
   aspect-ratio: 1;
   margin: calc(16 * var(--u)) 0;
   border-radius: calc(14 * var(--u));
