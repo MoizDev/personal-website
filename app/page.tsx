@@ -4,6 +4,7 @@ import Image from "next/image";
 import arion from "@/assets/arion.png";
 import { Navbar } from "@/components/Navbar";
 import { LINKS } from "@/lib/links";
+import { SolarSystem } from "@/components/SolarSystem";
 
 // Sliders for the scene, for development only. Behind a dynamic import in a
 // dead branch so production builds drop the panel entirely.
@@ -17,6 +18,7 @@ const TunePanel =
 export default function Home() {
   return (
     <main className="home">
+      <SolarSystem />
       <CardStack />
       <Navbar />
 
