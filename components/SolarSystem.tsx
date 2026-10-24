@@ -43,22 +43,28 @@ type Planet = {
   phase: number;
   /** how it's painted */
   look: "plain" | "earth" | "jupiter" | "saturn";
-  tint: Rgb;
+  /** its colour on the dark theme, and a deeper one that holds up on white */
+  tint: { dark: Rgb; light: Rgb };
 };
 
 const PLANETS: Planet[] = [
-  { orbit: 92, r: 9, period: 31, phase: 2.4, look: "plain", tint: [150, 140, 130] }, // Mercury
-  { orbit: 132, r: 15, period: 64, phase: 5.75, look: "plain", tint: [222, 160, 70] }, // Venus
-  { orbit: 184, r: 25, period: 105, phase: 3.55, look: "earth", tint: [59, 130, 246] }, // Earth
-  { orbit: 236, r: 13, period: 168, phase: 3.2, look: "plain", tint: [214, 88, 48] }, // Mars
-  { orbit: 340, r: 40, period: 420, phase: 5.05, look: "jupiter", tint: [196, 140, 90] }, // Jupiter
-  { orbit: 450, r: 30, period: 728, phase: 3.62, look: "saturn", tint: [214, 178, 110] }, // Saturn
+  { orbit: 92, r: 9, period: 31, phase: 2.4, look: "plain", tint: { dark: [150, 140, 130], light: [87, 83, 78] } }, // Mercury
+  { orbit: 132, r: 15, period: 64, phase: 5.75, look: "plain", tint: { dark: [222, 160, 70], light: [180, 83, 9] } }, // Venus
+  { orbit: 184, r: 25, period: 105, phase: 3.55, look: "earth", tint: { dark: [59, 130, 246], light: [29, 78, 216] } }, // Earth
+  { orbit: 236, r: 13, period: 168, phase: 3.2, look: "plain", tint: { dark: [214, 88, 48], light: [185, 28, 28] } }, // Mars
+  { orbit: 340, r: 40, period: 420, phase: 5.05, look: "jupiter", tint: { dark: [196, 140, 90], light: [146, 64, 14] } }, // Jupiter
+  { orbit: 450, r: 30, period: 728, phase: 3.62, look: "saturn", tint: { dark: [214, 178, 110], light: [161, 98, 7] } }, // Saturn
 ];
 
 const SUN_R = 46;
-const SUN: Rgb = [245, 150, 20];
-const SUN_EDGE: Rgb = [234, 88, 12];
-const LAND: Rgb = [34, 160, 80];
+
+/** The colours that aren't a planet's own, per theme. */
+type Palette = { sun: Rgb; sunEdge: Rgb; land: Rgb; city: Rgb; jupiterLight: Rgb; alpha: number; weight: number };
+const PALETTES: Record<"dark" | "light", Palette> = {
+  dark: { sun: [245, 150, 20], sunEdge: [234, 88, 12], land: [34, 160, 80], city: [250, 200, 80], jupiterLight: [236, 214, 180], alpha: 1, weight: 400 },
+  // on white, light tints and thin glyphs wash out, so: deeper colours, bolder type, more opacity
+  light: { sun: [234, 88, 12], sunEdge: [194, 50, 12], land: [21, 128, 61], city: [202, 138, 4], jupiterLight: [217, 119, 6], alpha: 1.4, weight: 600 },
+};
 const MOON = { orbit: 40, r: 6, period: 9 };
 const BELT = { from: 268, to: 298, count: 320, period: 280 };
 const STARS = 170;
@@ -114,6 +120,8 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   let cells: (Cell | null)[] = [];
   let zbuf = new Float32Array(0);
   let ink: Rgb = [22, 22, 22];
+  let theme: "dark" | "light" = "light";
+  let pal = PALETTES.light;
   // stars and belt rocks, placed once
   const stars = Array.from({ length: STARS }, (_, i) => ({
     u: hash3(i, 1, 7),
@@ -134,7 +142,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.font = `${FONT}px ${FONT_FAMILY}`;
+    ctx.font = `${pal.weight} ${FONT}px ${FONT_FAMILY}`;
     ctx.textBaseline = "top";
     cw = ctx.measureText("M").width || FONT * 0.6;
     chh = Math.round(FONT * 1.2);
@@ -144,8 +152,11 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     zbuf = new Float32Array(cols * rows);
   }
 
-  function setInk(rgb: Rgb) {
+  function setTheme(rgb: Rgb, dark: boolean) {
     ink = rgb;
+    theme = dark ? "dark" : "light";
+    pal = PALETTES[theme];
+    ctx.font = `${pal.weight} ${FONT}px ${FONT_FAMILY}`;
   }
 
   /** Put a character in a cell if it's empty (for orbits, the belt, stars and glow). */
@@ -236,7 +247,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     sphere(cx, cy, 0, sunR, null, (wx, wy, wz, _lit, nz) => {
       const boil = noise3(wx * 3.2 + t * 0.35, wy * 3.2 - t * 0.2, wz * 3.2);
       const v = 0.38 + nz * 0.42 + (boil - 0.5) * 0.5;
-      return { ch: ramp(v), color: css(mix(SUN_EDGE, SUN, clamp01(nz * 1.2))), alpha: 0.55 + nz * 0.4 };
+      return { ch: ramp(v), color: css(mix(pal.sunEdge, pal.sun, clamp01(nz * 1.2))), alpha: 0.55 + nz * 0.4 };
     });
 
     /* the planets */
@@ -249,8 +260,9 @@ function makeRenderer(canvas: HTMLCanvasElement) {
       const r = p.r * unit;
       const L = sunLight(x, z);
       const spin = t * 0.5;
+      const tint = p.tint[theme];
 
-      if (p.look === "saturn") rings(sx, sy, d, r, L, p.tint);
+      if (p.look === "saturn") rings(sx, sy, d, r, L, tint);
 
       sphere(sx, sy, d, r, L, (wx, wy, wz, lit) => {
         const shade = 0.2 + lit * 0.8;
@@ -261,19 +273,19 @@ function makeRenderer(canvas: HTMLCanvasElement) {
           const rz = wx * s + wz * c;
           const ice = Math.abs(wy) > 0.84;
           const land = fbm(rx * 1.7 + 11, wy * 1.7 + 3, rz * 1.7 + 5) > 0.5;
-          const col = ice ? ink : land ? LAND : p.tint;
+          const col = ice ? ink : land ? pal.land : tint;
           // the night side shows a few city lights on the land
           if (lit < 0.03 && land && !ice && hash3(Math.floor(rx * 40), Math.floor(wy * 40), Math.floor(rz * 40)) > 0.8) {
-            return { ch: ".", color: css([250, 200, 80]), alpha: 0.7 };
+            return { ch: ".", color: css(pal.city), alpha: 0.7 };
           }
           return { ch: ramp(shade), color: css(col), alpha: 0.45 + lit * 0.55 };
         }
         if (p.look === "jupiter") {
           const band = Math.sin(wy * 13 + noise3(wx * 3, wy * 3, wz * 3 + t * 0.05) * 2);
-          const col = mix(p.tint, [236, 214, 180], band * 0.5 + 0.5);
+          const col = mix(tint, pal.jupiterLight, band * 0.5 + 0.5);
           return { ch: ramp(shade * (0.82 + band * 0.18)), color: css(col), alpha: 0.45 + lit * 0.55 };
         }
-        return { ch: ramp(shade), color: css(p.tint), alpha: 0.45 + lit * 0.55 };
+        return { ch: ramp(shade), color: css(tint), alpha: 0.45 + lit * 0.55 };
       });
 
       if (p.look === "earth") {
@@ -298,7 +310,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const k = 2 - dist;
         if (hash3(i, j, 3) > k * k * 0.9) continue;
         const breathe = 0.6 + 0.4 * Math.sin(t * 1.3 + hash3(i, j, 4) * 6.28);
-        fill(i, j, k > 0.7 ? ":" : "·", css(SUN), (0.12 + k * 0.45) * breathe);
+        fill(i, j, k > 0.7 ? ":" : "·", css(pal.sun), (0.12 + k * 0.45) * breathe);
       }
     }
 
@@ -339,7 +351,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
       for (let i = 0; i < cols; i++) {
         const c = cells[j * cols + i];
         if (!c || c.ch === " ") continue;
-        ctx.globalAlpha = c.alpha;
+        ctx.globalAlpha = Math.min(1, c.alpha * pal.alpha);
         ctx.fillStyle = c.color;
         ctx.fillText(c.ch, i * cw, j * chh);
       }
@@ -378,7 +390,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     }
   }
 
-  return { resize, frame, setInk };
+  return { resize, frame, setTheme };
 }
 
 export function SolarSystem() {
@@ -392,7 +404,8 @@ export function SolarSystem() {
     const readInk = () => {
       const v = getComputedStyle(document.documentElement).getPropertyValue("--ink-rgb");
       const parts = v.split(",").map((n) => parseFloat(n));
-      if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) r.setInk(parts as Rgb);
+      const dark = document.documentElement.dataset.theme === "dark";
+      if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) r.setTheme(parts as Rgb, dark);
     };
     readInk();
     r.resize();
