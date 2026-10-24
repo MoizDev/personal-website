@@ -542,14 +542,13 @@ function linkLabel(href: string) {
 /** Shades of grey for the mystery cards, as a share of the text colour over the page. */
 const GREYS = [16, 24, 12, 30, 20, 26, 14, 22];
 const GLYPHS = "#%&@$*!/<>{}[]=+~^ABCDEFGHJKMNPRSTXYZ0123456789";
-const SCRAMBLE_FRAMES = 14; // characters shown before landing on ?
-const SCRAMBLE_FRAME_MS = 110; // how long each one shows
-const SCRAMBLE_REST_MS = 4000; // on ? between scrambles
+const SCRAMBLE_FRAMES = 11; // characters shown before landing on ?
+const SCRAMBLE_FRAME_MS = 75; // how long each one shows (11 x 75ms: lands in about 0.8s)
 
 /**
  * A grey card with a question mark. The first one, once it's at the front of
- * the row (the last project is out), scrambles through random characters and
- * lands back on the question mark, every few seconds while it stays there.
+ * the row (the last project is out), scrambles through random characters as it
+ * arrives and settles on the question mark.
  */
 function MysteryFace({ j, front }: { j: number; front: boolean }) {
   const mark = useRef<HTMLSpanElement>(null);
@@ -562,14 +561,13 @@ function MysteryFace({ j, front }: { j: number; front: boolean }) {
     const scramble = (frames: number) => {
       if (frames <= 0) {
         el.textContent = "?";
-        timer = window.setTimeout(() => scramble(SCRAMBLE_FRAMES), SCRAMBLE_REST_MS);
         return;
       }
       el.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
       timer = window.setTimeout(() => scramble(frames - 1), SCRAMBLE_FRAME_MS);
     };
-    // let the row settle first, so it's seen
-    timer = window.setTimeout(() => scramble(SCRAMBLE_FRAMES), 700);
+    // straight away, so it arrives scrambling rather than showing the ? first
+    scramble(SCRAMBLE_FRAMES);
     return () => {
       clearTimeout(timer);
       el.textContent = "?";
