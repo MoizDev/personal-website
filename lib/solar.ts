@@ -34,48 +34,48 @@ export type ThemeLook = {
 const defaults = {
   shared: {
     /** overall scale: 1 makes Saturn's orbit about 0.9 of the page width */
-    size: 1,
+    size: 1.28,
     /** where the Sun sits, as a fraction of the page width and height */
-    x: 0.72,
-    y: 0.16,
+    x: 0.74,
+    y: 0.22,
     /** how far we look down onto the orbits (0 edge on, 1 from straight above) */
     tilt: 0.36,
     /** the character cell, in px */
-    cell: 8,
+    cell: 6,
     /** planet sizes, times */
     planets: 1,
     /** Sun size, times */
     sun: 1,
     /** speed of everything, times */
-    speed: 1,
+    speed: 0.7,
     /** the drawing fades in from the left so it stays clear of the text: from here (% of the width, invisible) ... */
-    fadeFrom: 30,
+    fadeFrom: 0,
     /** ... to here (fully shown) */
     fadeTo: 52,
   },
   light: {
     colour: 0,
     vivid: 1,
-    lightness: 0,
+    lightness: -1,
     contrast: 1,
     invert: 1,
-    weight: 700,
+    weight: 900,
     bodies: 1,
-    orbits: 1,
-    stars: 1,
-    glow: 1,
-    sky: 1,
-    skyHue: 210,
+    orbits: 2.84,
+    stars: 1.88,
+    glow: 1.42,
+    sky: 0.38,
+    skyHue: 203,
   } satisfies ThemeLook,
   dark: {
     colour: 1,
     vivid: 1,
     lightness: 0,
     contrast: 1,
-    invert: 0,
+    invert: 1,
     weight: 400,
     bodies: 0.9,
-    orbits: 0.9,
+    orbits: 1.2,
     stars: 0.9,
     glow: 0.9,
     sky: 0,

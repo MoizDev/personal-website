@@ -103,16 +103,17 @@ body {
   height: 100%;
   pointer-events: none;
   /* fades out before the text on the left (set from lib/solar.ts) */
-  -webkit-mask-image: linear-gradient(to right, transparent var(--fade-from, 30%), #000 var(--fade-to, 52%));
-  mask-image: linear-gradient(to right, transparent var(--fade-from, 30%), #000 var(--fade-to, 52%));
+  -webkit-mask-image: linear-gradient(to right, transparent var(--fade-from, 0%), #000 var(--fade-to, 52%));
+  mask-image: linear-gradient(to right, transparent var(--fade-from, 0%), #000 var(--fade-to, 52%));
 }
 
 /* the light theme's sky: soft blue light pooling in the top right corner,
    two blurred washes drifting slowly past each other. Its strength and hue
    per theme come from lib/solar.ts; these are the first-paint defaults. */
 .sky {
-  --sky-hue: 210;
+  --sky-hue: 203;
   position: absolute;
+  opacity: 0.38;
   inset: 0;
   overflow: hidden;
   pointer-events: none;

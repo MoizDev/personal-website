@@ -79,12 +79,19 @@ const STORE = "solar-tune";
 const OPEN_KEY = "solar-tune:open";
 const empty = (): Overrides => ({ shared: {}, light: {}, dark: {} });
 
+const defaultOf = (g: Group, key: string) => (SOLAR_DEFAULTS[g] as Record<string, number>)[key];
+
+/** The saved values, minus any that match the defaults (e.g. after they were baked in). */
 function load(): Overrides {
+  let saved: Partial<Overrides> = {};
   try {
-    return { ...empty(), ...(JSON.parse(localStorage.getItem(STORE) ?? "{}") as Partial<Overrides>) };
-  } catch {
-    return empty();
-  }
+    saved = JSON.parse(localStorage.getItem(STORE) ?? "{}") as Partial<Overrides>;
+  } catch {}
+  const out = empty();
+  for (const g of ["shared", "light", "dark"] as const)
+    for (const [k, v] of Object.entries(saved[g] ?? {}))
+      if (typeof v === "number" && defaultOf(g, k) !== undefined && v !== defaultOf(g, k)) out[g][k] = v;
+  return out;
 }
 
 function save(o: Overrides) {
@@ -96,7 +103,6 @@ function save(o: Overrides) {
   }
 }
 
-const defaultOf = (g: Group, key: string) => (SOLAR_DEFAULTS[g] as Record<string, number>)[key];
 
 function apply(o: Overrides) {
   for (const g of ["shared", "light", "dark"] as const) {
