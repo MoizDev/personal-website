@@ -541,14 +541,40 @@ function linkLabel(href: string) {
 
 /** Shades of grey for the mystery cards, as a share of the text colour over the page. */
 const GREYS = [16, 24, 12, 30, 20, 26, 14, 22];
+const GLYPHS = "#%&@$*!/<>{}[]=+~^ABCDEFGHJKMNPRSTXYZ0123456789";
 
+/**
+ * A grey card whose mark every so often scrambles through random characters
+ * and lands back on a question mark.
+ */
 function MysteryFace({ j }: { j: number }) {
+  const mark = useRef<HTMLSpanElement>(null);
   const tone = `color-mix(in srgb, var(--fg) ${GREYS[j % GREYS.length]}%, var(--bg))`;
-  // each one flickers on its own beat
-  const delay = `${-((j * 1.37) % 4.1).toFixed(2)}s`;
+
+  useEffect(() => {
+    const el = mark.current;
+    if (!el || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let timer = 0;
+    const scramble = (frames: number) => {
+      if (frames <= 0) {
+        el.textContent = "?";
+        // rest a few seconds, each card on its own beat
+        timer = window.setTimeout(() => scramble(8 + Math.floor(Math.random() * 8)), 2500 + Math.random() * 5000);
+        return;
+      }
+      el.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      timer = window.setTimeout(() => scramble(frames - 1), 45 + Math.random() * 35);
+    };
+    // the first scramble as the cards land, staggered back along the row
+    timer = window.setTimeout(() => scramble(12), 600 + (j - N) * 70 + Math.random() * 300);
+    return () => clearTimeout(timer);
+  }, [j]);
+
   return (
-    <div className="card-face card-face-mystery" style={{ "--tone": tone, "--flicker-delay": delay } as CSSProperties}>
-      <span className="card-mystery">?</span>
+    <div className="card-face card-face-mystery" style={{ "--tone": tone } as CSSProperties}>
+      <span className="card-mystery" ref={mark}>
+        ?
+      </span>
     </div>
   );
 }
