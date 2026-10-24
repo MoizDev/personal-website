@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { MOTION } from "@/lib/motion";
-import { designPx } from "@/lib/scale";
+import { designPx, PHONE_QUERY } from "@/lib/scale";
 import { CardLines } from "@/components/CardLines";
 import { PROJECTS, type Project } from "@/lib/projects";
 
@@ -29,7 +29,7 @@ import { PROJECTS, type Project } from "@/lib/projects";
  * camera angle is the world's rotateX (pitch) and rotateY (yaw).
  *
  * Position `p` counts cards pulled out. At p = 0 nothing is out (the opening
- * view). Card n sits in slot s = n - p: s >= 0 is in the row, s in [-1, 0) is
+ * view, which on desktop only shows during the load before the first card flips out). Card n sits in slot s = n - p: s >= 0 is in the row, s in [-1, 0) is
  * flying to the spot, s in [-2, -1) is leaving it.
  */
 
@@ -333,8 +333,16 @@ export function CardStack() {
       raf = requestAnimationFrame(tick);
     }
 
+    /**
+     * The first position the row can rest at. On desktop a card is always in
+     * the spot, so it's 1 (the opening view, 0, is only passed through on load).
+     * Phones hide the intro while a card is out, so there the opening view stays
+     * reachable to show it.
+     */
+    const first = () => (matchMedia(PHONE_QUERY).matches ? 0 : 1);
+
     function aim(target: number) {
-      m.target = clamp(target, 0, N); // from the opening view to the last project
+      m.target = clamp(target, first(), N); // up to the last project
       kick();
     }
 
@@ -389,7 +397,7 @@ export function CardStack() {
       if (e.key === "Home" || e.key === "Escape") {
         e.preventDefault();
         setHover(null);
-        jump(0);
+        jump(first());
         return;
       }
       const forward = ["ArrowDown", "ArrowRight", "PageDown", "j"];
@@ -464,7 +472,7 @@ export function CardStack() {
     window.addEventListener("click", onClick, true);
     kick();
     // once the front cards have landed, the first one flips out (unless the visitor already moved)
-    flipTimer = window.setTimeout(() => m.target === 0 && aim(1), reduce ? 0 : FLIP_AT_MS);
+    flipTimer = window.setTimeout(() => m.target < 1 && aim(1), reduce ? 0 : FLIP_AT_MS);
 
     return () => {
       cancelAnimationFrame(raf);

@@ -22,7 +22,7 @@ import { Logo } from "@/components/Logo";
 import "./Navbar.css";
 import { EMAIL, LINKS } from "@/lib/links";
 
-/** Send the row back to its opening view (CardStack listens for Home). */
+/** Send the row back to its first card (CardStack listens for Home). */
 const toRow = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
 
 const BIG = [

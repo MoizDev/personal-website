@@ -240,8 +240,8 @@ export function TunePanel() {
         </button>
         {open && (
           <span className="tune-actions">
-            <button type="button" onClick={key("Home")} title="Back to the opening view">
-              Row
+            <button type="button" onClick={key("Home")} title="Back to the first card">
+              First
             </button>
             <button type="button" onClick={key("ArrowDown")} title="Pull the next card out">
               Next
