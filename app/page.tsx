@@ -8,8 +8,10 @@ import { LINKS } from "@/lib/links";
 
 // Sliders for the scene, for development only. Behind a dynamic import in a
 // dead branch so production builds drop the panel entirely.
+// Hidden for now: set SHOW_TUNE to true to bring it back.
+const SHOW_TUNE = false;
 const TunePanel =
-  process.env.NODE_ENV === "development"
+  SHOW_TUNE && process.env.NODE_ENV === "development"
     ? dynamic(() => import("@/components/TunePanel").then((m) => m.TunePanel))
     : () => null;
 
