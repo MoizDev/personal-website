@@ -24,9 +24,8 @@ import { PROJECTS, type Project } from "@/lib/projects";
  */
 
 const N = PROJECTS.length;
-const LOOPS = 7;
-/** card elements in the loop; the projects come round LOOPS times */
-const M = N * LOOPS;
+/** card elements: the projects, then mystery cards running off into the haze */
+const M = N * 7;
 /** slots behind the front kept for cards flying to and from the spot */
 const OUT = 2;
 /**
@@ -114,7 +113,7 @@ export function CardStack() {
   const origin = useRef<HTMLDivElement>(null);
   const spotRef = useRef<HTMLDivElement>(null);
   const detail = useRef<HTMLDivElement>(null);
-  const cards = useRef<(HTMLAnchorElement | null)[]>([]);
+  const cards = useRef<(HTMLElement | null)[]>([]);
   const slots = useRef<Float64Array>(new Float64Array(M));
   const goTo = useRef<(j: number) => void>(() => {});
   /** the project number in the spot (counting round the loop), or -1 */
@@ -243,7 +242,7 @@ export function CardStack() {
       kick();
     }
 
-    /** The last project is out and settled: further on, the page scrolls to the footer. */
+    /** The last project is out and settled: onward, the page scrolls to the footer. */
     const atEnd = () => m.target >= N && Math.abs(m.cur - N) < 0.05;
     const scrolled = () => window.scrollY > 0;
 
@@ -314,11 +313,11 @@ export function CardStack() {
 
     // The wheel moves the row while the pointer is over it, and scrolls the page
     // anywhere else, decided event by event so trackpad momentum can never strand
-    // it. Past the last project, scrolling onward over the row scrolls the page.
     function onWheel(e: WheelEvent) {
       if (e.ctrlKey) return; // pinch zoom
       const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
       const d = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      // past the last project, onward goes to the page (and the footer)
       if (!overRow(e.clientX, e.clientY) || (d > 0 && atEnd())) return; // the browser scrolls
       e.preventDefault();
       push(d * unit * MOTION.wheel);
@@ -347,14 +346,18 @@ export function CardStack() {
     }
 
     // Dragging (touch or mouse) moves the row too, and a flick carries on.
-    // Past the last project (or with the page scrolled) a drag scrolls the page instead.
+    // Like the wheel, it goes by where it starts: on the row it moves the row; elsewhere
+    // a touch drag scrolls the page (the scene blocks native touch scrolling) and a
+    // mouse drag does nothing.
     let drag: { x: number; y: number; t: number; v: number; moved: number; page: boolean } | null = null;
     let swallowClick = false;
 
     function onDown(e: PointerEvent) {
       if (e.button !== 0) return;
       if (!(e.target as Element | null)?.closest(".home")) return; // the footer is the page's own
-      drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, v: 0, moved: 0, page: false };
+      const page = !overRow(e.clientX, e.clientY);
+      if (page && e.pointerType === "mouse") return;
+      drag = { x: e.clientX, y: e.clientY, t: e.timeStamp, v: 0, moved: 0, page };
       swallowClick = false;
       clearTimeout(snapTimer);
     }
@@ -371,8 +374,7 @@ export function CardStack() {
       drag.y = e.clientY;
       drag.t = e.timeStamp;
       if (drag.moved <= 6) return;
-      if (scrolled() || (d > 0 && atEnd())) {
-        drag.page = true;
+      if (drag.page) {
         window.scrollBy(0, -(Math.abs(dy) >= Math.abs(dx) ? dy : dx));
         return;
       }
@@ -455,8 +457,22 @@ export function CardStack() {
         <div className="world" ref={world} style={INITIAL_WORLD}>
           <div className="world-origin" ref={origin} />
           {Array.from({ length: M }, (_, j) => {
-            const p = PROJECTS[j % N];
-            const copy = j >= N;
+            // past the last project: what's next
+            if (j >= N)
+              return (
+                <div
+                  key={j}
+                  ref={(el) => {
+                    cards.current[j] = el;
+                  }}
+                  className="card"
+                  aria-hidden
+                  style={INITIAL[j]}
+                >
+                  <MysteryFace j={j} />
+                </div>
+              );
+            const p = PROJECTS[j];
             return (
               <a
                 key={j}
@@ -470,8 +486,6 @@ export function CardStack() {
                 rel="noreferrer"
                 draggable={false}
                 aria-label={`${p.name}, ${p.year}. ${p.blurb}`}
-                aria-hidden={copy || undefined}
-                tabIndex={copy ? -1 : undefined}
                 style={INITIAL[j]}
                 onClick={(e) => onCardClick(e, j)}
                 onPointerEnter={(e) => e.pointerType === "mouse" && slots.current[j] >= 0 && setHover(j)}
@@ -523,6 +537,20 @@ export function CardStack() {
 function linkLabel(href: string) {
   const u = new URL(href);
   return (u.host.replace(/^www\./, "") + u.pathname).replace(/\/$/, "");
+}
+
+/** Shades of grey for the mystery cards, as a share of the text colour over the page. */
+const GREYS = [16, 24, 12, 30, 20, 26, 14, 22];
+
+function MysteryFace({ j }: { j: number }) {
+  const tone = `color-mix(in srgb, var(--fg) ${GREYS[j % GREYS.length]}%, var(--bg))`;
+  // each one flickers on its own beat
+  const delay = `${-((j * 1.37) % 4.1).toFixed(2)}s`;
+  return (
+    <div className="card-face card-face-mystery" style={{ "--tone": tone, "--flicker-delay": delay } as CSSProperties}>
+      <span className="card-mystery">?</span>
+    </div>
+  );
 }
 
 function CardFace({ project: p, live }: { project: Project; live: boolean }) {

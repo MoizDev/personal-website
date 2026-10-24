@@ -200,6 +200,43 @@ body {
   pointer-events: none;
 }
 
+/* past the last project: grey cards, each with a question mark flickering like a failing sign */
+.card-face-mystery {
+  display: grid;
+  place-items: center;
+}
+
+.card-mystery {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: calc(var(--card-w) * 0.42);
+  line-height: 1;
+  color: var(--bg);
+  animation: flicker 4.1s linear infinite;
+  animation-delay: var(--flicker-delay, 0s);
+  pointer-events: none;
+}
+
+@keyframes flicker {
+  0%, 18%, 22%, 24%, 53%, 57%, 100% {
+    opacity: 0.9;
+  }
+  19%, 23%, 54% {
+    opacity: 0.15;
+  }
+  55% {
+    opacity: 0.45;
+  }
+  80% {
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-mystery {
+    animation: none;
+  }
+}
+
 /* the world's origin, where the front card's foot stands; measured by CardStack */
 .world-origin {
   position: absolute;
