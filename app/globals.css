@@ -266,15 +266,34 @@ body {
   letter-spacing: -0.01em;
 }
 
-.intro-name,
 .intro-bio {
-  display: inline;
   font-size: inherit;
   font-weight: 400;
 }
 
-.intro-name {
-  font-weight: 600;
+.intro-bio a {
+  text-decoration: underline;
+  text-decoration-color: rgba(22, 22, 22, 0.25);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 160ms ease;
+}
+
+.intro-bio a:hover {
+  text-decoration-color: currentColor;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .intro-links {

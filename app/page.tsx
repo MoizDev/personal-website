@@ -21,10 +21,11 @@ export default function Home() {
       <CardStack />
 
       <header className="intro">
-        <h1 className="intro-name">Moiz Hashmi</h1>{" "}
+        {/* the name is for search engines and screen readers; the bio speaks for itself */}
+        <h1 className="sr-only">Moiz Hashmi</h1>
         <p className="intro-bio">
-          studies Computer Science at the University of Waterloo. He co-founded Factful and won Hack the North
-          2026 with Bricked.
+          I’m a software engineer and student at the University of Waterloo. Currently, I’m an engineer at{" "}
+          <a href="https://arion.nyc">Arion.nyc</a>, building novel, <span className="nowrap">AI-native</span> consumer experiences.
         </p>
         <nav className="intro-links" aria-label="Elsewhere">
           {LINKS.map((l) => (
