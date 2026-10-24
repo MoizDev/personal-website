@@ -17,14 +17,14 @@
  */
 
 import { useEffect, useRef } from "react";
+import { SOLAR, SOLAR_EVENT, type ThemeLook } from "@/lib/solar";
 
-/** The character cell, in CSS px. */
-const FONT = 8;
+/*
+ * Size, place, tilt, colour, contrast and weight all come from SOLAR
+ * (lib/solar.ts), read afresh every frame, so the dev panel can change them live.
+ */
+
 const FONT_FAMILY = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace';
-
-/** How steeply we look down onto the plane of the orbits: the sine and cosine of that angle. */
-const S = 0.36;
-const C = Math.sqrt(1 - S * S);
 
 /** Characters from empty to full, for shading. */
 const RAMP = " .,:;-=+*#%@";
@@ -43,7 +43,7 @@ type Planet = {
   phase: number;
   /** how it's painted */
   look: "plain" | "earth" | "jupiter" | "saturn";
-  /** its colour (on the dark theme; the light theme draws everything in ink) */
+  /** its colour (when the theme paints in colour; see ThemeLook.colour) */
   tint: Rgb;
 };
 
@@ -99,34 +99,20 @@ function fbm(x: number, y: number, z: number) {
 }
 
 const mix = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-const css = ([r, g, b]: Rgb) => `rgb(${r | 0},${g | 0},${b | 0})`;
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-/**
- * The same hue, fully saturated and deep enough to hold its own on white:
- * what the light theme paints with.
- */
-function vivid([r, g, b]: Rgb): Rgb {
-  const max = Math.max(r, g, b) / 255;
-  const min = Math.min(r, g, b) / 255;
-  const l0 = (max + min) / 2;
-  const d = max - min;
-  let h = 0;
-  if (d > 0) {
-    const [rr, gg, bb] = [r / 255, g / 255, b / 255];
-    h = max === rr ? ((gg - bb) / d + 6) % 6 : max === gg ? (bb - rr) / d + 2 : (rr - gg) / d + 4;
-    h /= 6;
-  }
-  const s0 = d === 0 ? 0 : d / (1 - Math.abs(2 * l0 - 1));
-  const s = Math.min(1, s0 * 1.5 + 0.25);
-  const l = Math.min(0.5, Math.max(0.4, l0 * 0.85));
-  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-  const p = 2 * l - q;
-  const ch = (t: number) => {
-    t = (t + 1) % 1;
-    const v = t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p;
-    return v * 255;
-  };
-  return [ch(h + 1 / 3), ch(h), ch(h - 1 / 3)];
+const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : v | 0);
+/** Greys run from near black to white. */
+const DAY: Rgb = [255, 255, 255];
+const NIGHT: Rgb = [14, 16, 20];
+const BLACK: Rgb = [0, 0, 0];
+
+/** A colour as CSS, after the theme's vividness (saturation) and lightness. */
+function paint([r, g, b]: Rgb, look: ThemeLook) {
+  const y = r * 0.299 + g * 0.587 + b * 0.114;
+  let c: Rgb = [y + (r - y) * look.vivid, y + (g - y) * look.vivid, y + (b - y) * look.vivid];
+  if (look.lightness > 0) c = mix(c, DAY, Math.min(1, look.lightness));
+  else if (look.lightness < 0) c = mix(c, BLACK, Math.min(1, -look.lightness));
+  return `rgb(${clamp255(c[0])},${clamp255(c[1])},${clamp255(c[2])})`;
 }
 
 const ramp = (v: number) => RAMP[1 + Math.min(RAMP.length - 2, Math.floor(clamp01(v) * (RAMP.length - 1)))];
@@ -146,11 +132,12 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   let cells: (Cell | null)[] = [];
   let zbuf = new Float32Array(0);
   let ink: Rgb = [22, 22, 22];
-  /**
-   * On white, nothing can glow, so the light theme makes up for it with
-   * bold glyphs in fully saturated colour.
-   */
-  let light = true;
+  let dark = false;
+  /** the font the cells were measured with; when the panel changes it, re-measure */
+  let font = "";
+  /** the view's tilt: the sine and cosine of how steeply we look down onto the orbits */
+  let S = 0.36;
+  let C = Math.sqrt(1 - S * S);
   // stars and belt rocks, placed once
   const stars = Array.from({ length: STARS }, (_, i) => ({
     u: hash3(i, 1, 7),
@@ -164,6 +151,23 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     s: 0.85 + hash3(i, 7, 9) * 0.3,
   }));
 
+  const look = () => (dark ? SOLAR.dark : SOLAR.light);
+  const fontFor = () => `${look().weight} ${SOLAR.shared.cell}px ${FONT_FAMILY}`;
+
+  /** Lay out the grid of cells for the canvas's size and the current font. */
+  function layout() {
+    const size = SOLAR.shared.cell;
+    font = fontFor();
+    ctx.font = font;
+    ctx.textBaseline = "top";
+    cw = ctx.measureText("M").width || size * 0.6;
+    chh = Math.max(1, Math.round(size * 1.2));
+    cols = Math.ceil(W / cw);
+    rows = Math.ceil(H / chh);
+    cells = new Array(cols * rows).fill(null);
+    zbuf = new Float32Array(cols * rows);
+  }
+
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = canvas.clientWidth;
@@ -171,20 +175,12 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.font = `${light ? 700 : 400} ${FONT}px ${FONT_FAMILY}`;
-    ctx.textBaseline = "top";
-    cw = ctx.measureText("M").width || FONT * 0.6;
-    chh = Math.round(FONT * 1.2);
-    cols = Math.ceil(W / cw);
-    rows = Math.ceil(H / chh);
-    cells = new Array(cols * rows).fill(null);
-    zbuf = new Float32Array(cols * rows);
+    layout();
   }
 
-  function setTheme(rgb: Rgb, dark: boolean) {
+  function setTheme(rgb: Rgb, isDark: boolean) {
     ink = rgb;
-    light = !dark;
-    ctx.font = `${light ? 700 : 400} ${FONT}px ${FONT_FAMILY}`;
+    dark = isDark;
   }
 
   /** Put a character in a cell if it's empty (for orbits, the belt, stars and glow). */
@@ -205,7 +201,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     py: number,
     d0: number,
     r: number,
-    light: [number, number, number] | null,
+    sun: [number, number, number] | null,
     paint: (wx: number, wy: number, wz: number, lit: number, nz: number) => Cell | null,
   ) {
     let drew = false;
@@ -227,7 +223,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const wx = dx;
         const wy = -dy * C + nz * S;
         const wz = dy * S + nz * C;
-        const lit = light ? Math.max(0, dx * light[0] + dy * light[1] - nz * light[2]) : 1;
+        const lit = sun ? Math.max(0, dx * sun[0] + dy * sun[1] - nz * sun[2]) : 1;
         const cell = paint(wx, wy, wz, lit, nz);
         if (!cell) continue;
         cells[k] = cell;
@@ -253,19 +249,37 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   }
 
   function frame(t: number) {
+    const L0 = look();
+    const sh = SOLAR.shared;
+    if (fontFor() !== font) layout();
+    S = Math.max(0.02, Math.min(1, sh.tilt));
+    C = Math.sqrt(1 - S * S);
     cells.fill(null);
     zbuf.fill(Infinity);
     // big: Saturn's orbit is nearly the width of the page. The Sun sits in the
     // open band above the row of cards, and the outer orbits sweep down behind it.
-    const unit = Math.min(W / 1000, H / 560);
-    const cx = W * 0.72;
-    const cy = H * 0.16;
-    const inkCss = css(ink);
-    /** a colour as the current theme paints it */
-    const hue = (c: Rgb) => css(light ? vivid(c) : c);
-
-    /** A cell on a body, from how bright that spot is (0 to 1), its colour and opacity. */
-    const body = (v: number, c: Rgb, alpha: number): Cell => ({ ch: ramp(v), color: hue(c), alpha: light ? Math.min(1, alpha * 1.25) : alpha });
+    const unit = Math.min(W / 1000, H / 560) * sh.size;
+    const cx = W * sh.x;
+    const cy = H * sh.y;
+    const inkCss = paint(ink, L0);
+    const colour = clamp01(L0.colour);
+    const contrast = (v: number) => clamp01(0.5 + (v - 0.5) * L0.contrast);
+    /** A grey for a glyph of density d (0 to 1): with `invert` dense is dark, else dense is light. */
+    const greyOf = (d: number): Rgb => mix(NIGHT, DAY, clamp01(L0.invert >= 0.5 ? 1 - d : d));
+    /**
+     * A cell on a body, from how bright that spot is (0 to 1), its colour and
+     * opacity. In greys the shade agrees with the glyph's density (`tone`
+     * scales it, so Earth's oceans sit lighter than its land); `colour` blends
+     * from those greys to the body's own colour.
+     */
+    const body = (v: number, c: Rgb, alpha: number, tone = 1): Cell => {
+      const cv = contrast(v);
+      return {
+        ch: ramp(cv),
+        color: paint(mix(greyOf(cv * tone), c, colour), L0),
+        alpha: (1 + (alpha - 1) * colour) * L0.bodies,
+      };
+    };
 
     // world (x, z) on the plane of the orbits -> screen and depth
     const project = (x: number, z: number) => ({ sx: cx + x, sy: cy + z * S, d: -z * C });
@@ -278,7 +292,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
     };
 
     /* the Sun: a boiling surface, brighter in the middle, and a glow around it */
-    const sunR = SUN_R * unit;
+    const sunR = SUN_R * unit * sh.sun;
     sphere(cx, cy, 0, sunR, null, (wx, wy, wz, _lit, nz) => {
       const boil = noise3(wx * 3.2 + t * 0.35, wy * 3.2 - t * 0.2, wz * 3.2);
       const v = 0.38 + nz * 0.42 + (boil - 0.5) * 0.5;
@@ -292,12 +306,12 @@ function makeRenderer(canvas: HTMLCanvasElement) {
       const x = Math.cos(a) * R;
       const z = Math.sin(a) * R;
       const { sx, sy, d } = project(x, z);
-      const r = p.r * unit;
+      const r = p.r * unit * sh.planets;
       const L = sunLight(x, z);
       const spin = t * 0.5;
       const tint = p.tint;
 
-      if (p.look === "saturn") rings(sx, sy, d, r, L, tint);
+      if (p.look === "saturn") rings(sx, sy, d, r, L, tint, L0);
 
       sphere(sx, sy, d, r, L, (wx, wy, wz, lit) => {
         const shade = 0.2 + lit * 0.8;
@@ -310,10 +324,10 @@ function makeRenderer(canvas: HTMLCanvasElement) {
           const land = fbm(rx * 1.7 + 11, wy * 1.7 + 3, rz * 1.7 + 5) > 0.5;
           const col = ice ? ink : land ? LAND : tint;
           // the night side shows a few city lights on the land
-          if (!light && lit < 0.03 && land && !ice && hash3(Math.floor(rx * 40), Math.floor(wy * 40), Math.floor(rz * 40)) > 0.8) {
-            return { ch: ".", color: css(CITY), alpha: 0.7 };
+          if (colour > 0.5 && lit < 0.03 && land && !ice && hash3(Math.floor(rx * 40), Math.floor(wy * 40), Math.floor(rz * 40)) > 0.8) {
+            return { ch: ".", color: paint(CITY, L0), alpha: 0.7 * L0.bodies };
           }
-          return body(shade, col, 0.45 + lit * 0.55);
+          return body(shade, col, 0.45 + lit * 0.55, ice ? 1.2 : land ? 1 : 0.62);
         }
         if (p.look === "jupiter") {
           const band = Math.sin(wy * 13 + noise3(wx * 3, wy * 3, wz * 3 + t * 0.05) * 2);
@@ -328,7 +342,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const mx = x + Math.cos(ma) * MOON.orbit * unit;
         const mz = z + Math.sin(ma) * MOON.orbit * unit;
         const m = project(mx, mz);
-        sphere(m.sx, m.sy, m.d, MOON.r * unit, sunLight(mx, mz), (_x, _y, _z, lit) =>
+        sphere(m.sx, m.sy, m.d, MOON.r * unit * sh.planets, sunLight(mx, mz), (_x, _y, _z, lit) =>
           body(0.2 + lit * 0.8, ink, 0.4 + lit * 0.5),
         );
       }
@@ -343,7 +357,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const k = 2 - dist;
         if (hash3(i, j, 3) > k * k * 0.9) continue;
         const breathe = 0.6 + 0.4 * Math.sin(t * 1.3 + hash3(i, j, 4) * 6.28);
-        fill(i, j, k > 0.7 ? ":" : "·", hue(SUN), (0.12 + k * 0.45) * breathe);
+        fill(i, j, k > 0.7 ? ":" : "·", paint(mix(DAY, SUN, colour), L0), (0.12 + k * 0.45) * breathe * L0.glow);
       }
     }
 
@@ -358,7 +372,7 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         const fy = y / chh - Math.floor(y / chh);
         // the far half of each orbit is a little fainter than the near half
         const near = Math.sin(a) > 0 ? 1 : 0.7;
-        fill(Math.floor(x / cw), Math.floor(y / chh), fy < 0.34 ? "'" : fy < 0.67 ? "·" : ".", inkCss, 0.22 * near);
+        fill(Math.floor(x / cw), Math.floor(y / chh), fy < 0.34 ? "'" : fy < 0.67 ? "·" : ".", inkCss, 0.22 * near * L0.orbits);
       }
     }
 
@@ -368,14 +382,14 @@ function makeRenderer(canvas: HTMLCanvasElement) {
       const R = rock.r * unit;
       const x = cx + Math.cos(a) * R;
       const y = cy + Math.sin(a) * R * S;
-      fill(Math.floor(x / cw), Math.floor(y / chh), rock.s > 1.05 ? "." : "·", inkCss, 0.26);
+      fill(Math.floor(x / cw), Math.floor(y / chh), rock.s > 1.05 ? "." : "·", inkCss, 0.26 * L0.orbits);
     }
 
     /* stars */
     for (const s of stars) {
       const tw = 0.5 + 0.5 * Math.sin(t * s.sp + s.tw);
       const ch = tw > 0.96 ? "+" : tw > 0.75 ? "*" : "·";
-      fill(Math.floor(s.u * cols), Math.floor(s.v * rows), ch, inkCss, 0.08 + tw * 0.28);
+      fill(Math.floor(s.u * cols), Math.floor(s.v * rows), ch, inkCss, (0.08 + tw * 0.28) * L0.stars);
     }
 
     /* paint */
@@ -393,7 +407,8 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   }
 
   /** Saturn's rings: an annulus in a plane tipped toward us, with a gap in it. */
-  function rings(px: number, py: number, d0: number, r: number, L: [number, number, number], tint: Rgb) {
+  function rings(px: number, py: number, d0: number, r: number, L: [number, number, number], tint: Rgb, look: ThemeLook) {
+    const colour = clamp01(look.colour);
     const outer = r * 2.25;
     const inner = r * 1.3;
     const k = 0.36; // how open the rings look
@@ -417,7 +432,15 @@ function makeRenderer(canvas: HTMLCanvasElement) {
         if (depth >= zbuf[kk]) continue;
         // in the planet's shadow? (the side facing away from the Sun, behind the ball)
         const shadow = ux * L[0] + uy * L[1] < 0 && Math.abs(ux * L[1] - uy * L[0]) < r ? 0.35 : 1;
-        cells[kk] = { ch: band < 0.58 ? "=" : "-", color: css(light ? vivid(tint) : tint), alpha: (0.35 + 0.35 * (1 - band)) * shadow };
+        // in greys, density: the lit ring dense near the planet, the shadow faint
+        const density = shadow < 1 ? 0.15 : 0.9 - band * 0.4;
+        const g = mix(NIGHT, DAY, look.invert >= 0.5 ? 1 - density : density);
+        const alpha = (0.35 + 0.35 * (1 - band)) * shadow;
+        cells[kk] = {
+          ch: band < 0.58 ? "=" : "-",
+          color: paint(mix(g, tint, colour), look),
+          alpha: (1 + (alpha - 1) * colour) * look.bodies,
+        };
         zbuf[kk] = depth;
       }
     }
@@ -428,59 +451,85 @@ function makeRenderer(canvas: HTMLCanvasElement) {
 
 export function SolarSystem() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const skyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const canvas = ref.current;
-    if (!canvas) return;
+    const sky = skyRef.current;
+    if (!canvas || !sky) return;
     const r = makeRenderer(canvas);
+    const root = document.documentElement;
 
-    const readInk = () => {
-      const v = getComputedStyle(document.documentElement).getPropertyValue("--ink-rgb");
-      const parts = v.split(",").map((n) => parseFloat(n));
-      const dark = document.documentElement.dataset.theme === "dark";
+    /** The theme's ink and the sky and fade, which live in CSS. */
+    const readTheme = () => {
+      const parts = getComputedStyle(root).getPropertyValue("--ink-rgb").split(",").map((n) => parseFloat(n));
+      const dark = root.dataset.theme === "dark";
       if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) r.setTheme(parts as Rgb, dark);
+      const look = dark ? SOLAR.dark : SOLAR.light;
+      sky.style.opacity = String(look.sky);
+      sky.style.visibility = look.sky > 0 ? "" : "hidden";
+      sky.style.setProperty("--sky-hue", String(look.skyHue));
+      canvas.style.setProperty("--fade-from", `${SOLAR.shared.fadeFrom}%`);
+      canvas.style.setProperty("--fade-to", `${SOLAR.shared.fadeTo}%`);
     };
-    readInk();
+    readTheme();
     r.resize();
 
     const still = matchMedia("(prefers-reduced-motion: reduce)");
-    const start = performance.now();
     // a fixed moment, for reduced motion: the planets spread out nicely
     const STILL_T = 40;
+    // the scene's own clock, so changing the speed doesn't make it jump
+    let t = 0;
     let raf = 0;
     let last = 0;
+    let prev = 0;
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       if (now - last < 1000 / FPS - 2) return;
       last = now;
-      r.frame((now - start) / 1000);
+      // a hidden tab pauses rAF; don't leap ahead when it comes back
+      t += Math.min(0.1, prev ? (now - prev) / 1000 : 0) * SOLAR.shared.speed;
+      prev = now;
+      r.frame(t);
     };
     const run = () => {
       cancelAnimationFrame(raf);
+      prev = 0;
       if (still.matches) r.frame(STILL_T);
       else raf = requestAnimationFrame(loop);
     };
     run();
+    const redraw = () => {
+      if (still.matches) r.frame(STILL_T);
+    };
 
     const ro = new ResizeObserver(() => {
       r.resize();
-      if (still.matches) r.frame(STILL_T);
+      redraw();
     });
     ro.observe(canvas);
-    const mo = new MutationObserver(() => {
-      readInk();
-      if (still.matches) r.frame(STILL_T);
-    });
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    const onChange = () => {
+      readTheme();
+      redraw();
+    };
+    const mo = new MutationObserver(onChange);
+    mo.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
     still.addEventListener("change", run);
+    addEventListener(SOLAR_EVENT, onChange);
 
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
       mo.disconnect();
       still.removeEventListener("change", run);
+      removeEventListener(SOLAR_EVENT, onChange);
     };
   }, []);
 
-  return <canvas className="solar" ref={ref} aria-hidden />;
+  return (
+    <>
+      <div className="sky" ref={skyRef} aria-hidden />
+      <canvas className="solar" ref={ref} aria-hidden />
+    </>
+  );
 }

@@ -15,6 +15,12 @@ const TunePanel =
     ? dynamic(() => import("@/components/TunePanel").then((m) => m.TunePanel))
     : () => null;
 
+// Sliders for the solar system in the background, development only. "]" hides it.
+const SolarPanel =
+  process.env.NODE_ENV === "development"
+    ? dynamic(() => import("@/components/SolarPanel").then((m) => m.SolarPanel))
+    : () => null;
+
 export default function Home() {
   return (
     <main className="home">
@@ -50,6 +56,7 @@ export default function Home() {
       </header>
 
       <TunePanel />
+      <SolarPanel />
     </main>
   );
 }

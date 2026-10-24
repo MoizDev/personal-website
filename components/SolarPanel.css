@@ -1,0 +1,61 @@
+/* dev-only solar system panel; see SolarPanel.tsx. Builds on TunePanel.css. */
+.solar-panel {
+  top: 16px;
+  right: auto;
+  left: 16px;
+  width: 310px;
+  /* solid, so the page's text doesn't show through the sliders */
+  background: rgb(var(--paper-rgb));
+}
+
+.solar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.tune .solar-head button {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+.tune .solar-head button:hover:not(:disabled) {
+  color: var(--fg);
+}
+
+.solar-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin-top: 16px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(var(--ink-rgb), 0.06);
+}
+
+.tune .solar-tabs button {
+  padding: 4px 0;
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tune .solar-tabs button[aria-selected="true"] {
+  background: rgba(var(--paper-rgb), 1);
+  box-shadow: 0 1px 3px rgba(var(--ink-rgb), 0.14);
+  color: var(--fg);
+}
+
+.solar-tabs span {
+  color: #2f6bff;
+}
+
+.tune-row .solar-check {
+  justify-self: start;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
