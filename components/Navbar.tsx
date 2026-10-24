@@ -63,6 +63,7 @@ export function Navbar() {
           <Link
             className="nav-home"
             href="/"
+            aria-label="Moiz Hashmi, home"
             onClick={(e) => {
               e.preventDefault();
               close();
@@ -70,7 +71,6 @@ export function Navbar() {
             }}
           >
             <Logo className="nav-logo" />
-            <span>Moiz Hashmi</span>
           </Link>
 
           <button
