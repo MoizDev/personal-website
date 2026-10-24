@@ -536,6 +536,7 @@ export function SolarSystem() {
 
   return (
     <>
+      <div className="corner-glow" aria-hidden />
       <div className="sky" ref={skyRef} aria-hidden />
       <canvas className="solar" ref={ref} aria-hidden />
     </>

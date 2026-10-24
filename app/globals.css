@@ -207,6 +207,36 @@ body {
   visibility: hidden;
 }
 
+/* dark theme: the faintest light pooling in the bottom left corner, in the
+   colour of the card in the spot (CardStack sets --project-tone) */
+@property --glow-tone {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+
+.corner-glow {
+  --glow-tone: var(--project-tone, transparent);
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: calc(var(--frame-x) + 0.62 * var(--frame-w));
+  height: calc(var(--frame-y) + 0.72 * var(--frame-h));
+  background: radial-gradient(
+    farthest-side at 0% 100%,
+    color-mix(in srgb, var(--glow-tone) 9%, transparent),
+    color-mix(in srgb, var(--glow-tone) 3%, transparent) 55%,
+    transparent
+  );
+  transition: --glow-tone 900ms ease;
+  pointer-events: none;
+  display: none;
+}
+
+:root[data-theme="dark"] .corner-glow {
+  display: block;
+}
+
 @media (max-aspect-ratio: 3/4) {
   .solar {
     display: none;
