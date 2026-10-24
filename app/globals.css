@@ -19,7 +19,7 @@ svg {
 
 :root {
   color-scheme: light;
-  --bg: #f3f2ee;
+  --bg: #ffffff;
   --fg: #161616;
   --muted: rgba(22, 22, 22, 0.52);
   --soft: rgba(22, 22, 22, 0.74);
