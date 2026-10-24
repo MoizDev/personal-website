@@ -382,6 +382,7 @@ body {
   position: absolute;
   inset: 0;
   mix-blend-mode: screen;
+  opacity: 0.55; /* overall strength of the gloss */
   transform: scale(0);
   will-change: transform;
   pointer-events: none;
