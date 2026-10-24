@@ -467,7 +467,8 @@ body {
 }
 
 .intro {
-  top: 40px;
+  /* the first line (the name) shares its centre line with the navbar; 0.68em is half the line height */
+  top: calc(var(--nav-top) + var(--nav-h) / 2 - 0.68em);
   left: 44px;
   max-width: 540px;
   font-size: 22px;
