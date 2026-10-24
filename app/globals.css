@@ -30,8 +30,8 @@ svg {
   --yaw: 61deg; /* how the row turns away from you */
   --pitch: -0.5deg; /* how far you look down on the ground at rest */
   /* where the front card stands, in card widths from the centre */
-  --ox-k: 0.41;
-  --oy-k: 0.3;
+  --ox-k: 0.32;
+  --oy-k: 0.43;
   --depth-k: 2.6; /* perspective distance, in card widths */
   --po-x: 56%; /* the vanishing point */
   --po-y: 32%;
