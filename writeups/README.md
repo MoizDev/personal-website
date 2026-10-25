@@ -212,6 +212,59 @@ build ~> plan "retry"
 - `play: a b c b c` sets the order the highlight walks, and `laps: 2` sets how
   many times it goes round a loop.
 
+#### Flowcharts: shapes, regions and routes
+
+Plain cards with arrows read as a list. Most flows should be charts: give
+nodes a shape for what they are, group them by who does the work, and let
+decisions branch.
+
+```
+flow
+row: assemble check .
+row: repair problems ok
+group "Kernel" {teal} : assemble check repair problems
+assemble <step> "Assemble" [Puzzle] {teal} : cells to real parts
+check <step> "Check" [ListChecks] {teal}
+problems <decide> "Any problems?" {orange}
+repair <round> "Repair" [Wrench] {purple}
+ok <pill> "Publish it" [Check] {green} : `.ldr`, brief, report
+assemble -> check -> problems
+problems -> ok "no"
+problems -> repair "yes"
+repair ~> assemble "rebuild" @left [Wrench]
+```
+
+- A shape goes in angle brackets after the id: `id <shape> "Label" …`.
+
+  | Shape | Use it for |
+  | --- | --- |
+  | `card` | The default, a card with an icon, title and note. |
+  | `step` | A plain process step, tinted by its tone. |
+  | `decide` | A question. Its outgoing arrows are branches; label them `"yes"`, `"no"`. Keep the label short; the note only shows on wide screens. |
+  | `pill` | A start or an end. Sizes to its words. |
+  | `store` | Something kept: a database, a cache, a folder of runs. |
+  | `doc` | A file or a written result: a brief, a manual. |
+  | `io` | Input or output to the outside: a prompt, a list sent to a shop. |
+  | `round` | An actor or a model: an icon in a disc, its label below. |
+  | `stack` | Many of a thing: every round, four views. |
+
+- `group "Label" [Icon] {tone} : a b c` shades a region behind those nodes.
+  `lane "Label" {tone} : a b c` makes a full-width band with the label running
+  down its left edge; use one lane per row of the chart (who does what). A line
+  is a region only when every word after its colon is a node id; anything else
+  is a node with a note.
+- `@left` or `@right` at the end of an edge sends its last hop around the
+  outside of the chart, with the label running along it. Use it for a loop
+  back that would otherwise cross other arrows.
+- `[Icon]` on an edge is what its token carries as it runs along the arrow
+  (`a -> b [Boxes]`). Without one the token is a plain dot.
+- Backticks in a label or note make a code chip. Inside `src={`…`}` write
+  them as `` \` ``, or the template literal ends early and the page fails.
+- Layout: a normal figure fits three columns at desktop width, a `wide` one
+  four. Below 560px the chart shrinks; labels too wide for a short arrow are
+  dropped there (the token still runs), so put the meaning in the nodes, not
+  only in edge labels. Check the phone width every time.
+
 ### chat: a conversation, typed out
 
 ```
