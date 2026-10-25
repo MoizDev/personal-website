@@ -75,14 +75,27 @@ export function Figure({
   );
 }
 
-/** An image inside a figure. */
-export function Shot({ src, alt, contain, style }: { src: StaticImageData; alt: string; contain?: boolean; style?: CSSProperties }) {
+/** An image inside a figure. `quality` must be listed in images.qualities in next.config.ts. */
+export function Shot({
+  src,
+  alt,
+  contain,
+  style,
+  quality,
+}: {
+  src: StaticImageData;
+  alt: string;
+  contain?: boolean;
+  style?: CSSProperties;
+  quality?: number;
+}) {
   return (
     <Image
       src={src}
       alt={alt}
       className={`wu-shot${contain ? " wu-shot-contain" : ""}`}
       sizes="(max-width: 1000px) 100vw, 960px"
+      quality={quality}
       style={style}
     />
   );
