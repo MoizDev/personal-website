@@ -37,6 +37,8 @@ export type Project = {
   /** a few sentences, for when the card is pulled out of the row */
   about: string;
   href: string;
+  /** a path to the project's writeup on this site, linked from the pulled-out card */
+  writeup?: string;
   /** optional looping clip (a path under /public) that plays on the pulled-out card */
   video?: string;
   /** a screenshot that fills the card, or a logo for a typeset card */
@@ -74,6 +76,7 @@ export const PROJECTS: Project[] = [
     about:
       "Type an idea and get a LEGO model you can actually build, brick by brick. Won Hack the North 2026.",
     href: "https://devpost.com/software/a-feuvb1",
+    writeup: "/writeups/bricked",
     art: { kind: "shot", src: bricked },
     logo: brickedLogo,
     badge: { title: "Winner", detail: "Hack the North 2026" },

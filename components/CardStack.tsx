@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   useEffect,
   useRef,
@@ -542,6 +543,11 @@ export function CardStack() {
               </span>
             </p>
             <p className="detail-about">{activeProject.about}</p>
+            {activeProject.writeup && (
+              <Link className="detail-link" href={activeProject.writeup}>
+                Read the writeup <span aria-hidden>&rarr;</span>
+              </Link>
+            )}
             <a className="detail-link" href={activeProject.href} target="_blank" rel="noreferrer">
               {linkLabel(activeProject.href)} <span aria-hidden>&#8599;</span>
             </a>
