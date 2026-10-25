@@ -1,0 +1,400 @@
+/* Choreographing a step. Scoped under .drf-ch-. */
+
+.drf-ch {
+  --tone: var(--t-blue);
+  container-type: inline-size;
+  margin: -16px;
+  padding: 20px 18px 16px;
+  border-radius: 4px;
+  background-image: radial-gradient(rgba(var(--ink-rgb), 0.13) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-position: 8px 8px;
+}
+
+.drf-ch-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  align-items: center;
+}
+
+/* ---------- the scene ---------- */
+
+.drf-ch-scene {
+  max-width: 340px;
+  margin: 0 auto;
+}
+.drf-ch-conn {
+  fill: none;
+  stroke-width: 1.6;
+}
+.drf-ch-pill-on {
+  fill: #fff !important;
+}
+.drf-ch-stamp {
+  fill: color-mix(in srgb, var(--t-gray) 20%, var(--bg));
+}
+.drf-ch-stamp-text {
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.drf-ch-glow {
+  fill: color-mix(in srgb, var(--t-green) 26%, transparent);
+}
+.drf-ch-returns {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: color-mix(in srgb, var(--t-green) 80%, var(--fg)) !important;
+}
+.drf-ch-ret-val {
+  font-weight: 600;
+  fill: var(--fg) !important;
+}
+.drf-ch-chip rect {
+  fill: var(--t-green);
+  filter: drop-shadow(0 2px 4px rgba(var(--ink-rgb), 0.25));
+}
+.drf-ch-chip text {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #fff !important;
+}
+
+/* ---------- the schedule ---------- */
+
+.drf-ch-sched {
+  overflow: hidden;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 7px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+.drf-ch-sched-head,
+.drf-ch-strip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+.drf-ch-sched-head,
+.drf-ch-strip-head {
+  flex-wrap: wrap;
+}
+.drf-ch-sched-head > span,
+.drf-ch-strip-head > span {
+  white-space: nowrap;
+}
+.drf-ch-sched-head b {
+  font-variant-numeric: tabular-nums;
+}
+.drf-ch-dim {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 10.5px;
+}
+.drf-ch-speeds {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 6px;
+}
+.drf-ch-speeds button {
+  padding: 1px 7px;
+  border: 0;
+  border-left: 1px solid rgba(var(--ink-rgb), 0.14);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.drf-ch-speeds button:first-child {
+  border-left: 0;
+}
+.drf-ch-speeds button[data-on] {
+  background: var(--tone);
+  color: #fff;
+}
+.drf-ch-speeds button:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: -2px;
+}
+
+.drf-ch-gantt {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 10px;
+  padding: 12px 14px 8px 10px;
+}
+.drf-ch-labels {
+  display: flex;
+  flex-direction: column;
+}
+.drf-ch-label {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.drf-ch-label[data-done] {
+  color: var(--soft);
+}
+.drf-ch-label[data-on] {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+.drf-ch-tracks {
+  position: relative;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  border-left: 1px solid rgba(var(--ink-rgb), 0.3);
+  border-right: 1px dashed rgba(var(--ink-rgb), 0.2);
+}
+.drf-ch-tracks:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.drf-ch-grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed rgba(var(--ink-rgb), 0.12);
+}
+.drf-ch-track {
+  position: relative;
+  height: 24px;
+}
+.drf-ch-bar {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  overflow: hidden;
+  border-radius: 4px;
+  --bar: var(--t-green);
+  background: color-mix(in srgb, var(--bar) 7%, var(--bg));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar) 35%, transparent);
+  transition: box-shadow 0.2s;
+}
+.drf-ch-bar[data-tone="gray"] {
+  --bar: var(--t-gray);
+}
+.drf-ch-bar[data-on] {
+  box-shadow: inset 0 0 0 1.5px var(--bar), 0 0 0 3px color-mix(in srgb, var(--bar) 18%, transparent);
+}
+.drf-ch-bar svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.drf-ch-area {
+  fill: color-mix(in srgb, var(--bar) 12%, transparent);
+}
+.drf-ch-area-lit {
+  fill: color-mix(in srgb, var(--bar) 55%, transparent);
+}
+.drf-ch-curve {
+  fill: none;
+  stroke: var(--bar);
+  stroke-width: 1.5;
+}
+
+.drf-ch-head {
+  position: absolute;
+  top: -6px;
+  bottom: -4px;
+  width: 0;
+  border-left: 2px solid var(--tone);
+  pointer-events: none;
+}
+.drf-ch-head::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 22%, transparent);
+}
+.drf-ch-head-label {
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--tone);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.drf-ch-axis {
+  position: relative;
+  height: 26px;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+.drf-ch-axis span {
+  position: absolute;
+  top: 12px;
+  transform: translateX(-50%);
+}
+
+/* ---------- interrupted mid-glide ---------- */
+
+.drf-ch-strip {
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 7px;
+  background: var(--bg);
+}
+.drf-ch-lanes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.drf-ch-lane {
+  padding: 8px 12px 10px;
+}
+.drf-ch-lane + .drf-ch-lane {
+  border-left: 1px solid var(--line);
+}
+.drf-ch-lane-title {
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.drf-ch-lane[data-naive] .drf-ch-lane-title {
+  color: var(--muted);
+}
+.drf-ch-lane-note {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.drf-ch-lane-svg {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  margin: 2px auto 0;
+  overflow: visible;
+}
+.drf-ch-lane-svg text {
+  font-family: var(--mono);
+}
+.drf-ch-ghost {
+  fill: none;
+  stroke: rgba(var(--ink-rgb), 0.3);
+  stroke-dasharray: 3 3;
+}
+.drf-ch-ghost[data-new] {
+  stroke: var(--tone);
+  transition: opacity 0.2s;
+}
+.drf-ch-mark {
+  font-size: 9px;
+  fill: var(--muted);
+}
+.drf-ch-mark[data-new] {
+  fill: color-mix(in srgb, var(--tone) 80%, var(--fg));
+  transition: opacity 0.2s;
+}
+.drf-ch-from {
+  fill: rgba(var(--ink-rgb), 0.35);
+}
+.drf-ch-trail {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.drf-ch-lane[data-naive] .drf-ch-trail {
+  stroke: rgba(var(--ink-rgb), 0.4);
+}
+.drf-ch-jump {
+  stroke: var(--t-red);
+  stroke-width: 1.4;
+  stroke-dasharray: 2 3;
+}
+.drf-ch-jump-text {
+  font-size: 9px;
+  font-weight: 700;
+  fill: var(--t-red);
+}
+.drf-ch-ping {
+  fill: none;
+  stroke: var(--tone);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: drf-ch-ping 0.9s ease-out both;
+}
+.drf-ch-lane[data-naive] .drf-ch-ping {
+  stroke: var(--t-red);
+}
+@keyframes drf-ch-ping {
+  from { opacity: 1; scale: 0.6; }
+  to { opacity: 0; scale: 2.4; }
+}
+.drf-ch-box {
+  fill: color-mix(in srgb, var(--tone) 12%, var(--bg));
+  stroke: var(--tone);
+  stroke-width: 1.4;
+}
+.drf-ch-lane[data-naive] .drf-ch-box {
+  fill: var(--bg);
+  stroke: rgba(var(--ink-rgb), 0.45);
+}
+.drf-ch-box-text {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--fg);
+}
+
+/* ---------- phones ---------- */
+
+@container (max-width: 520px) {
+  .drf-ch-top {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .drf-ch-lanes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .drf-ch-lane + .drf-ch-lane {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .drf-ch-label {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drf-ch * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

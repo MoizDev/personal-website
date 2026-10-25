@@ -1,0 +1,390 @@
+/* Binding arrows that ride along with edits. Scoped under .drf-ar. */
+
+.drf-ar {
+  --ar-shift: var(--t-green);
+  --ar-err: var(--t-red);
+  container-type: inline-size;
+  margin: -16px;
+  padding: 18px 18px 14px;
+  border-radius: 4px;
+  background-image: radial-gradient(rgba(var(--ink-rgb), 0.13) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-position: 8px 8px;
+}
+
+.drf-ar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.drf-ar-file {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+/* the check's state */
+.drf-ar-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  padding: 3px 10px 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  animation: drf-ar-in 0.3s ease-out;
+}
+.drf-ar-pill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--t-green);
+}
+.drf-ar-pill[data-k="wait"] i,
+.drf-ar-pill[data-k="wait-held"] i {
+  background: var(--muted);
+  animation: drf-ar-blink 0.9s steps(2) infinite;
+}
+.drf-ar-pill[data-k="wait"]::after,
+.drf-ar-pill[data-k="wait-held"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--tone);
+  transform-origin: left;
+  animation: drf-ar-due 1.6s linear both;
+}
+.drf-ar-pill[data-k="held"] {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--ar-err) 60%, transparent);
+}
+.drf-ar-pill[data-k="held"] i {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ar-err);
+}
+.drf-ar-pill[data-k="shown"] {
+  border-color: var(--ar-err);
+  color: var(--ar-err);
+}
+.drf-ar-pill[data-k="shown"] i {
+  background: var(--ar-err);
+}
+@keyframes drf-ar-due {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes drf-ar-blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* code beside the stored offsets; stacked on narrow screens */
+.drf-ar-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@container (min-width: 620px) {
+  .drf-ar-main {
+    grid-template-columns: minmax(0, 1fr) 190px;
+  }
+}
+
+.drf-ar-sheet {
+  container-type: inline-size;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.drf-ar-code {
+  position: relative;
+  font-size: min(14px, calc(100cqw / 31.5));
+  transition: height 0.5s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.drf-ar-probe {
+  position: absolute;
+  visibility: hidden;
+  white-space: pre;
+}
+
+.drf-ar-ln {
+  position: absolute;
+  left: 0;
+  text-align: right;
+  font-size: 0.72em;
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+.drf-ar-tok {
+  position: absolute;
+  white-space: pre;
+  color: var(--fg);
+}
+.drf-ar-tok[data-kind="kw"] { color: var(--c-kw); }
+.drf-ar-tok[data-kind="fn"] { color: var(--c-fn); }
+.drf-ar-tok[data-kind="num"] { color: var(--c-num); }
+.drf-ar-tok[data-kind="open"],
+.drf-ar-tok[data-kind="close"] { color: var(--muted); }
+.drf-ar-tok[data-kind="com"] {
+  color: var(--muted);
+  font-style: italic;
+}
+.drf-ar-tok[data-fresh] {
+  animation: drf-ar-type 0.25s ease-out var(--d, 0ms) backwards;
+}
+@keyframes drf-ar-type {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25em);
+  }
+}
+
+/* the hovered binder and the uses its arrows point at */
+.drf-ar-tok[data-binder]::before,
+.drf-ar-tok[data-use]::before {
+  content: "";
+  position: absolute;
+  inset: 22% -0.15em;
+  z-index: -1;
+  border-radius: 0.25em;
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+}
+.drf-ar-tok[data-binder] {
+  z-index: 0;
+  color: var(--tone);
+  font-weight: 600;
+}
+.drf-ar-tok[data-binder]::before {
+  background: color-mix(in srgb, var(--tone) 20%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent);
+}
+.drf-ar-tok[data-binder]::after {
+  /* the mouse pointer resting on it */
+  content: "";
+  position: absolute;
+  left: 62%;
+  top: 62%;
+  width: 0.7em;
+  height: 1em;
+  background: var(--fg);
+  clip-path: polygon(0 0, 0 78%, 24% 60%, 42% 100%, 58% 93%, 40% 55%, 74% 55%);
+  filter: drop-shadow(0 0 1px var(--bg));
+}
+.drf-ar-tok[data-use] {
+  z-index: 0;
+}
+
+.drf-ar-caret {
+  position: absolute;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--fg);
+  transition:
+    left 0.45s cubic-bezier(0.3, 0.7, 0.2, 1),
+    top 0.45s cubic-bezier(0.3, 0.7, 0.2, 1);
+  animation: drf-ar-blink 1.1s steps(2) infinite;
+}
+.drf-ar-caret[data-typing] {
+  animation: none;
+}
+
+.drf-ar-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.drf-ar-arrows {
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.drf-ar-arrows[data-on] {
+  opacity: 1;
+}
+.drf-ar-arrows[data-pulse] {
+  animation: drf-ar-pulse 0.8s ease-out;
+}
+@keyframes drf-ar-pulse {
+  30% {
+    opacity: 0.25;
+  }
+}
+.drf-ar-curve {
+  fill: none;
+  stroke: color-mix(in srgb, var(--tone) 82%, var(--fg));
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.drf-ar-fill {
+  fill: color-mix(in srgb, var(--tone) 82%, var(--fg));
+}
+
+/* the check's error: held (dashed, quiet) or shown (squiggle and message) */
+.drf-ar-err {
+  position: absolute;
+  border-radius: 4px;
+  pointer-events: none;
+  transition:
+    width 0.45s,
+    opacity 0.3s;
+}
+.drf-ar-err[data-k="held"] {
+  outline: 1.5px dashed color-mix(in srgb, var(--ar-err) 45%, transparent);
+  outline-offset: 1px;
+}
+.drf-ar-err[data-k="shown"] {
+  background: color-mix(in srgb, var(--ar-err) 9%, transparent);
+  animation: drf-ar-in 0.35s ease-out;
+}
+.drf-ar-err[data-k="shown"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 4px;
+  background: linear-gradient(135deg, transparent 45%, var(--ar-err) 45% 60%, transparent 60%) 0 0 / 5px 4px repeat-x,
+    linear-gradient(45deg, transparent 45%, var(--ar-err) 45% 60%, transparent 60%) 0 0 / 5px 4px repeat-x;
+}
+
+.drf-ar-msg,
+.drf-ar-hold {
+  position: absolute;
+  z-index: 2;
+  white-space: nowrap;
+  font-size: 0.78em;
+  line-height: 1.5;
+}
+.drf-ar-msg {
+  padding: 3px 8px;
+  border-radius: 6px;
+  color: var(--bg);
+  background: var(--ar-err);
+  animation: drf-ar-in 0.35s ease-out;
+}
+.drf-ar-hold {
+  color: color-mix(in srgb, var(--ar-err) 80%, var(--fg));
+  font-style: italic;
+  animation: drf-ar-in 0.35s ease-out;
+}
+@keyframes drf-ar-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+
+/* what Decorations stores for the hovered binder */
+.drf-ar-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 12px;
+}
+.drf-ar-side-head {
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.drf-ar-rows {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+@container (max-width: 619px) {
+  .drf-ar-rows {
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 18px;
+  }
+}
+.drf-ar-row {
+  display: grid;
+  grid-template-columns: auto auto auto 1fr;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.drf-ar-to {
+  color: var(--tone);
+}
+.drf-ar-tag {
+  justify-self: end;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.drf-ar-row[data-bump] .drf-ar-r,
+.drf-ar-row[data-bump] .drf-ar-tag {
+  color: var(--ar-shift);
+}
+.drf-ar-row[data-bump] {
+  animation: drf-ar-bump 0.5s ease-out backwards;
+}
+.drf-ar-row[data-same] .drf-ar-tag {
+  color: var(--tone);
+}
+.drf-ar-row[data-same] {
+  animation: drf-ar-in 0.4s ease-out backwards;
+}
+@keyframes drf-ar-bump {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5em);
+  }
+}
+.drf-ar-none {
+  padding: 4px 0;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.4;
+  animation: drf-ar-in 0.35s ease-out;
+}
+.drf-ar-side-foot {
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: 1px dashed var(--line);
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.drf-ar-say {
+  min-height: 3em;
+  margin: 10px 4px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--soft);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drf-ar * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

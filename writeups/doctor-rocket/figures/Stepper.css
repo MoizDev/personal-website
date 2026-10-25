@@ -1,0 +1,395 @@
+/* Stepping like DrRacket: raw reductions folded into calls. Scoped under .drf-st-. */
+
+.drf-st {
+  --tone: var(--t-purple);
+  --st-app: var(--t-purple);
+  --st-prim: rgba(var(--ink-rgb), 0.55);
+  --st-cond: var(--t-teal);
+  --st-after: var(--t-green);
+  container-type: inline-size;
+  margin: -16px;
+  padding: 20px 18px 16px;
+  border-radius: 4px;
+  background-image: radial-gradient(rgba(var(--ink-rgb), 0.13) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-position: 8px 8px;
+}
+
+.drf-st-dim {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* top: the program and the stepper window */
+
+.drf-st-top {
+  display: grid;
+  /* the program box fits its longest line; the stepper window takes the rest */
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.drf-st-prog,
+.drf-st-win {
+  overflow: hidden;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 7px;
+  background: var(--bg);
+}
+
+.drf-st-head,
+.drf-st-pane-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg);
+  font-size: 11px;
+  font-weight: 600;
+}
+.drf-st-head .drf-st-dim {
+  font-size: 10.5px;
+}
+
+.drf-st-code,
+.drf-st-expr {
+  margin: 0;
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: min(11.5px, calc(100cqw / 44));
+  line-height: 1.6;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--fg);
+}
+.drf-st-code {
+  color: var(--muted);
+}
+.drf-st-line {
+  display: block;
+  min-height: 1.6em;
+}
+.drf-st-code .drf-st-line[data-run] {
+  margin-top: 0.4em;
+  color: var(--fg);
+}
+.drf-st[data-phase="idle"] .drf-st-code .drf-st-line[data-run],
+.drf-st[data-phase="raw"] .drf-st-code .drf-st-line[data-run] {
+  color: var(--tone);
+}
+
+.drf-st-pane + .drf-st-pane {
+  border-top: 1px solid var(--line);
+}
+.drf-st-pane-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+  color: var(--muted);
+  font-weight: 500;
+}
+.drf-st-expr {
+  /* room for a context line and three cond clauses, so the window doesn't jump */
+  min-height: calc(4 * 1.6em + 16px);
+  padding-top: 4px;
+  animation: drf-st-in 0.28s ease-out;
+}
+@keyframes drf-st-in {
+  from {
+    opacity: 0.25;
+    transform: translateY(2px);
+  }
+}
+
+.drf-st-hl {
+  padding: 1px 0;
+  border-radius: 3px;
+  color: inherit;
+  background: color-mix(in srgb, var(--tone) 22%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 45%, transparent);
+}
+.drf-st-expr[data-side="after"] .drf-st-hl,
+.drf-st-hl[data-side="after"] {
+  background: color-mix(in srgb, var(--st-after) 20%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--st-after) 45%, transparent);
+}
+
+.drf-st-kind {
+  padding: 0 7px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+}
+.drf-st-kind[data-on] {
+  opacity: 1;
+}
+.drf-st-kind[data-kind="app"] {
+  background: var(--st-app);
+}
+.drf-st-kind[data-kind="prim"] {
+  background: rgba(var(--ink-rgb), 0.55);
+}
+.drf-st-kind[data-kind="cond"] {
+  background: var(--st-cond);
+}
+
+/* the two tapes: one tile per step */
+
+.drf-st-tapes {
+  padding: 8px 6px 0;
+  border-top: 1px solid var(--line);
+}
+.drf-st-tape-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.drf-st-tape-head[data-second] {
+  margin-top: 14px;
+}
+.drf-st-count {
+  min-width: 2.6em;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+.drf-st-count[data-on] {
+  border-color: var(--tone);
+  background: var(--tone);
+  color: #fff;
+}
+
+.drf-st-tape {
+  display: grid;
+  column-gap: 2px;
+  height: 22px;
+}
+.drf-st-tile {
+  position: relative;
+  border-radius: 3px;
+  border: 1px solid rgba(var(--ink-rgb), 0.22);
+  background: transparent;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, opacity 0.3s;
+}
+.drf-st-tile[data-gap] {
+  margin-left: 3px;
+}
+.drf-st-tile[data-past],
+.drf-st-tile[data-on] {
+  border-color: transparent;
+}
+.drf-st-tile[data-kind="app"][data-past],
+.drf-st-tile[data-kind="app"][data-on] {
+  background: var(--st-app);
+}
+.drf-st-tile[data-kind="prim"][data-past],
+.drf-st-tile[data-kind="prim"][data-on] {
+  background: var(--st-prim);
+}
+.drf-st-tile[data-kind="cond"][data-past],
+.drf-st-tile[data-kind="cond"][data-on] {
+  background: var(--st-cond);
+}
+.drf-st-tile[data-on] {
+  transform: scaleY(1.35);
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--fg);
+  z-index: 1;
+}
+.drf-st-tape[data-dim] .drf-st-tile:not([data-final]) {
+  opacity: 0.35;
+}
+
+/* the folded trace drops in under the groups it replaces */
+.drf-st-tape[data-trace]:not([data-folded]) {
+  border-radius: 4px;
+  outline: 1px dashed rgba(var(--ink-rgb), 0.18);
+}
+.drf-st-tape[data-trace]:not([data-folded]) .drf-st-tile {
+  opacity: 0;
+  transform: translateY(-14px) scaleY(0.4);
+}
+.drf-st-tape[data-trace][data-folded] .drf-st-tile {
+  transition-delay: var(--d, 0ms);
+}
+.drf-st-tape[data-trace][data-folded] .drf-st-tile[data-on] {
+  transition-delay: 0ms;
+}
+.drf-st-tile-n {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.drf-st-tile:not([data-past]):not([data-on]) .drf-st-tile-n {
+  color: var(--muted);
+}
+
+.drf-st-groups {
+  display: grid;
+  margin-top: 4px;
+}
+.drf-st-group {
+  overflow: hidden;
+  padding: 2px 0 0 3px;
+  border-top: 1px solid rgba(var(--ink-rgb), 0.25);
+  margin-left: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.drf-st-group:first-child {
+  margin-left: 0;
+}
+.drf-st-narrow {
+  display: none;
+}
+
+.drf-st-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.drf-st-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.drf-st-legend span::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.drf-st-legend [data-kind="app"]::before {
+  background: var(--st-app);
+}
+.drf-st-legend [data-kind="prim"]::before {
+  background: var(--st-prim);
+}
+.drf-st-legend [data-kind="cond"]::before {
+  background: var(--st-cond);
+}
+
+/* the printing strip */
+
+.drf-st-print {
+  margin-top: 16px;
+  padding: 8px 6px 0;
+  border-top: 1px solid var(--line);
+}
+.drf-st-print-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.drf-st-print-head .drf-st-dim {
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+.drf-st-print-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.drf-st-print-row code {
+  padding: 3px 8px;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--fg);
+  white-space: nowrap;
+}
+.drf-st-arrow {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* phones */
+
+@container (max-width: 540px) {
+  .drf-st-top {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .drf-st-code,
+  .drf-st-expr {
+    font-size: min(11px, calc(100cqw / 40));
+  }
+  .drf-st-wide {
+    display: none;
+  }
+  .drf-st-narrow {
+    display: inline;
+  }
+  .drf-st-tile-n {
+    font-size: 9px;
+  }
+  .drf-st-tape {
+    height: 20px;
+    column-gap: 1px;
+  }
+  .drf-st-tile[data-gap],
+  .drf-st-group {
+    margin-left: 2px;
+  }
+  .drf-st-print-row code {
+    font-size: 10.5px;
+  }
+  /* the three forms stack, so an arrow never dangles at the end of a line */
+  .drf-st-print-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .drf-st-arrow {
+    margin-left: 14px;
+    transform: rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drf-st-expr {
+    animation: none;
+  }
+  .drf-st-tile {
+    transition: none;
+  }
+}
