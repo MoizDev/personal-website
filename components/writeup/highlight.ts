@@ -4,7 +4,7 @@
  * comments, calls and keys. It runs on the server, so it ships no code.
  */
 
-export type Lang = "ts" | "js" | "tsx" | "py" | "json" | "sh" | "text";
+export type Lang = "ts" | "js" | "tsx" | "py" | "json" | "sh" | "rkt" | "text";
 
 /** What a piece of code is, for its colour. */
 export type Kind = "kw" | "str" | "num" | "com" | "fn" | "prop" | "key" | "lit" | "punct" | "deco";
@@ -17,6 +17,9 @@ const JS_WORDS =
   "const let var function return if else for of in while do await async new class extends import from export default type interface as switch case break continue throw try catch finally yield typeof instanceof void delete";
 const PY_WORDS =
   "def return if elif else for in while not and or is class import from as with try except finally raise lambda yield async await pass break continue global nonlocal del assert";
+
+const RKT_WORDS =
+  /(?:define-struct|define|lambda|λ|local|cond|else|if|let\*?|letrec|and|or|when|unless|begin|set!|require|provide|module|check-expect)(?=[\s()[\]{}]|$)/y;
 
 const words = (s: string) => new RegExp(`\\b(?:${s.split(" ").join("|")})\\b`, "y");
 
@@ -61,6 +64,19 @@ const RULES: Record<Exclude<Lang, "text">, Rule[]> = {
     IDENT,
     ["punct", /[|&;<>]+/y],
   ],
+  // Racket: names run until a delimiter, the word after "(" is the call
+  rkt: [
+    ["com", /;[^\n]*|#\|[\s\S]*?\|#|#;/y],
+    ["str", /"(?:\\.|[^"\\])*"/y],
+    ["key", /#:[^\s()[\]{}"]+/y],
+    ["lit", /#(?:true|false|t|f)(?=[\s()[\]{}]|$)/y],
+    ["kw", RKT_WORDS],
+    ["num", /[+-]?\d+(?:\.\d+)?(?:\/\d+)?(?=[\s()[\]{}]|$)/y],
+    ["lit", /(?:true|false|empty|null)(?=[\s()[\]{}]|$)/y],
+    ["fn", /(?<=\()[^\s()[\]{}"';`,]+/y],
+    [null, /[^\s()[\]{}"';`,]+/y],
+    ["punct", /[()[\]{}'`,]/y],
+  ],
 };
 RULES.js = RULES.ts;
 RULES.tsx = RULES.ts;
@@ -99,6 +115,7 @@ export function tokenize(code: string, lang: Lang): Token[] {
     for (let j = k - 1; j >= 0; j--) if (out[j].text.trim()) return out[j];
   };
   out.forEach((t, k) => {
+    if (lang === "rkt") return; // its rules already know calls from names
     const n = next(k)?.text;
     if (t.kind === "str" && (lang === "json" || lang === "py") && n === ":") t.kind = "key";
     // a keyword used as a name: spec.type, { type: "flow" }

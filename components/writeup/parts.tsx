@@ -230,6 +230,7 @@ const LANG_NAME: Record<Lang, string> = {
   py: "Python",
   json: "JSON",
   sh: "Shell",
+  rkt: "Racket",
   text: "",
 };
 
