@@ -154,6 +154,11 @@ html:has(.wu) {
   line-height: 22px;
 }
 
+/* each part wraps as a whole, so "Winner" never ends up alone on a line */
+.wu-date-dim {
+  display: inline-block;
+}
+
 .wu-date-dim::before {
   content: "·";
   margin: 0 8px;

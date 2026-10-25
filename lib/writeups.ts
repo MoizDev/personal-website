@@ -13,11 +13,11 @@ export type Section = { id: string; title: string; level: 2 | 3 };
 
 export type WriteupMeta = {
   slug: string;
-  /** the project's name, shown above the title */
+  /** the project's name, shown in the line under the title */
   project: string;
   /** a small mark beside the project's name */
   mark?: StaticImageData;
-  /** the headline */
+  /** the headline, the page's big heading; a bit of fun is welcome */
   title: string;
   /** one sentence under the headline */
   dek: string;

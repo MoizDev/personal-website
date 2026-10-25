@@ -32,9 +32,10 @@ export function WriteupPage({ meta, others, children }: { meta: WriteupMeta; oth
 
       <article className="wu-article">
         <div className="wu-head">
-          <h1 className="wu-title">{meta.project}</h1>
+          <h1 className="wu-title">{meta.title}</h1>
           <p className="wu-date">
-            {meta.date}
+            {meta.project}
+            <span className="wu-date-dim">{meta.date}</span>
             {meta.occasion && <span className="wu-date-dim">{meta.occasion}</span>}
           </p>
         </div>

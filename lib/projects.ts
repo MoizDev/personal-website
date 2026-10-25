@@ -37,7 +37,7 @@ export type Project = {
   /** a few sentences, for when the card is pulled out of the row */
   about: string;
   href: string;
-  /** a path to the project's writeup on this site, linked from the pulled-out card */
+  /** a path to the project's writeup on this site: the card opens it instead of href, and href stays in the detail links */
   writeup?: string;
   /** optional looping clip (a path under /public) that plays on the pulled-out card */
   video?: string;

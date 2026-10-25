@@ -15,7 +15,8 @@ few paragraphs. `/writeups` lists them all.
 3. Images go in `assets/writeups/<slug>/` as `.webp`, imported statically so
    Next sizes them. Keep them under about 100 KB each.
 4. To link it from the home page, set `writeup: "/writeups/<slug>"` on the
-   project in `lib/projects.ts`. The pulled-out card then shows "Read the writeup".
+   project in `lib/projects.ts`. Clicking the pulled-out card then opens the
+   writeup, and its detail shows "Read the writeup" beside the project's own link.
 
 ## The page
 
@@ -23,7 +24,9 @@ few paragraphs. `/writeups` lists them all.
 an article only writes its body.
 
 - Top bar: Back on the left; the project's links and the theme switch on the right.
-- Head: the project's name, centred, and a quiet line under it: date · occasion.
+- Head: the title, centred, and a quiet line under it: project · date · occasion.
+  Give it a title with some character ("Some Assembly Required"); the project's
+  name is in the line under it.
 - Hero image, the full width of the column.
 - Team and Overview, side by side (1 : 2), in small grey type.
 - The body, in one 662px column. Figures can break out to 944px with `wide`.

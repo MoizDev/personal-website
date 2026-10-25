@@ -511,9 +511,10 @@ export function CardStack() {
                 }}
                 className="card"
                 data-hover={hover === j}
-                href={p.href}
-                target="_blank"
-                rel="noreferrer"
+                // a project with a writeup opens it here; the rest open their site in a new tab
+                href={p.writeup ?? p.href}
+                target={p.writeup ? undefined : "_blank"}
+                rel={p.writeup ? undefined : "noreferrer"}
                 draggable={false}
                 aria-label={`${p.name}, ${p.year}. ${p.blurb}`}
                 style={INITIAL[j]}
