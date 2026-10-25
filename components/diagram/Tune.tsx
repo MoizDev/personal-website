@@ -38,6 +38,8 @@ export function Tune({ spec }: { spec: TuneSpec }) {
   const rolling = seq.step >= n || seq.reduced;
   const v = useRoll(from, to, rolling);
   const shown = seq.reduced ? to : v;
+  // keep as many decimals as from: and to: were written with
+  const places = Math.max(...[spec.from, spec.to].map((x) => x.match(/\.(\d+)/)?.[1].length ?? 0));
 
   return (
     <div ref={ref} className="dg-tune-wrap">
@@ -45,7 +47,7 @@ export function Tune({ spec }: { spec: TuneSpec }) {
       <div className="dg-tune">
         <div className="dg-tune-dial" data-done={seq.step >= n}>
           {spec.label && <span className="dg-tune-label">{spec.label}</span>}
-          <span className="dg-tune-value">{isClock ? clock(shown) : Math.round(shown)}</span>
+          <span className="dg-tune-value">{isClock ? clock(shown) : shown.toFixed(places)}</span>
           <span className="dg-tune-from" data-show={seq.step >= n}>
             was {spec.from}
           </span>

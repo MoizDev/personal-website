@@ -150,13 +150,16 @@ export function clock(sec: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** Pull "Label", [Icon], {tone} and ": note" out of a fragment. */
-export function bits(src: string): Bits & { rest: string } {
+/**
+ * Pull "Label", [Icon], {tone} and ": note" out of a fragment. With withNote
+ * false, colons are left alone, for fragments that hold times like 1:30.
+ */
+export function bits(src: string, withNote = true): Bits & { rest: string } {
   let s = src;
   let note: string | undefined;
   // the note is whatever follows the first colon that sits outside quotes
   let inQuote = false;
-  for (let i = 0; i < s.length; i++) {
+  for (let i = 0; withNote && i < s.length; i++) {
     if (s[i] === '"') inQuote = !inQuote;
     else if (s[i] === ":" && !inQuote) {
       note = s.slice(i + 1).trim() || undefined;
@@ -351,7 +354,7 @@ function parseBars(lines: Line[]): BarsSpec {
     const row: BarRow = { label: lb.label, icon: lb.icon, tone: lb.tone ?? nb?.tone, note: nb ? nb.rest || nb.note : undefined };
     if (value.includes("..")) {
       row.segments = value.split(",").map((seg) => {
-        const sb = bits(seg);
+        const sb = bits(seg, false);
         const [a, b] = sb.rest.split("..").map(toNumber);
         return { from: a, to: b, label: seg.includes('"') ? sb.label : undefined, tone: sb.tone };
       });
@@ -361,7 +364,7 @@ function parseBars(lines: Line[]): BarsSpec {
   const top = Math.max(...rows.map((r) => r.value ?? Math.max(...(r.segments ?? []).map((s) => s.to))));
   let mark: BarsSpec["mark"];
   if (head.mark) {
-    const mb = bits(head.mark);
+    const mb = bits(head.mark, false);
     mark = { at: toNumber(mb.rest), label: head.mark.includes('"') ? mb.label : undefined };
   }
   return {
