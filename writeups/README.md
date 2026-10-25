@@ -34,7 +34,8 @@ The Bricked writeup was made this way; follow the same steps for the next projec
 3. **Plan the figures before the prose.** For each section, ask what the
    reader should see: a pipeline is a `flow`, a retry loop a `cycle`, a run
    over time a `clock` or a gantt in `bars`, a before and after `Stats`, an
-   idea and its result a `Pair`. Aim for a figure every two or three
+   idea and its result a `Pair`, the shape of a record or a rule a short
+   `Code` snippet. Aim for a figure every two or three
    paragraphs, and give each one a `title` and a `caption` that says what to
    look at.
 4. **Write the prose** (see Writing, below), then the head in `meta.ts`: a
@@ -72,6 +73,9 @@ an article only writes its body.
   card in `lib/projects.ts`). It scrolls away with the page, fades out before
   the body, keeps clear of the title, and stops drawing once it's off screen.
   Phones show only the soft glow, as on the home page.
+- Type: Manrope, the site's font everywhere (loaded once in `app/layout.tsx`
+  as `--font-body`, weights 200 to 800). Code uses the system monospace.
+  Libre Baskerville (`--font-display`) is only for polaroid labels.
 - Top bar: Back on the left; the project's links and the theme switch on the right.
 - Head: the title, centred, and a quiet line under it: project · date · occasion.
   Give it a title with some character ("Some Assembly Required"); the project's
@@ -117,11 +121,14 @@ All of these are in `components/writeup/parts.tsx`, except `Diagram`,
 | `<Turntable frames alt label?>` | Four views of one object, turning slowly. |
 | `<Points>` + `<Point icon tone title>` | Two or three short points side by side, each under an icon. Three makes three columns. |
 | `<Stats items>` | Big numbers with a label under each, for a before and after. Put it in a `bare` `Figure`. |
+| `<Code lang label? mark? caption?>` | A short, simplified snippet with its syntax coloured (see Code, below). |
 | `<Chip icon tone>` | A name in a sentence with a small icon: `<Chip icon="Cpu" tone="teal">kernel</Chip>`. |
 | `<Pane kicker imgs?>` | Detail for one step of a flow, passed as `panes={{ id: <Pane …/> }}`. |
 | `<Beat>` | One line set apart for weight. Use rarely. |
 | `<Quote who>` | A pull quote. |
 | `<Hood s>` | A quieter panel for a deeper aside, with its own entry in the contents. |
+
+Prose can name a file, a field or a value as inline code: `<code>brief.json</code>`.
 
 Frames are for drawn figures only. Photos, screenshots, polaroids, mosaics,
 turntables and stats go in a `bare` `Figure`, since they bring their own
@@ -138,6 +145,41 @@ teal for the kernel and orange for the image model.
 Icons are Lucide names (`Bot`, `Cpu`, `Image`) plus a few of our own
 (`brick`, `GitHub`), listed in `components/diagram/icons.tsx`. An unknown name
 draws a small dot, so check new ones there.
+
+## Code
+
+Sometimes a few lines of code say it better than a paragraph: the shape of a
+record, a rule, the control flow of a loop. Use `<Code>` for those.
+
+```tsx
+<p>A simplified version of the check:</p>
+<Code lang="py" label="pipeline.py" mark="4-5" caption="One repair, then give up.">{`
+  def build_checked(brief):
+      parts, problems = build(brief)
+      if problems:
+          brief = repair(brief, problems)
+          parts, problems = build(brief)
+      return brief, parts, problems
+`}</Code>
+```
+
+- It's an illustration, not a copy of the repo. Cut the real code down to the
+  lines that make the point (five to fifteen), rename things for clarity, and
+  replace the rest with `...` or a comment. Say "a simplified version" in the
+  sentence before it.
+- `lang`: `ts`, `js`, `tsx`, `py`, `json`, `sh` or `text`. Colours come from a
+  small built-in highlighter (`components/writeup/highlight.ts`) that runs on
+  the server.
+- `label` is a file name or a short title, shown above the block with the
+  language.
+- `mark="2-3, 6"` lights those lines (counting from 1) in the project's colour
+  and dims the rest a little. Use it to point at the one or two lines the
+  prose is about.
+- `caption` is a short line under it. It isn't numbered; snippets aren't
+  figures.
+- The source's shared indent and blank first and last lines are trimmed, so
+  indent it with the JSX around it. Long lines scroll sideways on phones; keep
+  them under about 70 characters.
 
 ## The diagram language
 
