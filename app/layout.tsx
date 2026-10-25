@@ -16,6 +16,8 @@ const serif = Libre_Baskerville({
 });
 
 export const metadata: Metadata = {
+  // makes OG and Twitter image paths absolute; the apex domain redirects to www
+  metadataBase: new URL("https://www.moizhashmi.com"),
   title: "Moiz Hashmi",
   description: "Computer Science at the University of Waterloo. A row of projects, one card each.",
 };
