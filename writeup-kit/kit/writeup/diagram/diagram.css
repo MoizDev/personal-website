@@ -1,0 +1,1692 @@
+/*
+ * Animated diagrams. Every renderer shares the card look (.dg-node), the tone
+ * colours (data-tone, set up in writeup.css) and the corner controls. Load it
+ * with writeup.css (WriteupPage imports both).
+ * States are data attributes: idle, active, done.
+ */
+
+.dg {
+  --dg-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --dg-card: var(--bg);
+  position: relative;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--fg);
+}
+
+/* ---------- controls ---------- */
+
+.dg-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wu-fig-tools .dg-controls {
+  position: static;
+}
+
+.dg-controls-label {
+  /* the same height as the button beside it, so the pair lines up */
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 99px;
+  line-height: 1;
+  background: var(--wu-tone);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.dg-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.dg-btn:hover {
+  color: var(--fg);
+  border-color: rgba(var(--ink-rgb), 0.3);
+}
+
+/* ---------- a card ---------- */
+
+.dg-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 13px 13px;
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+  border-radius: 12px;
+  background: var(--dg-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: opacity 0.45s var(--dg-ease), border-color 0.45s, box-shadow 0.45s, transform 0.45s var(--dg-ease);
+}
+
+.dg-node[data-state="idle"] {
+  opacity: 0.42;
+}
+
+.dg-node[data-state="active"] {
+  border-color: var(--tone);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone) 16%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--tone) 70%, transparent);
+  transform: translateY(-2px);
+}
+
+.dg-flow .dg-node {
+  cursor: pointer;
+}
+
+.dg-node-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: rgba(var(--ink-rgb), 0.05);
+  color: var(--soft);
+  transition: background 0.45s, color 0.45s;
+}
+
+.dg-node[data-state="done"] .dg-node-icon {
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--tone);
+}
+
+.dg-node[data-state="active"] .dg-node-icon {
+  background: var(--tone);
+  color: var(--bg);
+}
+
+.dg-node[data-tone="ink"][data-state="done"] .dg-node-icon {
+  background: rgba(var(--ink-rgb), 0.07);
+  color: var(--fg);
+}
+
+.dg-node-label {
+  font-size: 14.5px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.dg-node-note {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+/* ---------- flow ---------- */
+
+.dg-flow-wrap[data-loop="true"] {
+  padding-right: 26px;
+}
+
+.dg-flow {
+  position: relative;
+  display: grid;
+  column-gap: 40px;
+  row-gap: 54px;
+  align-items: stretch;
+}
+
+.dg-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.dg-edge-line,
+.dg-edge-head {
+  fill: none;
+  stroke: rgba(var(--ink-rgb), 0.2);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.4s;
+}
+
+.dg-edge[data-lit="true"] .dg-edge-line,
+.dg-edge[data-lit="true"] .dg-edge-head {
+  stroke: rgba(var(--ink-rgb), 0.6);
+}
+
+.dg-edge[data-kind="loop"] .dg-edge-line {
+  stroke-dasharray: 5 5;
+}
+
+.dg-edge[data-kind="loop"][data-lit="true"] .dg-edge-line,
+.dg-edge[data-kind="loop"][data-lit="true"] .dg-edge-head {
+  stroke: var(--wu-tone);
+  animation: dg-march 0.9s linear infinite;
+}
+
+.dg-edge[data-kind="cut"] .dg-edge-line {
+  stroke-dasharray: 3 5;
+  stroke: rgba(var(--ink-rgb), 0.22);
+}
+
+.dg-edge-cut circle {
+  fill: var(--bg);
+  stroke: var(--t-red);
+  stroke-width: 1.5;
+}
+
+.dg-edge-cut path {
+  stroke: var(--t-red);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+@keyframes dg-march {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+.dg-pulse circle {
+  fill: var(--wu-tone);
+  filter: drop-shadow(0 0 5px var(--wu-tone));
+}
+
+.dg-edge-label {
+  position: absolute;
+  z-index: 2;
+  padding: 2px 8px;
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  border-radius: 99px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  transition: color 0.4s, border-color 0.4s;
+  pointer-events: none;
+}
+
+.dg-edge-label[data-lit="true"] {
+  color: var(--fg);
+}
+
+.dg-edge-label[data-kind="loop"][data-lit="true"] {
+  border-color: var(--wu-tone);
+  color: var(--wu-tone);
+}
+
+/* a decision's branch: plain words just past where it leaves */
+.dg-edge-label[data-branch] {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* a branch on a short line on a phone: a small chip over the line */
+.dg-edge-label[data-branch="line"] {
+  z-index: 3;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--bg);
+  font-size: 10.5px;
+  line-height: 15px;
+  transform: translate(-50%, -50%);
+}
+
+/* a label on a short line: plain words just above it */
+.dg-edge-label[data-tight] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  transform: translate(-50%, calc(-100% - 3px));
+}
+
+/* an arrow around the outside: its label runs along it */
+.dg-edge-label[data-via] {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.dg-flow-wrap[data-via-left] {
+  padding-left: 30px;
+}
+
+.dg-flow-wrap[data-via-right] {
+  padding-right: 30px;
+}
+
+/* a token carrying an icon along an arrow */
+.dg-token-icon {
+  color: #fff;
+}
+
+/* flowcharts sit on a faint dotted grid */
+.wu-fig-panel:has(> .dg-flow-fig) {
+  background-image: radial-gradient(circle, rgba(var(--ink-rgb), 0.13) 1px, transparent 1.3px);
+  background-size: 18px 18px;
+  background-position: 9px 9px;
+}
+
+.dg-node-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dg-node code {
+  padding: 0.05em 0.32em;
+  border-radius: 3px;
+  background: rgba(var(--ink-rgb), 0.07);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.86em;
+}
+
+/* ---------- flowchart shapes ---------- */
+
+/* everything but a card centres its words and takes a tint of its tone */
+.dg-node:not([data-shape="card"]) {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.dg-node:not([data-shape="card"]):not([data-shape="round"]) .dg-node-icon {
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none !important;
+  color: var(--muted);
+}
+
+.dg-node:not([data-shape="card"]):not([data-shape="round"])[data-state="active"] .dg-node-icon,
+.dg-node:not([data-shape="card"]):not([data-shape="round"])[data-state="done"] .dg-node-icon {
+  color: var(--tone);
+}
+
+.dg-node[data-shape="step"],
+.dg-node[data-shape="pill"],
+.dg-node[data-shape="store"],
+.dg-node[data-shape="stack"] {
+  --fill: color-mix(in srgb, var(--tone) 7%, var(--dg-card));
+  --edge: color-mix(in srgb, var(--tone) 32%, rgba(var(--ink-rgb), 0.12));
+}
+
+.dg-node[data-tone="ink"] {
+  --fill: var(--dg-card);
+  --edge: rgba(var(--ink-rgb), 0.14);
+}
+
+/* a step: a plain box, title over a line of detail */
+.dg-node[data-shape="step"] {
+  padding: 12px 14px;
+  border-color: var(--edge);
+  border-radius: 6px;
+  background: var(--fill);
+}
+
+/* a terminal: where the chart starts or ends */
+.dg-node[data-shape="pill"] {
+  flex-direction: row;
+  gap: 8px;
+  align-self: center;
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 9px 18px;
+  border-color: var(--edge);
+  border-radius: 99px;
+  background: var(--fill);
+}
+
+.dg-node[data-shape="pill"] .dg-node-text {
+  gap: 1px;
+}
+
+/* a stack: several of the same thing */
+.dg-node[data-shape="stack"] {
+  border-color: var(--edge);
+  background: var(--fill);
+  box-shadow:
+    4px 4px 0 -1px var(--dg-card),
+    4px 4px 0 0 var(--edge),
+    8px 8px 0 -1px var(--dg-card),
+    8px 8px 0 0 var(--edge);
+}
+
+.dg-node[data-shape="stack"][data-state="active"] {
+  box-shadow:
+    4px 4px 0 -1px var(--dg-card),
+    4px 4px 0 0 var(--tone),
+    8px 8px 0 -1px var(--dg-card),
+    8px 8px 0 0 var(--tone),
+    0 0 0 4px color-mix(in srgb, var(--tone) 16%, transparent);
+}
+
+/* a store: a cylinder, for anything kept on disk */
+.dg-node[data-shape="store"] {
+  justify-self: center;
+  width: 100%;
+  max-width: 240px;
+  padding: 26px 14px 14px;
+  border-color: var(--edge);
+  border-radius: 50% / 13px;
+  background: var(--fill);
+}
+
+.dg-node[data-shape="store"]::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto;
+  height: 26px;
+  border: 1px solid var(--edge);
+  border-radius: 50%;
+  transition: border-color 0.45s;
+}
+
+.dg-node[data-shape="store"][data-state="active"]::before {
+  border-color: var(--tone);
+}
+
+/* shapes drawn by an outline: decision, input or output, document */
+.dg-node[data-shape="decide"],
+.dg-node[data-shape="io"],
+.dg-node[data-shape="doc"] {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dg-outline {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dg-outline path {
+  fill: color-mix(in srgb, var(--tone) 7%, var(--dg-card));
+  stroke: color-mix(in srgb, var(--tone) 32%, rgba(var(--ink-rgb), 0.12));
+  stroke-width: 1;
+  transition: stroke 0.45s, fill 0.45s;
+}
+
+.dg-node[data-tone="ink"] .dg-outline path {
+  fill: var(--dg-card);
+  stroke: rgba(var(--ink-rgb), 0.16);
+}
+
+.dg-node[data-state="active"] .dg-outline path {
+  stroke: var(--tone);
+  stroke-width: 1.5;
+}
+
+.dg-node[data-state="active"] .dg-outline {
+  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--tone) 30%, transparent));
+}
+
+.dg-node[data-shape="decide"] {
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  max-width: 220px;
+  min-height: 92px;
+  padding: 18px 30px;
+}
+
+.dg-node[data-shape="decide"] .dg-node-text {
+  max-width: 128px;
+}
+
+.dg-node[data-shape="decide"] .dg-node-note {
+  font-size: 11.5px;
+}
+
+.dg-node[data-shape="io"] {
+  padding: 12px 26px;
+}
+
+.dg-node[data-shape="doc"] {
+  padding: 12px 14px 22px;
+}
+
+/* an actor: a disc with its icon, the name underneath, no box */
+.dg-node[data-shape="round"] {
+  align-self: center;
+  justify-self: center;
+  gap: 8px;
+  max-width: 160px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dg-node[data-shape="round"][data-state="active"] {
+  transform: none;
+}
+
+.dg-node[data-shape="round"] .dg-node-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+  border-radius: 50%;
+  background: var(--dg-card);
+  transition: background 0.45s, color 0.45s, box-shadow 0.45s, border-color 0.45s;
+}
+
+.dg-node[data-shape="round"][data-state="done"] .dg-node-icon {
+  border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+  background: color-mix(in srgb, var(--tone) 10%, var(--dg-card));
+}
+
+.dg-node[data-shape="round"][data-state="active"] .dg-node-icon {
+  border-color: var(--tone);
+  background: var(--tone);
+  color: #fff;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+.dg-node[data-shape="round"] .dg-node-label {
+  font-size: 13.5px;
+}
+
+/* ---------- groups and lanes ---------- */
+
+.dg-flow[data-groups] {
+  padding: 30px 14px 14px;
+}
+
+.dg-flow[data-lanes] {
+  row-gap: 42px;
+  padding: 12px 0 12px 36px;
+}
+
+.dg-group {
+  position: absolute;
+  z-index: 0;
+  border: 1px dashed color-mix(in srgb, var(--tone) 38%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tone) 4%, transparent);
+  transition: border-color 0.45s, background 0.45s;
+  pointer-events: none;
+}
+
+.dg-group[data-lit="true"] {
+  border-color: color-mix(in srgb, var(--tone) 60%, transparent);
+  background: color-mix(in srgb, var(--tone) 6.5%, transparent);
+}
+
+.dg-group-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--tone) 70%, var(--fg));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dg-group[data-kind="lane"] {
+  border: 0;
+  border-radius: 8px;
+}
+
+/* a lane's name reads up its side; an icon would turn with it, so it goes */
+.dg-group[data-kind="lane"] .dg-group-label svg {
+  display: none;
+}
+
+.dg-group[data-kind="lane"] .dg-group-label {
+  inset: 0 auto 0 0;
+  justify-content: center;
+  width: 36px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* ---------- a chart on a phone keeps its shape, with tighter nodes ---------- */
+
+.dg-flow-wrap[data-compact] .dg-flow {
+  row-gap: 40px;
+}
+
+.dg-flow-wrap[data-compact] .dg-flow[data-lanes] {
+  padding-left: 28px;
+}
+
+.dg-flow-wrap[data-compact] .dg-group[data-kind="lane"] .dg-group-label {
+  width: 28px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node {
+  padding: 9px 9px 10px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node-label {
+  font-size: 12.5px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node-note {
+  font-size: 11px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="decide"] {
+  min-height: 76px;
+  padding: 14px 16px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="decide"] .dg-node-note,
+.dg-flow-wrap[data-compact] .dg-node[data-shape="round"] .dg-node-note {
+  display: none;
+}
+
+/* a pill too narrow for one line becomes a rounded box, not a circle */
+.dg-flow-wrap[data-compact] .dg-node[data-shape="pill"] {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 9px 10px;
+  border-radius: 18px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="decide"] .dg-node-label {
+  font-size: 11.5px;
+  line-height: 1.25;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="decide"] .dg-node-icon {
+  display: none;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="round"] {
+  padding: 0;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="round"] .dg-node-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.dg-pane {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s var(--dg-ease);
+}
+
+.dg-pane[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+.dg-pane > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dg-pane-inner {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px dashed rgba(var(--ink-rgb), 0.16);
+  animation: dg-in 0.5s var(--dg-ease);
+}
+
+.dg-pane-inner:not(:has(*)) {
+  display: none;
+}
+
+/* a pane: a picture and a few lines about the step */
+.dg-detail {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  align-items: center;
+  min-height: 150px;
+}
+
+.dg-detail[data-text-only="true"] {
+  grid-template-columns: 1fr;
+  min-height: 0;
+}
+
+.dg-detail img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.dg-detail-imgs {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+}
+
+.dg-detail-k {
+  margin-bottom: 4px;
+  color: var(--wu-tone);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.dg-detail-t {
+  color: var(--soft);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.dg-detail code,
+.dg-mono {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.86em;
+}
+
+.dg-detail q {
+  color: var(--fg);
+}
+
+@keyframes dg-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* ---------- cycle ---------- */
+
+.dg-cycle {
+  position: relative;
+  width: min(100%, 460px);
+  aspect-ratio: 1;
+  margin: 6px auto;
+}
+
+.dg-ring {
+  position: absolute;
+  inset: 0;
+}
+
+.dg-ring circle {
+  fill: none;
+  stroke: rgba(var(--ink-rgb), 0.16);
+  stroke-width: 0.4;
+  stroke-dasharray: 1.2 1.2;
+}
+
+.dg-token {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.7s var(--dg-ease);
+  pointer-events: none;
+}
+
+.dg-token[data-resetting="true"] {
+  transition: none;
+}
+
+.dg-token span {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--wu-tone);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--wu-tone) 20%, transparent), 0 0 18px var(--wu-tone);
+}
+
+.dg-cycle-center {
+  position: absolute;
+  inset: 32%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.dg-cycle-lap {
+  font-size: 58px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dg-cycle-caption {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dg-cycle-end {
+  color: var(--wu-tone);
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.2;
+  animation: dg-in 0.5s var(--dg-ease);
+}
+
+.dg-cycle-node {
+  position: absolute;
+  align-items: center;
+  width: 128px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.dg-cycle-node[data-state="active"] {
+  transform: translate(-50%, calc(-50% - 2px));
+}
+
+/* ---------- chat ---------- */
+
+.dg-chat-wrap {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.dg-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 40px;
+  list-style: none;
+}
+
+.dg-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  animation: dg-in 0.4s var(--dg-ease);
+}
+
+.dg-msg[data-mine="true"] {
+  flex-direction: row-reverse;
+}
+
+.dg-msg[data-shown="false"],
+.dg-aside[data-shown="false"] {
+  display: none;
+}
+
+.dg-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--tone);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dg-bubble {
+  display: grid;
+  gap: 2px;
+  max-width: 80%;
+  padding: 9px 14px 10px;
+  border: 1px solid rgba(var(--ink-rgb), 0.08);
+  border-radius: 18px 18px 18px 6px;
+  background: var(--dg-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.dg-msg[data-mine="true"] .dg-bubble {
+  border-color: transparent;
+  border-radius: 18px 18px 6px 18px;
+  background: var(--tone);
+  color: #fff;
+}
+
+.dg-who {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.dg-msg[data-mine="true"] .dg-who {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.dg-said {
+  font-size: 15.5px;
+  line-height: 1.42;
+}
+
+.dg-aside {
+  align-self: center;
+  max-width: 85%;
+  padding: 2px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  animation: dg-in 0.4s var(--dg-ease);
+}
+
+.dg-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px 2px;
+}
+
+.dg-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: dg-bounce 1s infinite;
+}
+
+.dg-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.dg-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes dg-bounce {
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.dg-call {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  margin: 0 auto 22px;
+  padding: 10px 18px 10px 10px;
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  border-radius: 99px;
+  background: var(--dg-card);
+}
+
+.dg-call-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--t-green);
+  color: #fff;
+}
+
+.dg-call[data-ringing="true"] .dg-call-icon {
+  animation: dg-ring 1.1s infinite;
+}
+
+.dg-call[data-ringing="true"] .dg-call-icon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--t-green);
+  animation: dg-ripple 1.1s infinite;
+}
+
+@keyframes dg-ring {
+  0%, 50%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(-12deg); }
+  20%, 40% { transform: rotate(12deg); }
+}
+
+@keyframes dg-ripple {
+  from { opacity: 0.8; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.8); }
+}
+
+.dg-call-text {
+  display: grid;
+}
+
+.dg-call-who {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.dg-call-state {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* ---------- timeline ---------- */
+
+.dg-tl-wrap {
+  container: dgtl / inline-size;
+}
+
+.dg-tl {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 10px;
+  list-style: none;
+}
+
+.dg-tl-track {
+  position: absolute;
+  top: 16px;
+  left: calc(50% / var(--n));
+  right: calc(50% / var(--n));
+  height: 2px;
+  background: rgba(var(--ink-rgb), 0.1);
+}
+
+.dg-tl-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--wu-tone);
+  transform: scaleX(var(--fill));
+  transform-origin: 0 50%;
+  transition: transform 1s var(--dg-ease);
+}
+
+.dg-tl-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  transition: opacity 0.5s;
+}
+
+.dg-tl-item[data-state="idle"] {
+  opacity: 0.4;
+}
+
+.dg-tl-dot {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid rgba(var(--ink-rgb), 0.18);
+  border-radius: 50%;
+  background: var(--dg-card);
+  color: var(--soft);
+  transition: background 0.45s, color 0.45s, border-color 0.45s, box-shadow 0.45s, transform 0.45s var(--dg-ease);
+}
+
+.dg-tl-item[data-state="done"] .dg-tl-dot {
+  border-color: var(--tone);
+  color: var(--tone);
+}
+
+.dg-tl-item[data-tone="ink"][data-state="done"] .dg-tl-dot {
+  border-color: var(--wu-tone);
+  color: var(--wu-tone);
+}
+
+.dg-tl-item[data-state="active"] .dg-tl-dot {
+  border-color: transparent;
+  background: var(--wu-tone);
+  color: #fff;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--wu-tone) 18%, transparent);
+  transform: scale(1.08);
+}
+
+.dg-tl-item:not([data-tone="ink"])[data-state="active"] .dg-tl-dot {
+  background: var(--tone);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+.dg-tl-text {
+  display: grid;
+  gap: 3px;
+}
+
+.dg-tl-time {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dg-tl-title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.dg-tl-note {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+@container dgtl (max-width: 560px) {
+  .dg-tl {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .dg-tl-track {
+    top: 17px;
+    bottom: 17px;
+    left: 16px;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+
+  .dg-tl-fill {
+    transform: scaleY(var(--fill));
+    transform-origin: 50% 0;
+  }
+
+  .dg-tl-item {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+    text-align: left;
+  }
+
+  .dg-tl-dot {
+    flex: none;
+  }
+
+  .dg-tl-text {
+    padding-top: 2px;
+  }
+}
+
+/* ---------- clock ---------- */
+
+.dg-clock {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  gap: 36px;
+  align-items: center;
+}
+
+.dg-clock-face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+}
+
+.dg-clock-face svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.dg-clock-bg {
+  fill: var(--dg-card);
+  stroke: rgba(var(--ink-rgb), 0.1);
+  stroke-width: 5;
+}
+
+.dg-clock-arc {
+  fill: none;
+  stroke: var(--wu-tone);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--p));
+}
+
+.dg-clock-tick {
+  fill: var(--bg);
+  stroke: rgba(var(--ink-rgb), 0.3);
+  stroke-width: 1.2;
+  transition: fill 0.3s, stroke 0.3s;
+}
+
+.dg-clock-tick[data-hit="true"] {
+  fill: var(--wu-tone);
+  stroke: var(--bg);
+}
+
+.dg-clock-time {
+  position: relative;
+  font-size: 44px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dg-clock-done {
+  position: absolute;
+  top: 64%;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.dg-clock-face[data-done="true"] .dg-clock-done {
+  color: var(--t-green);
+  font-weight: 500;
+}
+
+.dg-clock-events {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.dg-clock-events li {
+  display: grid;
+  grid-template-columns: 44px 22px 1fr;
+  align-items: start;
+  gap: 8px;
+  transition: opacity 0.4s, color 0.4s;
+}
+
+.dg-clock-events li[data-state="idle"] {
+  opacity: 0.32;
+}
+
+.dg-clock-events li[data-state="active"] .dg-clock-label {
+  color: var(--tone);
+  font-weight: 500;
+}
+
+.dg-clock-events li[data-tone="ink"][data-state="active"] .dg-clock-label {
+  color: var(--fg);
+}
+
+.dg-clock-at {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.dg-clock-icon {
+  display: grid;
+  place-items: center;
+  height: 20px;
+  color: var(--tone);
+}
+
+.dg-clock-label {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.dg-clock-note {
+  display: block;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+/* ---------- bars ---------- */
+
+.dg-bars {
+  display: grid;
+  gap: 16px;
+  padding-right: 54px;
+}
+
+.dg-bar-row,
+.dg-axis {
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  column-gap: 16px;
+  align-items: center;
+}
+
+.dg-bar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--soft);
+  font-size: 14px;
+}
+
+.dg-bar-label svg {
+  flex: none;
+  color: var(--tone);
+}
+
+.dg-bar-track {
+  position: relative;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(var(--ink-rgb), 0.04);
+}
+
+.dg-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: 7px;
+  background: var(--tone);
+  transition: width 1.1s var(--dg-ease) calc(var(--i) * 130ms);
+}
+
+.dg-bar-row[data-tone="ink"] .dg-bar {
+  background: rgba(var(--ink-rgb), 0.78);
+}
+
+[data-grown="true"] .dg-bar {
+  width: var(--w);
+}
+
+.dg-bar-value {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.4s calc(0.7s + var(--i) * 130ms);
+}
+
+[data-grown="true"] .dg-bar-value {
+  opacity: 1;
+}
+
+.dg-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--l);
+  width: var(--w);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 9px;
+  border-radius: 7px;
+  background: var(--tone);
+  color: #fff;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 1s var(--dg-ease) calc(var(--i) * 260ms + var(--k) * 200ms);
+}
+
+.dg-seg[data-tone="ink"] {
+  background: rgba(var(--ink-rgb), 0.78);
+  color: var(--bg);
+}
+
+[data-grown="true"] .dg-seg {
+  transform: scaleX(1);
+}
+
+.dg-seg-label {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dg-bar-mark {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  z-index: 1;
+  width: 0;
+  border-left: 1.5px dashed var(--wu-tone);
+}
+
+.dg-bar-note {
+  grid-column: 2;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.dg-axis {
+  margin-top: -4px;
+}
+
+.dg-axis-track {
+  position: relative;
+  height: 18px;
+}
+
+.dg-tick {
+  position: absolute;
+  top: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
+}
+
+.dg-mark-label {
+  position: absolute;
+  top: 18px;
+  color: var(--wu-tone);
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* ---------- tune ---------- */
+
+.dg-tune {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.dg-tune-dial {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 26px 10px;
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  border-radius: 18px;
+  background: var(--dg-card);
+  text-align: center;
+}
+
+.dg-tune-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.dg-tune-value {
+  font-size: 56px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.5s;
+}
+
+.dg-tune-dial[data-done="true"] .dg-tune-value {
+  color: var(--wu-tone);
+}
+
+.dg-tune-from,
+.dg-tune-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.dg-tune-from {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.dg-tune-done {
+  color: var(--t-green);
+  font-weight: 500;
+}
+
+.dg-tune-from[data-show="true"],
+.dg-tune-done[data-show="true"] {
+  opacity: 1;
+}
+
+.dg-levers {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+}
+
+.dg-levers li {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(var(--ink-rgb), 0.1);
+  border-radius: 12px;
+  background: var(--dg-card);
+  transition: border-color 0.4s, opacity 0.4s;
+}
+
+.dg-levers li[data-on="false"] {
+  opacity: 0.55;
+}
+
+.dg-levers li[data-on="true"] {
+  border-color: color-mix(in srgb, var(--tone) 50%, transparent);
+}
+
+.dg-lever-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(var(--ink-rgb), 0.05);
+  color: var(--soft);
+  transition: background 0.4s, color 0.4s;
+}
+
+.dg-levers li[data-on="true"] .dg-lever-icon {
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--tone);
+}
+
+.dg-lever-text {
+  display: grid;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.dg-lever-note {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.dg-switch {
+  position: relative;
+  width: 36px;
+  height: 21px;
+  border-radius: 99px;
+  background: rgba(var(--ink-rgb), 0.14);
+  transition: background 0.35s;
+}
+
+.dg-switch span {
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.35s var(--dg-ease);
+}
+
+.dg-levers li[data-on="true"] .dg-switch {
+  background: var(--tone);
+}
+
+.dg-levers li[data-on="true"] .dg-switch span {
+  transform: translateX(15px);
+}
+
+/* ---------- dots ---------- */
+
+.dg-dots {
+  width: 100%;
+  height: auto;
+}
+
+.dg-dot {
+  fill: rgba(var(--ink-rgb), 0.22);
+  opacity: 0;
+  transition: opacity 0.4s var(--d), fill 0.6s;
+}
+
+[data-step="0"] .dg-dot,
+[data-step="1"] .dg-dot,
+[data-step="2"] .dg-dot {
+  opacity: 1;
+}
+
+[data-step="1"] .dg-dot:not(.dg-dot-hit),
+[data-step="2"] .dg-dot:not(.dg-dot-hit) {
+  fill: rgba(var(--ink-rgb), 0.12);
+  transition-delay: 0s;
+}
+
+[data-step="1"] .dg-dot-hit,
+[data-step="2"] .dg-dot-hit {
+  fill: var(--wu-tone);
+  filter: drop-shadow(0 0 3px var(--wu-tone));
+  transition-delay: 0s;
+}
+
+.dg-dots-legend {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.dg-dots-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: opacity 0.5s;
+}
+
+.dg-dots-legend span::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dg-dots-all {
+  color: var(--muted);
+}
+
+.dg-dots-all::before {
+  background: rgba(var(--ink-rgb), 0.25);
+}
+
+.dg-dots-pick {
+  color: var(--fg);
+  font-weight: 500;
+  opacity: 0;
+}
+
+.dg-dots-pick::before {
+  background: var(--wu-tone);
+}
+
+[data-step="2"] .dg-dots-pick {
+  opacity: 1;
+}
+
+/* ---------- small screens ---------- */
+
+@media (max-width: 720px) {
+  .dg-flow {
+    column-gap: 28px;
+    row-gap: 44px;
+  }
+
+  .dg-node {
+    padding: 10px 11px 11px;
+  }
+
+  .dg-cycle-node {
+    width: 96px;
+    padding: 8px;
+  }
+
+  .dg-cycle-node .dg-node-note {
+    display: none;
+  }
+
+  .dg-cycle-lap {
+    font-size: 42px;
+  }
+
+  .dg-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .dg-clock,
+  .dg-tune {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .dg-clock-face {
+    width: 190px;
+    margin: 0 auto;
+  }
+
+  .dg-bars {
+    padding-right: 44px;
+  }
+
+  .dg-bar-row,
+  .dg-axis {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
+  }
+
+  .dg-axis > span:first-child {
+    display: none;
+  }
+
+  .dg-bar-note {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dg *,
+  .dg *::before,
+  .dg *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
