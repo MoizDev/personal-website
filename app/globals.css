@@ -560,6 +560,10 @@ body {
   text-decoration-color: currentColor;
 }
 
+.detail-link + .detail-link {
+  margin-left: 1.4em;
+}
+
 /* ---------- overlay ---------- */
 
 .intro {
