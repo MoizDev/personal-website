@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Google_Sans, Libre_Baskerville } from "next/font/google";
+import { Libre_Baskerville, Manrope } from "next/font/google";
 import "./globals.css";
 
-const sans = Google_Sans({
+// Manrope is a variable font: one file covers every weight from 200 to 800.
+// next/font sizes a local fallback to its metrics, so the swap doesn't shift text.
+const sans = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
-  // next/font has no metrics for Google Sans, so it can't build a fallback
-  adjustFontFallback: false,
 });
 
 const serif = Libre_Baskerville({

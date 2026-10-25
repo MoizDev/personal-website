@@ -73,6 +73,9 @@ an article only writes its body.
   card in `lib/projects.ts`). It scrolls away with the page, fades out before
   the body, keeps clear of the title, and stops drawing once it's off screen.
   Phones show only the soft glow, as on the home page.
+- Type: Manrope, the site's font everywhere (loaded once in `app/layout.tsx`
+  as `--font-body`, weights 200 to 800). Code uses the system monospace.
+  Libre Baskerville (`--font-display`) is only for polaroid labels.
 - Top bar: Back on the left; the project's links and the theme switch on the right.
 - Head: the title, centred, and a quiet line under it: project · date · occasion.
   Give it a title with some character ("Some Assembly Required"); the project's
