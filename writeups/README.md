@@ -18,6 +18,50 @@ few paragraphs. `/writeups` lists them all.
    project in `lib/projects.ts`. Clicking the pulled-out card then opens the
    writeup, and its detail shows "Read the writeup" beside the project's own link.
 
+## Making one, start to finish
+
+The Bricked writeup was made this way; follow the same steps for the next project.
+
+1. **Read the project's code.** Clone it into a temporary folder outside this
+   repo and read it; don't run it. Start at the entry points, then the prompts,
+   configs and the commit history. Look for anything a run left behind (logs,
+   galleries, timings): that's where the real numbers and pictures come from.
+   Note what each part does and why it exists, with file names.
+2. **Outline it in `meta.ts`.** A shape that works: what it does → why the
+   obvious version failed → how the pieces fit → one section per stage → what
+   the runs showed (numbers) → what it can't do yet. Put deeper asides in a
+   `Hood`.
+3. **Plan the figures before the prose.** For each section, ask what the
+   reader should see: a pipeline is a `flow`, a retry loop a `cycle`, a run
+   over time a `clock` or a gantt in `bars`, a before and after `Stats`, an
+   idea and its result a `Pair`. Aim for a figure every two or three
+   paragraphs, and give each one a `title` and a `caption` that says what to
+   look at.
+4. **Write the prose** (see Writing, below), then the head in `meta.ts`: a
+   title with some character, a one-sentence dek, team, overview and hero.
+5. **Prepare the images.** Take them from the project's own repo or runs, not
+   from other sites. Convert them to `.webp` with Pillow and size each for
+   where it shows: about 1600px wide for the hero, 1200px for a full-width
+   figure, 560px for tiles. Use quality 80–85 and keep each under about
+   100 KB. Only commit images the article uses.
+
+   ```py
+   from PIL import Image
+   im = Image.open(src).convert("RGB")  # "RGBA" if it has transparency
+   if im.width > w: im = im.resize((w, round(im.height * w / im.width)), Image.LANCZOS)
+   im.save(dest, "WEBP", quality=84, method=6)
+   ```
+
+6. **Register it and link it**: steps 2 and 4 of "Adding one".
+7. **Check it.** `npm run build` (a broken diagram fails it) and
+   `npm run lint`. Then open the page in a browser and look at every figure,
+   at 1440px and 390px wide, in light and dark, while it plays and after it
+   ends. Look for labels that wrap or clip, flows that wrap badly in the 662px
+   column (fix them with `row:`), and empty space. Turn on reduced motion once:
+   every figure should show its finished state with no controls. Finally,
+   click the project's card on the home page and make sure it opens the
+   writeup.
+
 ## The page
 
 `components/writeup/WriteupPage.tsx` draws everything around the article, so
