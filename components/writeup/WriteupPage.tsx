@@ -62,7 +62,7 @@ export function WriteupPage({ meta, others, children }: { meta: WriteupMeta; oth
               {meta.team.map((t) => (
                 <li key={t.name}>
                   <span>{t.name}</span>
-                  <span className="wu-team-role">{t.role}</span>
+                  {t.role && <span className="wu-team-role">{t.role}</span>}
                 </li>
               ))}
             </ul>

@@ -34,7 +34,7 @@ export type WriteupMeta = {
   hero: { src: StaticImageData; alt: string; video?: { mp4: string; webm?: string } };
   /** the project's colour, the same as its card's (lib/projects.ts): for accents and the sky at the top */
   tone: string;
-  team: { name: string; role: string; href?: string }[];
+  team: { name: string; role?: string; href?: string }[];
   overview: string;
   /** tools, shown as chips: [label, icon name] */
   stack?: [string, string][];
