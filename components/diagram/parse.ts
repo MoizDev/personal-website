@@ -370,7 +370,8 @@ function parseBars(lines: Line[]): BarsSpec {
   return {
     type: "bars",
     rows,
-    max: head.max ? toNumber(head.max) : top,
+    // without max:, the axis reaches the last bar or the mark, whichever is later
+    max: head.max ? toNumber(head.max) : Math.max(top, mark?.at ?? 0),
     unit: head.unit ?? "",
     format: head.format === "clock" ? "clock" : "number",
     mark,
