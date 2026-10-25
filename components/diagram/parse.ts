@@ -28,8 +28,26 @@ const TONES = new Set<Tone>(["ink", "orange", "blue", "yellow", "green", "purple
 /** The parts every labelled item can carry. */
 export type Bits = { label: string; icon?: string; tone?: Tone; note?: string };
 
-export type FlowNode = Bits & { id: string };
-export type FlowEdge = { from: string; to: string; kind: "next" | "loop" | "cut"; label?: string };
+/**
+ * How a flow node is drawn. card is the default: an icon tile over a label.
+ * The rest are flowchart shapes; see writeups/README.md.
+ */
+export type Shape = "card" | "step" | "decide" | "pill" | "store" | "doc" | "io" | "round" | "stack";
+const SHAPES = new Set<Shape>(["card", "step", "decide", "pill", "store", "doc", "io", "round", "stack"]);
+
+export type FlowNode = Bits & { id: string; shape?: Shape };
+export type FlowEdge = {
+  from: string;
+  to: string;
+  kind: "next" | "loop" | "cut";
+  label?: string;
+  /** an icon the token carries along this arrow */
+  icon?: string;
+  /** route around the outside of the chart, on this side */
+  via?: "left" | "right";
+};
+/** A shaded region behind some nodes (group), or a full-width band (lane). */
+export type FlowGroup = Bits & { kind: "group" | "lane"; ids: string[] };
 export type FlowSpec = {
   type: "flow";
   cols: number;
@@ -37,6 +55,7 @@ export type FlowSpec = {
   rows?: (string | null)[][];
   nodes: FlowNode[];
   edges: FlowEdge[];
+  groups?: FlowGroup[];
   /** the order the highlight walks; ids may repeat to go round a loop */
   play: string[];
   /** when the walk passes a loop edge, how many laps to show */
@@ -178,21 +197,39 @@ function headers(lines: Line[], keys: string[]): { head: Record<string, string>;
 
 const unquote = (s: string | undefined) => s?.replace(/^"(.*)"$/, "$1");
 
-/** "node id ..." or "id "Label" ..." */
+/** "node id ..." or "id "Label" ...", with an optional <shape> after the id */
 function nodeLine(text: string): FlowNode | null {
-  const m = text.match(/^(?:node\s+)?([A-Za-z]\w*)\s+(?=["[{])(.*)$/);
+  const m = text.match(/^(?:node\s+)?([A-Za-z]\w*)\s+(?:<(\w+)>\s*)?(?=["[{])(.*)$/);
+  if (!m) return null;
+  const shape = m[2] as Shape | undefined;
+  if (shape && !SHAPES.has(shape)) throw new DiagramError(`unknown shape <${shape}>: use ${[...SHAPES].join(", ")}`);
+  const b = bits(m[3]);
+  return { id: m[1], label: b.label, icon: b.icon, tone: b.tone, note: b.note, ...(shape && shape !== "card" ? { shape } : {}) };
+}
+
+/** group "Label" {tone} : a b c, or lane ... : when every word after the colon is a node */
+function groupLine(text: string, ids: Set<string>): FlowGroup | null {
+  const m = text.match(/^(group|lane)\s+(?=["[{])(.*)$/);
   if (!m) return null;
   const b = bits(m[2]);
-  return { id: m[1], label: b.label, icon: b.icon, tone: b.tone, note: b.note };
+  const members = (b.note ?? "").split(/\s+/).filter(Boolean);
+  if (!members.length || !members.every((id) => ids.has(id))) return null;
+  return { kind: m[1] as FlowGroup["kind"], label: b.label, icon: b.icon, tone: b.tone, ids: members };
 }
 
 const EDGE_OP = /\s*(->|~>|-x)\s*/;
 
 function edgeLine(text: string, ids: Set<string>, n: number): FlowEdge[] | null {
   if (!EDGE_OP.test(text)) return null;
+  // @left or @right sends the last hop around the outside; [Icon] is what its token carries
+  let t = text;
+  const via = t.match(/\s@(left|right)\b/)?.[1] as FlowEdge["via"];
+  t = t.replace(/\s@(left|right)\b/, "");
+  const icon = t.match(/\s\[([\w-]+)\]/)?.[1];
+  t = t.replace(/\s\[([\w-]+)\]/, "").trim();
   // a trailing "label" names the last hop
-  const lm = text.match(/"([^"]*)"\s*$/);
-  const body = lm ? text.slice(0, lm.index).trim() : text;
+  const lm = t.match(/"([^"]*)"\s*$/);
+  const body = lm ? t.slice(0, lm.index).trim() : t;
   const parts = body.split(EDGE_OP).map((p) => p.trim());
   const out: FlowEdge[] = [];
   for (let i = 0; i + 2 < parts.length; i += 2) {
@@ -202,7 +239,12 @@ function edgeLine(text: string, ids: Set<string>, n: number): FlowEdge[] | null 
     }
     out.push({ from, to, kind: op === "~>" ? "loop" : op === "-x" ? "cut" : "next" });
   }
-  if (lm && out.length) out[out.length - 1].label = lm[1];
+  const last = out[out.length - 1];
+  if (last) {
+    if (lm) last.label = lm[1];
+    if (icon) last.icon = icon;
+    if (via) last.via = via;
+  }
   return out;
 }
 
@@ -211,16 +253,25 @@ function parseFlow(lines: Line[]): FlowSpec {
   const nodes: FlowNode[] = [];
   const rows: (string | null)[][] = [];
   const edgeLines: Line[] = [];
+  // a line starting "group" or "lane" is a region if what follows its colon is
+  // all node ids, and otherwise a node that happens to have that id
+  const ids = new Set(body.map((l) => (/^(group|lane)\s/.test(l.text) ? null : nodeLine(l.text)?.id)).filter(Boolean) as string[]);
+  const groups: FlowGroup[] = [];
   for (const l of body) {
     if (l.text.startsWith("row:")) {
       rows.push(l.text.slice(4).trim().split(/\s+/).map((id) => (id === "." ? null : id)));
+      continue;
+    }
+    const g = groupLine(l.text, ids);
+    if (g) {
+      groups.push(g);
       continue;
     }
     const node = nodeLine(l.text);
     if (node) nodes.push(node);
     else edgeLines.push(l);
   }
-  const ids = new Set(nodes.map((n) => n.id));
+  for (const n of nodes) ids.add(n.id);
   const edges: FlowEdge[] = [];
   for (const l of edgeLines) {
     const e = edgeLine(l.text, ids, l.n);
@@ -236,6 +287,7 @@ function parseFlow(lines: Line[]): FlowSpec {
     rows: rows.length ? rows : undefined,
     nodes,
     edges,
+    groups: groups.length ? groups : undefined,
     play,
     laps: head.laps ? Number(head.laps) : undefined,
   };
