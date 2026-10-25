@@ -31,7 +31,10 @@ const overlapY = (a: Box, b: Box) => a.y < b.y + b.h && b.y < a.y + a.h;
 
 /** The height a side arrow between two boxes should run at, if one line can join them. */
 function sideY(a: Box, b: Box): number | null {
-  const pick = a.shape === "decide" ? a.cy : b.shape === "decide" ? b.cy : b.shape === "round" ? b.cy : a.cy;
+  // a diamond is joined at its corner and an actor at its disc, so their height is fixed
+  const fixed = (q: Box) => q.shape === "decide" || q.shape === "round";
+  if (fixed(a) && fixed(b)) return Math.abs(a.cy - b.cy) < 3 ? a.cy : null;
+  const pick = fixed(b) ? b.cy : a.cy;
   const inside = (q: Box) => pick > q.y + 4 && pick < q.y + q.h - 4;
   return inside(a) && inside(b) ? pick : null;
 }
@@ -145,14 +148,28 @@ function labelAt(pts: Pt[]): { at: Pt; len: number; flat: boolean } {
   return { at, len, flat };
 }
 
+/** The middle of the last segment: a second place for a label when the first is taken. */
+function lastAt(pts: Pt[]): Pt {
+  const [x1, y1] = pts[pts.length - 1];
+  const [x0, y0] = pts[pts.length - 2];
+  return [(x0 + x1) / 2, (y0 + y1) / 2];
+}
+
+/** A rough box for a label, to keep two labels from landing on each other. */
+function labelBox(at: Pt, text: string, tight: boolean) {
+  const w = text.length * (tight ? 6 : 6.8) + (tight ? 4 : 20);
+  const h = tight ? 16 : 24;
+  return tight ? { l: at[0] - w / 2, r: at[0] + w / 2, t: at[1] - h - 3, b: at[1] - 3 } : { l: at[0] - w / 2, r: at[0] + w / 2, t: at[1] - h / 2, b: at[1] + h / 2 };
+}
+
 /** A decision's branch label ("yes", "no") sits just past where the branch leaves. */
-function branchAt(pts: Pt[]): { at: Pt; vertical: boolean } {
+function branchAt(pts: Pt[]): { at: Pt; vertical: boolean; left: boolean } {
   const [x0, y0] = pts[0];
   const [x1, y1] = pts[1];
   const vertical = Math.abs(x1 - x0) < 1;
   const len = Math.hypot(x1 - x0, y1 - y0) || 1;
   const k = Math.min(16, len / 2);
-  return { at: [x0 + ((x1 - x0) / len) * k, y0 + ((y1 - y0) / len) * k], vertical };
+  return { at: [x0 + ((x1 - x0) / len) * k, y0 + ((y1 - y0) / len) * k], vertical, left: x1 < x0 };
 }
 
 /**
@@ -317,9 +334,32 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
         const along = e.via ?? (label[0] > Math.max(a.r, b.r) + 1 ? "right" : undefined);
         // a label too wide for its line sits above it instead of across it
         const tight = flat && len < 56;
-        return { e, i, d: pathOf(pts), head: headOf(pts), label, branch, along, tight };
+        // on a phone, a label much wider than its short line is left out; the token still runs
+        const words = (e.label?.length ?? 0) * 6 + 4;
+        const dropped = compact && tight && !branch && words > len + 8;
+        // a branch on a short flat line sits on the line, over it, so it can't touch the next box
+        const onLine = compact && branch && !branch.vertical && Math.abs(pts[1][0] - pts[0][0]) < 44;
+        return { e, i, pts, d: pathOf(pts), head: headOf(pts), label, branch, along, tight, dropped, onLine };
       })
     : [];
+
+  // a label that would land on an earlier one moves to its arrow's last stretch
+  const taken: ReturnType<typeof labelBox>[] = [];
+  const hits = (q: ReturnType<typeof labelBox>) => taken.some((o) => q.l < o.r && o.l < q.r && q.t < o.b && o.t < q.b);
+  for (const x of edges) {
+    if (!x?.e.label || x.branch || x.along || x.dropped) continue;
+    let box = labelBox(x.label, x.e.label, x.tight);
+    if (hits(box) && x.pts.length > 2) {
+      const alt = lastAt(x.pts);
+      const altBox = labelBox(alt, x.e.label, false);
+      if (!hits(altBox)) {
+        x.label = alt;
+        x.tight = false;
+        box = altBox;
+      }
+    }
+    taken.push(box);
+  }
 
   const regions =
     ready && showGroups
@@ -395,7 +435,7 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
           {walking && <Token key={seq.step} d={walking.d} icon={walking.e.icon} />}
         </svg>
         {edges.map((x) => {
-          if (!x?.e.label) return null;
+          if (!x?.e.label || x.dropped) return null;
           const lit = walked.has(x.i) || seq.reduced;
           if (x.branch) {
             const [bx, by] = x.branch.at;
@@ -403,12 +443,14 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
               <span
                 key={`l${x.i}`}
                 className="dg-edge-label"
-                data-branch
+                data-branch={x.onLine ? "line" : ""}
                 data-lit={lit}
                 style={
-                  x.branch.vertical
+                  x.onLine
+                    ? { left: (x.pts[0][0] + x.pts[1][0]) / 2, top: x.pts[0][1] }
+                    : x.branch.vertical
                     ? { left: bx + 7, top: by, transform: "translate(0, -50%)" }
-                    : { left: bx, top: by - 4, transform: "translate(0, -100%)" }
+                    : { left: bx, top: by - 4, transform: x.branch.left ? "translate(-100%, -100%)" : "translate(0, -100%)" }
                 }
               >
                 {x.e.label}
