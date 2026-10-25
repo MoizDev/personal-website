@@ -1,7 +1,7 @@
 import { S } from "./meta";
 import { Diagram } from "@/components/diagram/Diagram";
 import { Mosaic, type MosaicItem } from "@/components/writeup/Mosaic";
-import { Beat, Chapter, Chip, Figure, Pair, Pane, Point, Points, Polaroids, Shot, Stats, Sub } from "@/components/writeup/parts";
+import { Beat, Chapter, Chip, Code, Figure, Pair, Pane, Point, Points, Polaroids, Shot, Stats, Sub } from "@/components/writeup/parts";
 import { Turntable } from "@/components/writeup/Turntable";
 
 import app3d from "@/assets/writeups/bricked/app-3d.webp";
@@ -92,14 +92,20 @@ export function Article() {
         caption="What a person sees. Everything between the first card and the last is automatic."
         src={`
 flow
-cols: 3
-type "Type an idea" [MessageSquare] {orange} : “space shuttle”
-imagine "Imagine it" [Image] {orange} : a picture of the set
-plan "Plan it" [Bot] {purple} : agents write the design
-build "Build it" [Cpu] {teal} : real parts, checked
-manual "Follow the steps" [BookOpen] {blue} : a manual, page by page
-order "Order the parts" [ShoppingCart] {green} : a BrickLink list
-type -> imagine -> plan -> build -> manual -> order
+row: type manual order
+row: imagine plan build
+lane "You" [User] {orange} : type manual order
+lane "Bricked" [Sparkles] {purple} : imagine plan build
+type <pill> "Type an idea" [MessageSquare] {orange} : “space shuttle”
+imagine <step> "Imagine it" [Image] {orange} : a picture of the set
+plan <step> "Plan it" [Bot] {purple} : agents write the design
+build <step> "Build it" [Cpu] {teal} : real parts, checked
+manual <doc> "Follow the steps" [BookOpen] {blue} : a manual, page by page
+order <pill> "Order the parts" [ShoppingCart] {green} : a BrickLink list
+type -> imagine [MessageSquare]
+imagine -> plan -> build
+build -> manual [Boxes]
+manual -> order
 `}
       />
 
@@ -124,12 +130,14 @@ row: plan builder
 row: critic inspect
 laps: 2
 play: plan builder inspect builder inspect critic
-plan "Planner" [Brain] {purple} : splits it into bands of layers
-builder "Builder" [Bot] {purple} : places one band's bricks
-inspect "Inspector" [ListChecks] {teal} : code checks overlaps and gaps
-critic "Vision critic" [Eye] {purple} : scores a render, 0 to 10
-plan -> builder -> inspect -> critic
-inspect ~> builder "one retry"
+plan <round> "Planner" [Brain] {purple} : splits it into bands of layers
+builder <round> "Builder" [Bot] {purple} : places one band's bricks
+inspect <decide> "Overlaps or gaps?" [ListChecks] {teal} : one retry if so
+critic <round> "Vision critic" [Eye] {purple} : scores a render, 0 to 10
+plan -> builder
+builder -> inspect [brick]
+inspect ~> builder "yes"
+inspect -> critic "no"
 `}
       />
 
@@ -157,12 +165,14 @@ inspect ~> builder "one retry"
         caption="A and B were built side by side and compared on the same ideas. C merges the best of both."
         src={`
 flow
-cols: 3
-a "Pipeline A" [Bot] {red} : agents place bricks, layer by layer
-b "Pipeline B" [Cpu] {teal} : agents write a brief, code places parts
-c "Pipeline C" [Sparkles] {green} : B's kernel, plus what worked in A
+row: a . b
+row: . c .
+a <step> "Pipeline A" [Bot] {red} : agents place bricks, layer by layer
+b <step> "Pipeline B" [Cpu] {teal} : agents write a brief, code places parts
+c <pill> "Pipeline C" [Sparkles] {green} : what the app runs today
 a -> b "flip the rule"
-b -> c "merge"
+a -> c "what worked"
+b -> c "the kernel"
 `}
       />
 
@@ -221,21 +231,25 @@ b -> c "merge"
         }}
         src={`
 flow
-row: app server engine
-row: runs kernel models
+row: . app .
+row: . server runs
+row: models engine kernel
+lane "Browser" [Monitor] {blue} : app
+lane "Server" [Server] {gray} : server runs
+lane "Pipeline" [Repeat] {purple} : models engine kernel
 play: app server engine models engine kernel runs app
-app "Web app" [Monitor] {blue} : Next.js and a 3D viewer
-server "Server" [Server] {gray} : starts runs, streams events
-engine "Pipeline" [Repeat] {purple} : the harness
-models "Models" [Bot] {purple} : Claude and an image model
-kernel "Kernel" [Cpu] {teal} : places and checks parts
-runs "Runs" [Database] {gray} : art, briefs, models, tape
-app -> server "idea"
+app <step> "Web app" [Monitor] {blue} : Next.js and a 3D viewer
+server <step> "Server" [Server] {gray} : starts runs, streams events
+engine <stack> "Pipeline" [Repeat] {purple} : the harness
+models <round> "Models" [Bot] {purple} : Claude and an image model
+kernel <step> "Kernel" [Cpu] {teal} : places and checks parts
+runs <store> "Runs" [Database] {gray} : art, briefs, models, tape
+app -> server "idea" [MessageSquare]
 server -> engine
-engine -> models "prompts"
-engine -> kernel "brief"
-kernel -> runs "model"
-runs ~> app "live"
+engine -> models "prompts" [MessageSquare]
+engine -> kernel "brief" [FileText]
+kernel -> runs "model" [Boxes]
+runs ~> app "live" @right [Radio]
 `}
       />
 
@@ -324,16 +338,16 @@ laps: 2
 row: distill concept views spec
 row: assemble check render critique
 play: distill concept views spec assemble check render critique spec assemble check render critique
-distill "Distill" [Wand] {orange} : make it buildable
-concept "Imagine" [Image] {orange} : the finished set
-views "More angles" [ScanEye] {orange} : side and back
-spec "Plan" [Bot] {purple} : agents write the brief
-assemble "Assemble" [Puzzle] {teal} : brief to real parts
-check "Check" [ListChecks] {teal} : overlaps, stability
-render "Render" [Camera] {blue} : four angles
-critique "Critique" [Eye] {purple} : score against the picture
+distill <step> "Distill" [Wand] {orange} : make it buildable
+concept <step> "Imagine" [Image] {orange} : the finished set
+views <stack> "More angles" [ScanEye] {orange} : side and back
+spec <doc> "Plan" [Bot] {purple} : agents write the brief
+assemble <step> "Assemble" [Puzzle] {teal} : brief to real parts
+check <step> "Check" [ListChecks] {teal} : overlaps, stability
+render <stack> "Render" [Camera] {blue} : four angles
+critique <round> "Critique" [Eye] {purple} : score against the picture
 distill -> concept -> views -> spec -> assemble -> check -> render -> critique
-critique ~> spec "patch"
+critique ~> spec "patch" [Pencil]
 `}
       />
 
@@ -372,15 +386,15 @@ Distiller [Wand] {orange}: A sitting dog wearing a small red umbrella hat.
         caption="Four outputs. The features become the checklist the designer and the critic both work from."
         src={`
 flow
-row: idea distill .
-row: concept features cuts prompt
+row: idea distill concept
+row: features cuts prompt
 play: idea distill concept features cuts prompt
-idea "“space shuttle”" [MessageSquare] {gray}
-distill "Distill" [Wand] {orange} : fast model, no thinking
-concept "Concept" [Rocket] {orange} : a chunky orbiter on a stand
-features "Five features" [ListChecks] {purple} : nose, delta wings, nozzles
-cuts "Simplifications" [Scissors] {gray} : no fuel tank, no boosters
-prompt "Image prompt" [Image] {orange} : an official Lego set photo
+idea <pill> "“space shuttle”" [MessageSquare] {gray}
+distill <round> "Distill" [Wand] {orange} : fast model, no thinking
+concept <doc> "Concept" [Rocket] {orange} : a chunky orbiter on a stand
+features <doc> "Five features" [ListChecks] {purple} : nose, delta wings, nozzles
+cuts <step> "Simplifications" [Scissors] {gray} : no fuel tank, no boosters
+prompt <io> "Image prompt" [Image] {orange} : an official Lego set photo
 idea -> distill -> concept
 distill -> features
 distill -> cuts
@@ -448,6 +462,34 @@ Rebuild and critique | 220..236 {blue}
         wide and one plate tall per cell, and says which cells are filled and in which colour. Bodies attach to each
         other only through real Lego connectors.
       </p>
+      <p>
+        A simplified piece of the shuttle&rsquo;s brief: the stand, two of its layers, and the hinge that carries the
+        fuselage. Each row is a line of cells, one letter per colour.
+      </p>
+
+      <Code
+        lang="json"
+        label="brief-r1.json"
+        mark="11-12"
+        caption="The palette maps letters to Lego colours (47 is clear). The hinge sits on one cell of the column and tilts the fuselage by 10°."
+      >{`
+        {
+          "palette": { "w": 15, "k": 0, "c": 47 },
+          "root": "stand",
+          "bodies": [
+            { "name": "stand",
+              "layers": [
+                ["cccc", "cccc", "cccc", "cccc"],
+                ["....", ".cc.", ".cc.", "...."]
+              ],
+              "connectors": [
+                { "part": "3937", "kind": "hinge", "at": [1, 8, 1],
+                  "attach": [{ "body": "fuselage", "angle": -10 }] }
+              ] },
+            { "name": "fuselage", "layers": [ ... ] }
+          ]
+        }
+      `}</Code>
 
       <Points>
         <Point icon="RotateCcw" tone="teal" title="Hinge brick">
@@ -472,15 +514,15 @@ row: . stand .
 row: . fuselage .
 row: engines windows windshield
 play: stand fuselage engines windows windshield
-stand "Stand" [Anchor] {gray} : clear, a 4×4 base and a column
-fuselage "Fuselage" [Rocket] {purple} : white and black, ten layers
-engines "Three engines" [Zap] {orange}
-windows "Four windows" [Grid3x3] {blue}
-windshield "Windshield, red mark" [Eye] {red}
-stand -> fuselage "hinge, tilted 10°"
-fuselage -> engines "3 side studs"
-fuselage -> windows "4 side studs"
-fuselage -> windshield "2 side studs"
+stand <stack> "Stand" [Anchor] {gray} : clear, a 4×4 base and a column
+fuselage <stack> "Fuselage" [Rocket] {purple} : white and black, ten layers
+engines <stack> "Three engines" [Zap] {orange}
+windows <stack> "Four windows" [Grid3x3] {blue}
+windshield <stack> "Windshield" [Eye] {red} : and a red mark
+stand -> fuselage "hinge, tilted 10°" [RotateCcw]
+fuselage -> engines "3 studs" [Magnet]
+fuselage -> windows "4 studs" [Magnet]
+fuselage -> windshield "2 studs" [Magnet]
 `}
       />
 
@@ -529,21 +571,27 @@ say: The kernel merges neighbours of one colour into longer plates, and shifts t
 
       <Diagram
         title="Inside the geometry kernel"
-        caption="Four checks, then one chance to repair. A round that still won't build is rejected, and the run keeps its last good model."
+        caption="Build, check, and one chance to repair. A round that still won't build is thrown away, and the run keeps its last good model."
         src={`
 flow
-row: repair assemble resolve
-row: ok stand collide
-play: assemble resolve collide stand repair assemble resolve collide stand ok
-assemble "Assemble" [Puzzle] {teal} : cells to real parts
-resolve "Trim slivers" [Scissors] {teal} : structure beats decoration
-collide "Collisions" [Crosshair] {teal} : no two parts share space
-stand "Stands?" [Scale] {teal} : weight over the base
-ok "Publish the round" [Check] {green} : model, brief, report
-repair "Repair" [Wrench] {purple} : the fast model sends a patch
-assemble -> resolve -> collide -> stand -> ok
-stand -> repair "problems"
-repair -> assemble "once"
+row: assemble resolve check
+row: repair again problems
+row: . reject ok
+play: assemble resolve check problems again repair assemble resolve check problems ok
+assemble <step> "Assemble" [Puzzle] {teal} : cells to real parts
+resolve <step> "Trim slivers" [Scissors] {teal} : structure beats decoration
+check <step> "Check" [Crosshair] {teal} : collisions, does it stand
+problems <decide> "Any problems?" {teal}
+again <decide> "Already repaired?" {purple}
+repair <round> "Repair" [Wrench] {purple} : the fast model patches
+reject <step> "Throw the round away" [Ban] {red} : keep the last good model
+ok <pill> "Publish it" [Check] {green} : \`.ldr\`, brief, report
+assemble -> resolve -> check -> problems
+problems -> ok "no"
+problems -> again "yes"
+again -> repair "no"
+again -> reject "yes"
+repair ~> assemble "rebuild" @left [Wrench]
 `}
       />
 
@@ -657,6 +705,24 @@ say: The weight now sits past the edge of the base. The kernel flags it, and the
         prettier broken one.
       </p>
 
+      <p>A simplified version of that rule, as the harness runs it after every brief it writes:</p>
+
+      <Code
+        lang="py"
+        label="pipeline.py"
+        mark="6-7"
+        caption="One repair at most. The caller drops the round if the second build still has problems."
+      >{`
+        def build_checked(brief, fixes=1):
+            parts, report, problems = build(brief)
+            for _ in range(fixes):
+                if not problems:
+                    break
+                brief = repair(brief, problems)
+                parts, report, problems = build(brief)
+            return brief, parts, report, problems
+      `}</Code>
+
       {/* 4e · Judge */}
       <Sub s={S.judge} />
       <p>
@@ -688,6 +754,28 @@ Critic [Eye] {purple}: 3/10. Reads as a generic jet. The tail fin is a thin plat
         parts that already work can&rsquo;t drift while something else is being fixed. A loop that rewrote the whole
         brief each round scored 5, then 5, then 3 on the same model.
       </p>
+
+      <p>A simplified version of the rounds that follow the first build:</p>
+
+      <Code
+        lang="py"
+        label="pipeline.py"
+        mark="4, 6-7"
+        caption="The app runs one round by default and stops early at a score of 8. Every version built is kept for the choice at the end."
+      >{`
+        for rnd in range(1, rounds + 1):
+            if score >= target:
+                break
+            brief = revise(brief, issues, shots)
+            brief, parts, report, problems = build_checked(brief)
+            if parts is None:
+                break
+            shots = render(f"r{rnd}")
+            score, issues = judge(shots, problems)
+            built.append(brief)
+
+        review(built)
+      `}</Code>
       <p>
         Measuring also turned up a surprise. Over four test runs, the revision round made the model worse every time,
         even once the designer could see the renders it was fixing.
@@ -721,16 +809,22 @@ Run 4, revised {red} | 2
         caption="Every built version is offered. A note costs one more model call and one more build. If nobody answers within three minutes, the critic picks."
         src={`
 flow
-row: built review keep
-row: . note .
-play: built review note keep
-built "Every version built" [Boxes] {teal} : first build, after notes
-review "You choose" [User] {orange} : three minutes to answer
-keep "Keep it" [Check] {green}
-note "Change it" [Pencil] {purple} : “make the wings bigger”
-built -> review -> keep
-review -> note "a note"
-note -> keep "rebuilt"
+row: built you .
+row: critic note change
+row: . keep .
+play: built you note change keep
+built <stack> "Every version built" [Boxes] {teal} : first build, then revised
+you <round> "You choose" [User] {orange} : three minutes to answer
+note <decide> "Add a note?" {orange}
+critic <round> "The critic picks" [Eye] {purple} : if nobody answers
+change <step> "Change it" [Pencil] {purple} : “make the wings bigger”
+keep <pill> "Keep it" [Check] {green}
+built -> you -> note
+you -> critic "no answer"
+note -> keep "no"
+note -> change "yes"
+change -> keep "rebuilt"
+critic -> keep
 `}
       />
 
@@ -864,12 +958,13 @@ High {orange} | 31 | the default
 flow
 row: ask match replay
 row: . fresh save
-ask "You ask" [MessageSquare] {orange} : “bus”
-match "Seen it?" [Search] {gray} : match the words
-replay "Replay the run" [Play] {green} : about 20 seconds
-fresh "Design it" [Repeat] {purple} : the full harness
-save "Save every round" [Database] {gray} : the run is the record
-ask -> match -> replay "yes"
+ask <pill> "You ask" [MessageSquare] {orange} : “bus”
+match <decide> "Seen it?" [Search] {gray} : match the words
+replay <pill> "Replay the run" [Play] {green} : about 20 seconds
+fresh <step> "Design it" [Repeat] {purple} : the full harness
+save <store> "Save every round" [Database] {gray} : the run is the record
+ask -> match
+match -> replay "yes" [Play]
 match -> fresh "no"
 fresh -> save
 `}
@@ -901,17 +996,36 @@ row: q1 r1
 row: q2 r2
 row: q3 r3
 play: q1 r1 q2 r2 q3 r3
-q1 "“bus”" [MessageSquare] {gray}
-r1 "yellow school bus" [Check] {green} : the same thing
-q2 "“dog”" [MessageSquare] {gray}
-r2 "dog holding an umbrella" [Ban] {red} : the thing is the umbrella
-q3 "“red”" [MessageSquare] {gray}
-r3 "a red tractor" [Ban] {red} : the thing is a tractor
-q1 -> r1 "replay"
+q1 <pill> "“bus”" [MessageSquare] {gray}
+r1 <store> "yellow school bus" [Check] {green} : the same thing
+q2 <pill> "“dog”" [MessageSquare] {gray}
+r2 <store> "dog holding an umbrella" [Ban] {red} : the thing is the umbrella
+q3 <pill> "“red”" [MessageSquare] {gray}
+r3 <store> "a red tractor" [Ban] {red} : the thing is a tractor
+q1 -> r1 "replay" [Play]
 q2 -x r2
 q3 -x r3
 `}
       />
+
+      <p>A simplified version of the rule:</p>
+
+      <Code
+        lang="py"
+        label="pipeline.py"
+        mark="9"
+        caption="Among the matches, an exact one wins, then the one with the fewest extra words, then the newest."
+      >{`
+        FILLER = {"a", "an", "the", "of", "with", "build", "me"}
+
+        def words(idea):
+            found = re.findall(r"[a-z0-9]+", idea.lower())
+            return [w for w in found if w not in FILLER]
+
+        def matches(asked, saved):
+            want, have = words(asked), words(saved)
+            return have[-1] == want[-1] and set(want) <= set(have)
+      `}</Code>
 
       <p>
         A replay is not a mock-up. It plays the real tape, shows the real concept art, and puts the real model together
@@ -953,13 +1067,19 @@ q3 -x r3
         caption="Every step here is plain code. No model is involved."
         src={`
 flow
-row: model list
-row: bricklink price
-model "The model" [Boxes] {teal} : every part and colour
-list "Parts list" [ClipboardList] {blue} : counted by part and colour
-price "Estimate" [CircleDollarSign] {green} : a price per part
-bricklink "BrickLink" [ShoppingCart] {green} : paste the wanted list
-model -> list -> price -> bricklink
+row: model list .
+row: skip sold wanted
+row: . . shop
+model <stack> "The model" [Boxes] {teal} : every part and colour
+list <doc> "Parts list" [ClipboardList] {blue} : counted by part and colour
+sold <decide> "Sold on BrickLink?" {green}
+skip <step> "Counted, left out" [Ban] {gray} : never dropped silently
+wanted <io> "Wanted List" [CircleDollarSign] {green} : BrickLink colours, a price each
+shop <pill> "Buy the lot" [ShoppingCart] {green}
+model -> list -> sold
+sold -> wanted "yes"
+sold -> skip "no"
+wanted -> shop
 `}
       />
 
