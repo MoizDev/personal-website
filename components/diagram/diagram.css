@@ -233,6 +233,373 @@
   color: var(--wu-tone);
 }
 
+/* a decision's branch: plain words just past where it leaves */
+.dg-edge-label[data-branch] {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* a label on a short line: plain words just above it */
+.dg-edge-label[data-tight] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  transform: translate(-50%, calc(-100% - 3px));
+}
+
+/* an arrow around the outside: its label runs along it */
+.dg-edge-label[data-via] {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.dg-flow-wrap[data-via-left] {
+  padding-left: 30px;
+}
+
+.dg-flow-wrap[data-via-right] {
+  padding-right: 30px;
+}
+
+/* a token carrying an icon along an arrow */
+.dg-token-icon {
+  color: #fff;
+}
+
+/* flowcharts sit on a faint dotted grid */
+.wu-fig-panel:has(> .dg-flow-fig) {
+  background-image: radial-gradient(circle, rgba(var(--ink-rgb), 0.13) 1px, transparent 1.3px);
+  background-size: 18px 18px;
+  background-position: 9px 9px;
+}
+
+.dg-node-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dg-node code {
+  padding: 0.05em 0.32em;
+  border-radius: 3px;
+  background: rgba(var(--ink-rgb), 0.07);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.86em;
+}
+
+/* ---------- flowchart shapes ---------- */
+
+/* everything but a card centres its words and takes a tint of its tone */
+.dg-node:not([data-shape="card"]) {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.dg-node:not([data-shape="card"]):not([data-shape="round"]) .dg-node-icon {
+  width: auto;
+  height: auto;
+  margin: 0;
+  background: none !important;
+  color: var(--muted);
+}
+
+.dg-node:not([data-shape="card"]):not([data-shape="round"])[data-state="active"] .dg-node-icon,
+.dg-node:not([data-shape="card"]):not([data-shape="round"])[data-state="done"] .dg-node-icon {
+  color: var(--tone);
+}
+
+.dg-node[data-shape="step"],
+.dg-node[data-shape="pill"],
+.dg-node[data-shape="store"],
+.dg-node[data-shape="stack"] {
+  --fill: color-mix(in srgb, var(--tone) 7%, var(--dg-card));
+  --edge: color-mix(in srgb, var(--tone) 32%, rgba(var(--ink-rgb), 0.12));
+}
+
+.dg-node[data-tone="ink"] {
+  --fill: var(--dg-card);
+  --edge: rgba(var(--ink-rgb), 0.14);
+}
+
+/* a step: a plain box, title over a line of detail */
+.dg-node[data-shape="step"] {
+  padding: 12px 14px;
+  border-color: var(--edge);
+  border-radius: 6px;
+  background: var(--fill);
+}
+
+/* a terminal: where the chart starts or ends */
+.dg-node[data-shape="pill"] {
+  flex-direction: row;
+  gap: 8px;
+  align-self: center;
+  min-height: 44px;
+  padding: 9px 18px;
+  border-color: var(--edge);
+  border-radius: 99px;
+  background: var(--fill);
+}
+
+.dg-node[data-shape="pill"] .dg-node-text {
+  gap: 1px;
+}
+
+/* a stack: several of the same thing */
+.dg-node[data-shape="stack"] {
+  border-color: var(--edge);
+  background: var(--fill);
+  box-shadow:
+    4px 4px 0 -1px var(--dg-card),
+    4px 4px 0 0 var(--edge),
+    8px 8px 0 -1px var(--dg-card),
+    8px 8px 0 0 var(--edge);
+}
+
+.dg-node[data-shape="stack"][data-state="active"] {
+  box-shadow:
+    4px 4px 0 -1px var(--dg-card),
+    4px 4px 0 0 var(--tone),
+    8px 8px 0 -1px var(--dg-card),
+    8px 8px 0 0 var(--tone),
+    0 0 0 4px color-mix(in srgb, var(--tone) 16%, transparent);
+}
+
+/* a store: a cylinder, for anything kept on disk */
+.dg-node[data-shape="store"] {
+  padding: 26px 14px 14px;
+  border-color: var(--edge);
+  border-radius: 50% / 13px;
+  background: var(--fill);
+}
+
+.dg-node[data-shape="store"]::before {
+  content: "";
+  position: absolute;
+  inset: -1px -1px auto;
+  height: 26px;
+  border: 1px solid var(--edge);
+  border-radius: 50%;
+  transition: border-color 0.45s;
+}
+
+.dg-node[data-shape="store"][data-state="active"]::before {
+  border-color: var(--tone);
+}
+
+/* shapes drawn by an outline: decision, input or output, document */
+.dg-node[data-shape="decide"],
+.dg-node[data-shape="io"],
+.dg-node[data-shape="doc"] {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dg-outline {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.dg-outline path {
+  fill: color-mix(in srgb, var(--tone) 7%, var(--dg-card));
+  stroke: color-mix(in srgb, var(--tone) 32%, rgba(var(--ink-rgb), 0.12));
+  stroke-width: 1;
+  transition: stroke 0.45s, fill 0.45s;
+}
+
+.dg-node[data-tone="ink"] .dg-outline path {
+  fill: var(--dg-card);
+  stroke: rgba(var(--ink-rgb), 0.16);
+}
+
+.dg-node[data-state="active"] .dg-outline path {
+  stroke: var(--tone);
+  stroke-width: 1.5;
+}
+
+.dg-node[data-state="active"] .dg-outline {
+  filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--tone) 30%, transparent));
+}
+
+.dg-node[data-shape="decide"] {
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  max-width: 220px;
+  min-height: 92px;
+  padding: 18px 30px;
+}
+
+.dg-node[data-shape="decide"] .dg-node-text {
+  max-width: 128px;
+}
+
+.dg-node[data-shape="decide"] .dg-node-note {
+  font-size: 11.5px;
+}
+
+.dg-node[data-shape="io"] {
+  padding: 12px 26px;
+}
+
+.dg-node[data-shape="doc"] {
+  padding: 12px 14px 22px;
+}
+
+/* an actor: a disc with its icon, the name underneath, no box */
+.dg-node[data-shape="round"] {
+  align-self: center;
+  justify-self: center;
+  gap: 8px;
+  max-width: 160px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.dg-node[data-shape="round"][data-state="active"] {
+  transform: none;
+}
+
+.dg-node[data-shape="round"] .dg-node-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+  border-radius: 50%;
+  background: var(--dg-card);
+  transition: background 0.45s, color 0.45s, box-shadow 0.45s, border-color 0.45s;
+}
+
+.dg-node[data-shape="round"][data-state="done"] .dg-node-icon {
+  border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+  background: color-mix(in srgb, var(--tone) 10%, var(--dg-card));
+}
+
+.dg-node[data-shape="round"][data-state="active"] .dg-node-icon {
+  border-color: var(--tone);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+.dg-node[data-shape="round"] .dg-node-label {
+  font-size: 13.5px;
+}
+
+/* ---------- groups and lanes ---------- */
+
+.dg-flow[data-groups] {
+  padding: 30px 14px 14px;
+}
+
+.dg-flow[data-lanes] {
+  row-gap: 42px;
+  padding: 12px 0 12px 36px;
+}
+
+.dg-group {
+  position: absolute;
+  z-index: 0;
+  border: 1px dashed color-mix(in srgb, var(--tone) 38%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--tone) 4%, transparent);
+  transition: border-color 0.45s, background 0.45s;
+  pointer-events: none;
+}
+
+.dg-group[data-lit="true"] {
+  border-color: color-mix(in srgb, var(--tone) 60%, transparent);
+  background: color-mix(in srgb, var(--tone) 6.5%, transparent);
+}
+
+.dg-group-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--tone) 70%, var(--fg));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dg-group[data-kind="lane"] {
+  border: 0;
+  border-radius: 8px;
+}
+
+.dg-group[data-kind="lane"] .dg-group-label {
+  inset: 0 auto 0 0;
+  justify-content: center;
+  width: 36px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+/* ---------- a chart on a phone keeps its shape, with tighter nodes ---------- */
+
+.dg-flow-wrap[data-compact] .dg-flow {
+  row-gap: 40px;
+}
+
+.dg-flow-wrap[data-compact] .dg-flow[data-lanes] {
+  padding-left: 28px;
+}
+
+.dg-flow-wrap[data-compact] .dg-group[data-kind="lane"] .dg-group-label {
+  width: 28px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node {
+  padding: 9px 9px 10px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node-label {
+  font-size: 12.5px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node-note {
+  font-size: 11px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="decide"] {
+  min-height: 76px;
+  padding: 14px 16px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="decide"] .dg-node-note,
+.dg-flow-wrap[data-compact] .dg-node[data-shape="round"] .dg-node-note {
+  display: none;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="pill"] {
+  padding: 8px 12px;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="round"] {
+  padding: 0;
+}
+
+.dg-flow-wrap[data-compact] .dg-node[data-shape="round"] .dg-node-icon {
+  width: 40px;
+  height: 40px;
+}
+
 .dg-pane {
   display: grid;
   grid-template-rows: 0fr;

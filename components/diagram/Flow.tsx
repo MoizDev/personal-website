@@ -1,47 +1,92 @@
 "use client";
 
 /**
- * A flow: cards on a grid joined by arrows. The highlight walks the `play`
- * order, a pulse runs along each arrow it takes, and loop arrows (~>) route
- * around the cards so a critique loop reads as a loop. Click a card to stop
- * on it; if the figure has a pane for that card, it opens below.
+ * A flow: nodes on a grid joined by arrows. Nodes are cards by default, or
+ * flowchart shapes (decisions, terminals, stores, documents, actors...). The
+ * highlight walks the `play` order and a token runs along each arrow it takes.
+ * Loop arrows (~>) route around the nodes, or around the whole chart with
+ * @left / @right. Groups shade a few nodes; lanes are full-width bands. Click
+ * a node to stop on it; if the figure has a pane for it, the pane opens below.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "./icons";
 import { Controls } from "./Controls";
-import type { FlowEdge, FlowSpec } from "./parse";
+import type { FlowEdge, FlowSpec, Shape } from "./parse";
 import { useSequence } from "./usePlayback";
 
-type Box = { x: number; y: number; w: number; h: number };
+/** A node's box in the grid, plus where side arrows meet it (l, r at height cy). */
+type Box = { x: number; y: number; w: number; h: number; l: number; r: number; cy: number; shape: Shape };
 type Pt = [number, number];
 
 const MIN_CARD = 128; // narrowest a card gets before the grid drops a column
 const COL_GAP = 40;
+// on a phone, a chart keeps its layout with tighter cards rather than reflowing
+const COMPACT_BELOW = 560;
+const MIN_CARD_COMPACT = 84;
+const COL_GAP_COMPACT = 14;
+const AROUND = 24; // how far outside the chart an @left / @right arrow runs
+
+const overlapY = (a: Box, b: Box) => a.y < b.y + b.h && b.y < a.y + a.h;
+
+/** The height a side arrow between two boxes should run at, if one line can join them. */
+function sideY(a: Box, b: Box): number | null {
+  const pick = a.shape === "decide" ? a.cy : b.shape === "decide" ? b.cy : b.shape === "round" ? b.cy : a.cy;
+  const inside = (q: Box) => pick > q.y + 4 && pick < q.y + q.h - 4;
+  return inside(a) && inside(b) ? pick : null;
+}
+
+/** An arrow around the outside of the chart, on one side. */
+function around(a: Box, b: Box, side: "left" | "right", all: Box[]): Pt[] {
+  const right = side === "right";
+  const X = right ? Math.max(...all.map((q) => q.x + q.w)) + AROUND : Math.min(...all.map((q) => q.x)) - AROUND;
+  // a node with others beside it on that side is left from its bottom, or entered from its top
+  const blocked = (q: Box) => all.some((o) => o !== q && overlapY(o, q) && (right ? o.x > q.x : o.x < q.x));
+  const acx = a.x + a.w / 2;
+  const bcx = b.x + b.w / 2;
+  const out: Pt[] = blocked(a)
+    ? [[acx, a.y + a.h], [acx, a.y + a.h + 18], [X, a.y + a.h + 18]]
+    : [[right ? a.r : a.l, a.cy], [X, a.cy]];
+  const into: Pt[] = blocked(b)
+    ? [[X, b.y - 18], [bcx, b.y - 18], [bcx, b.y]]
+    : [[X, b.cy], [right ? b.r : b.l, b.cy]];
+  return [...out, ...into];
+}
 
 /** Where an arrow runs, as a list of corner points. */
-function route(a: Box, b: Box, kind: FlowEdge["kind"]): Pt[] {
+function route(a: Box, b: Box, e: FlowEdge, all: Box[]): Pt[] {
+  if (e.via) return around(a, b, e.via, all);
   const acx = a.x + a.w / 2;
-  const acy = a.y + a.h / 2;
   const bcx = b.x + b.w / 2;
-  const bcy = b.y + b.h / 2;
-  const sameRow = Math.abs(a.y - b.y) < 6;
+  const loop = e.kind === "loop";
   const sameCol = Math.abs(acx - bcx) < 6;
-  const loop = kind === "loop";
-  if (sameRow) {
-    if (b.x > a.x && !loop) return [[a.x + a.w, acy], [b.x, bcy]];
-    if (b.x + b.w < a.x && !loop) return [[a.x, acy], [b.x + b.w, bcy]];
+  if (overlapY(a, b) && !sameCol) {
+    const y = sideY(a, b);
+    if (!loop && y !== null) return b.x > a.x ? [[a.r, y], [b.l, y]] : [[a.l, y], [b.r, y]];
+    if (!loop) {
+      // same row, different heights: a step in the gap between them
+      const fwd = b.x > a.x;
+      const mx = fwd ? (a.r + b.l) / 2 : (a.l + b.r) / 2;
+      return [[fwd ? a.r : a.l, a.cy], [mx, a.cy], [mx, b.cy], [fwd ? b.l : b.r, b.cy]];
+    }
     // round the back of the row, underneath
-    const y = Math.max(a.y + a.h, b.y + b.h) + 24;
-    return [[acx, a.y + a.h], [acx, y], [bcx, y], [bcx, b.y + b.h]];
+    const y2 = Math.max(a.y + a.h, b.y + b.h) + 24;
+    return [[acx, a.y + a.h], [acx, y2], [bcx, y2], [bcx, b.y + b.h]];
   }
   if (sameCol) {
     if (b.y > a.y && !loop) return [[acx, a.y + a.h], [bcx, b.y]];
-    // up the right-hand side
-    const x = Math.max(a.x + a.w, b.x + b.w) + 22;
-    return [[a.x + a.w, acy], [x, acy], [x, bcy], [b.x + b.w, bcy]];
+    if (b.y < a.y && !loop) return [[acx, a.y], [bcx, b.y + b.h]];
+    // a loop runs up the right-hand side, inside the gap if a column sits there
+    const right = Math.max(a.x + a.w, b.x + b.w);
+    const top = Math.min(a.y, b.y);
+    const bottom = Math.max(a.y + a.h, b.y + b.h);
+    const next = all.filter((q) => q.x >= right && q.y < bottom && q.y + q.h > top).map((q) => q.x);
+    const x = next.length ? (right + Math.min(...next)) / 2 : right + 22;
+    return [[a.r, a.cy], [x, a.cy], [x, b.cy], [b.r, b.cy]];
   }
   if (b.y > a.y) {
+    // a decision leaves by the corner facing its branch, then drops into it
+    if (a.shape === "decide") return [[bcx > acx ? a.r : a.l, a.cy], [bcx, a.cy], [bcx, b.y]];
     const gy = (a.y + a.h + b.y) / 2;
     return [[acx, a.y + a.h], [acx, gy], [bcx, gy], [bcx, b.y]];
   }
@@ -85,27 +130,43 @@ function headOf(pts: Pt[]): string {
 }
 
 /** Midpoint of the longest segment, for the arrow's label. */
-function labelAt(pts: Pt[]): Pt {
-  let best = 0;
+function labelAt(pts: Pt[]): { at: Pt; len: number; flat: boolean } {
+  let len = 0;
   let at: Pt = pts[0];
+  let flat = false;
   for (let i = 1; i < pts.length; i++) {
     const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    if (l > best) {
-      best = l;
+    if (l > len) {
+      len = l;
       at = [(pts[i][0] + pts[i - 1][0]) / 2, (pts[i][1] + pts[i - 1][1]) / 2];
+      flat = Math.abs(pts[i][1] - pts[i - 1][1]) < 1;
     }
   }
-  return at;
+  return { at, len, flat };
 }
 
-/** A dot that runs along a path once. Drawn straight to the DOM, so it costs no renders. */
-function Pulse({ d, ms = 560 }: { d: string; ms?: number }) {
+/** A decision's branch label ("yes", "no") sits just past where the branch leaves. */
+function branchAt(pts: Pt[]): { at: Pt; vertical: boolean } {
+  const [x0, y0] = pts[0];
+  const [x1, y1] = pts[1];
+  const vertical = Math.abs(x1 - x0) < 1;
+  const len = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const k = Math.min(16, len / 2);
+  return { at: [x0 + ((x1 - x0) / len) * k, y0 + ((y1 - y0) / len) * k], vertical };
+}
+
+/**
+ * The token that runs along an arrow once: a dot, or a small disc carrying an
+ * icon. Drawn straight to the DOM, so it costs no renders.
+ */
+function Token({ d, icon }: { d: string; icon?: string }) {
   const path = useRef<SVGPathElement>(null);
-  const dot = useRef<SVGCircleElement>(null);
+  const dot = useRef<SVGGElement>(null);
+  const ms = icon ? 860 : 560;
   useEffect(() => {
     const p = path.current;
-    const c = dot.current;
-    if (!p || !c) return;
+    const g = dot.current;
+    if (!p || !g) return;
     const len = p.getTotalLength();
     const t0 = performance.now();
     let raf = 0;
@@ -113,9 +174,8 @@ function Pulse({ d, ms = 560 }: { d: string; ms?: number }) {
       const t = Math.min(1, (now - t0) / ms);
       const e = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
       const pt = p.getPointAtLength(e * len);
-      c.setAttribute("cx", String(pt.x));
-      c.setAttribute("cy", String(pt.y));
-      c.setAttribute("opacity", t >= 1 ? "0" : "1");
+      g.setAttribute("transform", `translate(${pt.x} ${pt.y})`);
+      g.setAttribute("opacity", t >= 1 ? "0" : "1");
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -124,9 +184,33 @@ function Pulse({ d, ms = 560 }: { d: string; ms?: number }) {
   return (
     <g className="dg-pulse">
       <path ref={path} d={d} fill="none" stroke="none" />
-      <circle ref={dot} r={4.5} opacity={0} />
+      <g ref={dot} opacity={0}>
+        {icon ? (
+          <g className="dg-token-icon">
+            <circle r={11} />
+            <g transform="translate(-6.5 -6.5)">
+              <Icon name={icon} size={13} />
+            </g>
+          </g>
+        ) : (
+          <circle r={4.5} />
+        )}
+      </g>
     </g>
   );
+}
+
+/** Outlines for the shapes CSS can't draw, in a 100 × 100 box stretched to the node. */
+const OUTLINE: Partial<Record<Shape, string>> = {
+  decide: "M50,1 L99,50 L50,99 L1,50 Z",
+  io: "M11,1 L99,1 L89,99 L1,99 Z",
+  doc: "M1,1 L99,1 L99,86 C80,74 64,100 40,92 C26,87 12,86 1,92 Z",
+};
+
+/** Text with `code` in backticks shown as small code chips. */
+function rich(text: string): ReactNode {
+  if (!text.includes("`")) return text;
+  return text.split("`").map((part, i) => (i % 2 ? <code key={i}>{part}</code> : <Fragment key={i}>{part}</Fragment>));
 }
 
 export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, ReactNode> }) {
@@ -135,12 +219,25 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
   const cards = useRef(new Map<string, HTMLDivElement>());
   const [width, setWidth] = useState(0);
   const [boxes, setBoxes] = useState<Record<string, Box>>({});
+  const [gridW, setGridW] = useState(0);
 
   const seq = useSequence(wrap, spec.play.length, { loop: true, delay: [500, ...spec.play.slice(1).map(() => 1050)], hold: 3200 });
 
+  const shapeOf = useMemo(() => new Map(spec.nodes.map((n) => [n.id, n.shape ?? "card"] as const)), [spec]);
+  const hasLanes = !!spec.groups?.some((g) => g.kind === "lane");
+  const hasGroups = !!spec.groups?.some((g) => g.kind === "group");
+  const viaLeft = spec.edges.some((e) => e.via === "left");
+  const viaRight = spec.edges.some((e) => e.via === "right");
+
   // how many columns fit
-  const cols = width ? Math.max(1, Math.min(spec.cols, Math.floor((width + COL_GAP) / (MIN_CARD + COL_GAP)))) : spec.cols;
+  const compact = width > 0 && width < COMPACT_BELOW;
+  const minCard = compact ? MIN_CARD_COMPACT : MIN_CARD;
+  const gap = compact ? COL_GAP_COMPACT : COL_GAP;
+  const inner = width - (hasLanes ? (compact ? 28 : 36) : hasGroups ? 28 : 0);
+  const cols = width ? Math.max(1, Math.min(spec.cols, Math.floor((inner + gap) / (minCard + gap)))) : spec.cols;
   const useRows = !!spec.rows && cols === spec.cols;
+  // regions only make sense in the layout they were drawn for
+  const showGroups = !!spec.groups && (useRows || !spec.rows);
 
   const place = useMemo(() => {
     const at = new Map<string, { row: number; col: number }>();
@@ -157,10 +254,20 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
     if (!g) return;
     const next: Record<string, Box> = {};
     cards.current.forEach((el, id) => {
-      next[id] = { x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+      const x = el.offsetLeft;
+      const y = el.offsetTop;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const shape = shapeOf.get(id) ?? "card";
+      // an actor is joined at its disc, not at its label
+      const disc = shape === "round" ? el.querySelector<HTMLElement>(".dg-node-icon") : null;
+      next[id] = disc
+        ? { x, y, w, h, shape, l: x + disc.offsetLeft, r: x + disc.offsetLeft + disc.offsetWidth, cy: y + disc.offsetTop + disc.offsetHeight / 2 }
+        : { x, y, w, h, shape, l: x, r: x + w, cy: y + h / 2 };
     });
     setBoxes(next);
-  }, []);
+    setGridW(g.clientWidth);
+  }, [shapeOf]);
 
   useEffect(() => {
     const el = wrap.current;
@@ -178,7 +285,7 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
   useLayoutEffect(() => {
     const raf = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(raf);
-  }, [cols, useRows, measure]);
+  }, [cols, useRows, compact, measure]);
 
   const activeId = seq.step >= 0 ? spec.play[seq.step] : null;
   const reached = new Set(spec.play.slice(0, Math.max(0, seq.step + 1)));
@@ -197,15 +304,36 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
   }
 
   const ready = Object.keys(boxes).length === spec.nodes.length;
+  const all = Object.values(boxes);
   const edges = ready
     ? spec.edges.map((e, i) => {
         const a = boxes[e.from];
         const b = boxes[e.to];
         if (!a || !b) return null;
-        const pts = route(a, b, e.kind);
-        return { e, i, d: pathOf(pts), head: headOf(pts), label: labelAt(pts) };
+        const pts = route(a, b, e, all);
+        const branch = a.shape === "decide" && !e.via ? branchAt(pts) : null;
+        const { at: label, len, flat } = labelAt(pts);
+        // a label on a vertical run beside the chart turns to run along it
+        const along = e.via ?? (label[0] > Math.max(a.r, b.r) + 1 ? "right" : undefined);
+        // a label too wide for its line sits above it instead of across it
+        const tight = flat && len < 56;
+        return { e, i, d: pathOf(pts), head: headOf(pts), label, branch, along, tight };
       })
     : [];
+
+  const regions =
+    ready && showGroups
+      ? spec.groups!.map((g, i) => {
+          const bs = g.ids.map((id) => boxes[id]).filter(Boolean);
+          const top = Math.min(...bs.map((b) => b.y));
+          const bottom = Math.max(...bs.map((b) => b.y + b.h));
+          const lit = g.ids.includes(activeId ?? "") || seq.reduced || g.ids.some((id) => reached.has(id));
+          if (g.kind === "lane") return { g, i, lit, left: 0, top: top - 12, width: gridW, height: bottom - top + 24 };
+          const left = Math.min(...bs.map((b) => b.x));
+          const right = Math.max(...bs.map((b) => b.x + b.w));
+          return { g, i, lit, left: left - 14, top: top - 30, width: right - left + 28, height: bottom - top + 44 };
+        })
+      : [];
 
   const hasLoop = spec.edges.some((e) => e.kind === "loop");
   // the pane stays on the latest card that has one, so the figure doesn't jump
@@ -214,15 +342,40 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
   if (seq.reduced && !paneId && panes) paneId = spec.play.find((id) => panes[id]) ?? null;
   const pane = paneId && panes?.[paneId];
   const firstIndex = (id: string) => spec.play.indexOf(id);
+  const walking = current >= 0 && edges[current] && !seq.reduced ? edges[current] : null;
 
   return (
-    <div ref={wrap} className="dg-flow-wrap" data-loop={hasLoop}>
+    <div
+      ref={wrap}
+      className="dg-flow-wrap"
+      data-loop={hasLoop}
+      data-compact={compact || undefined}
+      data-via-left={viaLeft || undefined}
+      data-via-right={viaRight || undefined}
+    >
       <Controls seq={seq} label={spec.laps && seq.step >= 0 ? `Round ${Math.min(laps, spec.laps)}` : undefined} />
       <div
         ref={grid}
         className="dg-flow"
-        style={{ gridTemplateColumns: `repeat(${useRows ? spec.cols : cols}, minmax(0, 1fr))` }}
+        data-lanes={(showGroups && hasLanes) || undefined}
+        data-groups={(showGroups && hasGroups) || undefined}
+        style={{ gridTemplateColumns: `repeat(${useRows ? spec.cols : cols}, minmax(0, 1fr))`, columnGap: gap }}
       >
+        {regions.map((x) => (
+          <div
+            key={`g${x.i}`}
+            className="dg-group"
+            data-kind={x.g.kind}
+            data-tone={x.g.tone ?? "gray"}
+            data-lit={x.lit}
+            style={{ left: x.left, top: x.top, width: x.width, height: x.height }}
+          >
+            <span className="dg-group-label">
+              {x.g.icon && <Icon name={x.g.icon} size={12} />}
+              {x.g.label}
+            </span>
+          </div>
+        ))}
         <svg className="dg-edges" aria-hidden>
           {edges.map(
             (x) =>
@@ -239,24 +392,46 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
                 </g>
               ),
           )}
-          {current >= 0 && edges[current] && !seq.reduced && <Pulse key={seq.step} d={edges[current]!.d} />}
+          {walking && <Token key={seq.step} d={walking.d} icon={walking.e.icon} />}
         </svg>
-        {edges.map(
-          (x) =>
-            x?.e.label && (
+        {edges.map((x) => {
+          if (!x?.e.label) return null;
+          const lit = walked.has(x.i) || seq.reduced;
+          if (x.branch) {
+            const [bx, by] = x.branch.at;
+            return (
               <span
                 key={`l${x.i}`}
                 className="dg-edge-label"
-                data-kind={x.e.kind}
-                data-lit={walked.has(x.i) || seq.reduced}
-                style={{ left: x.label[0], top: x.label[1] }}
+                data-branch
+                data-lit={lit}
+                style={
+                  x.branch.vertical
+                    ? { left: bx + 7, top: by, transform: "translate(0, -50%)" }
+                    : { left: bx, top: by - 4, transform: "translate(0, -100%)" }
+                }
               >
                 {x.e.label}
               </span>
-            ),
-        )}
+            );
+          }
+          return (
+            <span
+              key={`l${x.i}`}
+              className="dg-edge-label"
+              data-kind={x.e.kind}
+              data-via={x.along}
+              data-tight={x.tight || undefined}
+              data-lit={lit}
+              style={{ left: x.label[0], top: x.label[1] }}
+            >
+              {x.e.label}
+            </span>
+          );
+        })}
         {spec.nodes.map((n) => {
           const p = place.get(n.id)!;
+          const shape = n.shape ?? "card";
           const state = n.id === activeId ? "active" : reached.has(n.id) || seq.reduced ? "done" : "idle";
           return (
             <div
@@ -266,19 +441,27 @@ export function Flow({ spec, panes }: { spec: FlowSpec; panes?: Record<string, R
                 else cards.current.delete(n.id);
               }}
               className="dg-node"
+              data-shape={shape}
               data-state={state}
               data-tone={n.tone ?? "ink"}
               data-pane={!!panes?.[n.id]}
               style={{ gridRow: p.row, gridColumn: p.col }}
               onClick={() => firstIndex(n.id) >= 0 && seq.goto(firstIndex(n.id))}
             >
+              {OUTLINE[shape] && (
+                <svg className="dg-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+                  <path d={OUTLINE[shape]} vectorEffect="non-scaling-stroke" />
+                </svg>
+              )}
               {n.icon && (
                 <span className="dg-node-icon">
-                  <Icon name={n.icon} size={17} />
+                  <Icon name={n.icon} size={shape === "round" ? 20 : shape === "card" ? 17 : 14} />
                 </span>
               )}
-              <span className="dg-node-label">{n.label}</span>
-              {n.note && <span className="dg-node-note">{n.note}</span>}
+              <span className="dg-node-text">
+                <span className="dg-node-label">{rich(n.label)}</span>
+                {n.note && <span className="dg-node-note">{rich(n.note)}</span>}
+              </span>
             </div>
           );
         })}
