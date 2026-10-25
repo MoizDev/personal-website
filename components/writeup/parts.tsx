@@ -7,6 +7,7 @@ import Image, { type StaticImageData } from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import { Icon } from "@/components/diagram/icons";
 import type { Section } from "@/lib/writeups";
+import { dedent, lineSet, tokenize, toLines, type Lang } from "./highlight";
 
 /** A chapter heading: a level 2 section. */
 export function Chapter({ s }: { s: Section }) {
@@ -219,5 +220,74 @@ export function Stats({ items }: { items: { value: string; label: string; tone?:
         </div>
       ))}
     </div>
+  );
+}
+
+const LANG_NAME: Record<Lang, string> = {
+  ts: "TypeScript",
+  js: "JavaScript",
+  tsx: "TSX",
+  py: "Python",
+  json: "JSON",
+  sh: "Shell",
+  text: "",
+};
+
+/**
+ * A short, simplified snippet that explains an idea, with its syntax coloured.
+ * Not a copy of the repo: cut it down to the lines that make the point.
+ *
+ *   <Code lang="py" label="kernel.py" mark="3-4" caption="…">{`…`}</Code>
+ *
+ * mark lights up lines (counting from 1), such as "3-4, 7". The source is a
+ * template string; its shared indent and blank edges are trimmed.
+ */
+export function Code({
+  lang = "text",
+  label,
+  mark,
+  caption,
+  children,
+}: {
+  lang?: Lang;
+  /** a file name or a short label, in a bar above the code */
+  label?: string;
+  /** lines to light up, such as "3-4, 7" */
+  mark?: string | number[];
+  caption?: ReactNode;
+  children: string;
+}) {
+  const lines = toLines(tokenize(dedent(children), lang));
+  const marked = lineSet(mark);
+  return (
+    <figure className="wu-code" data-marked={marked.size > 0 || undefined}>
+      {label && (
+        <div className="wu-code-head">
+          <span className="wu-code-label">{label}</span>
+          {LANG_NAME[lang] && <span className="wu-code-lang">{LANG_NAME[lang]}</span>}
+        </div>
+      )}
+      <pre className="wu-code-pre">
+        <code>
+          {lines.map((line, i) => (
+            <span key={i}>
+              <span className="wu-code-line" data-mark={marked.has(i + 1) || undefined}>
+                {line.map((t, j) =>
+                  t.kind ? (
+                    <span key={j} className={`tk-${t.kind}`}>
+                      {t.text}
+                    </span>
+                  ) : (
+                    t.text
+                  ),
+                )}
+              </span>
+              {i < lines.length - 1 && "\n"}
+            </span>
+          ))}
+        </code>
+      </pre>
+      {caption && <figcaption className="wu-code-cap">{caption}</figcaption>}
+    </figure>
   );
 }
