@@ -7,6 +7,7 @@
 import type { ComponentType } from "react";
 import type { StaticImageData } from "next/image";
 import * as bricked from "@/writeups/bricked";
+import * as doctorRocket from "@/writeups/doctor-rocket";
 
 /** A heading in the article: chapters number themselves, "hood" ones nest under them in the contents. */
 export type Section = { id: string; title: string; level: 2 | 3 };
@@ -25,7 +26,12 @@ export type WriteupMeta = {
   date: string;
   /** a short line beside the date: "Hack the North 2026 · Winner" */
   occasion?: string;
-  hero: { src: StaticImageData; alt: string };
+  /**
+   * The picture under the title. With video, the clip plays there instead (muted,
+   * looping, inline) and src is its poster: the first thing shown, the still for
+   * reduced motion, and the share image. Videos live under /public.
+   */
+  hero: { src: StaticImageData; alt: string; video?: { mp4: string; webm?: string } };
   /** the project's colour, the same as its card's (lib/projects.ts): for accents and the sky at the top */
   tone: string;
   team: { name: string; role: string; href?: string }[];
@@ -38,7 +44,7 @@ export type WriteupMeta = {
 
 export type Writeup = { meta: WriteupMeta; Article: ComponentType };
 
-export const WRITEUPS: Writeup[] = [bricked];
+export const WRITEUPS: Writeup[] = [doctorRocket, bricked];
 
 export function getWriteup(slug: string): Writeup | undefined {
   return WRITEUPS.find((w) => w.meta.slug === slug);

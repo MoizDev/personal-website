@@ -63,6 +63,7 @@ export const PROJECTS: Project[] = [
     about:
       "Everything DrRacket does, at native speed: a Racket IDE written in Rust, with a stepper, a debugger and a Visualizer that draws your program as it runs. Free for macOS, Windows and Linux.",
     href: "https://doctorocket.com/",
+    writeup: "/writeups/doctor-rocket",
     art: { kind: "shot", src: drrocket },
     logo: drrocketLogo,
     tone: "#1fa2ec",
