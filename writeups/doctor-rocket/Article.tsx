@@ -6,11 +6,13 @@ import { Clocks } from "./figures/Clocks";
 import { DebugTabs } from "./figures/DebugTabs";
 import { Explain } from "./figures/Explain";
 import { Formatter } from "./figures/Formatter";
+import { Arrows } from "./figures/Arrows";
+import { Choreo } from "./figures/Choreo";
 import { ImageChar } from "./figures/ImageChar";
 import { MemoryFlow } from "./figures/MemoryFlow";
 import { MiniViz } from "./figures/MiniViz";
 import { Relex } from "./figures/Relex";
-import { RendererLadder } from "./figures/RendererLadder";
+import { Stepper } from "./figures/Stepper";
 import { Terminal } from "./figures/Terminal";
 import { UpdateFlow } from "./figures/UpdateFlow";
 import { UserWritten } from "./figures/UserWritten";
@@ -190,11 +192,30 @@ Oct 23 {blue} | 50 | beta 14
         explanation a teaching assistant would give at the board.
       </p>
 
+      {/* 3d · Choreography */}
+      <Sub s={S.choreo} />
+      <p>
+        A step can change several things at once: a question fades, a value appears, a card moves. The app plays
+        all of them inside one 600 ms transition. While the program plays, the transition shrinks to 0.85 s divided
+        by the speed, so at 8&times; a step takes 85 ms. Each part reads its own window of that transition through a
+        small function, <code>phase</code>, which eases it with a cubic ease-out.
+      </p>
+      <p>
+        On a return, the old question fades in the first quarter while the value appears. The value then travels
+        up the connector between 20% and 75% of the transition as the caller&rsquo;s border turns green, and it
+        fills the hole only after it lands. Cards glide to new positions over 350 ms. If the next step arrives
+        mid-glide, each card restarts from where it is drawn at that moment, not from where the last layout put it,
+        so nothing jumps.
+      </p>
+      <Figure title="Choreographing a step" caption="One step of the Visualizer, slowed down. Each part of a return runs in its own window of a 600 ms transition; drag the timeline to scrub it, or pick a speed to see the transition shorten. Below, a new step arrives a quarter of the way into a glide, and the card turns from where it is drawn." tools>
+        <Choreo />
+      </Figure>
+
       {/* 4 · Editor core */}
       <Chapter s={S.editor} />
       <p>
         The editor is written from scratch, because a Racket editor needs to know Racket at every keystroke: where
-        a form starts, which bracket matches which, and what DrRacket would indent. Three pieces show how it is
+        a form starts, which bracket matches which, and what DrRacket would indent. Four pieces show how it is
         built.
       </p>
 
@@ -273,6 +294,23 @@ Oct 23 {blue} | 50 | beta 14
       </p>
       <Figure bare title="A picture in the code" caption="A rocket pasted into a Beginning Student file, used as a value, and drawn in the interactions.">
         <Shot src={imagesShot} quality={92} alt="Dr. Rocket with poster.rkt open: a rocket image sits inside the code as the value of rocket, and the interactions show the posters it makes." />
+      </Figure>
+
+      {/* 4d · Binding arrows */}
+      <Sub s={S.arrows} />
+      <p>
+        Hovering over a name draws arrows from where it is bound to each of its uses, as DrRacket does. The arrows
+        come from Racket&rsquo;s check syntax, which reports them as character offsets. The first keystroke makes
+        those offsets stale, but the editor does not throw them away. It maps both ends of every arrow through each
+        edit, the same way it maps the cursor, so text typed above a binding carries its arrows down with it.
+      </p>
+      <p>
+        Each edit restarts a 0.45 s countdown to the next check. A new check cancels one still running, and a
+        result for an older version of the text is dropped. Half-typed code is briefly wrong, so an error inside the
+        form being typed is held until the cursor leaves that form.
+      </p>
+      <Figure title="Arrows that survive typing" caption="The mouse rests on lst. Edits above it move every stored arrow end, so the arrows ride along until the next check replaces them. An error in the definition being typed waits until the cursor leaves it." tools>
+        <Arrows />
       </Figure>
 
       {/* 5 · Running */}
@@ -363,29 +401,43 @@ Oct 23 {blue} | 50 | beta 14
         <code>e</code>, <code>acc</code> and <code>pow</code>, and nothing else.
       </p>
 
-      {/* 6 · Robot */}
-      <Chapter s={S.robot} />
+      {/* 6 · Stepper */}
+      <Chapter s={S.stepper} />
       <p>
-        Dr. Rocket can be driven by a script. Given a JSON file, the app plays a user: it opens files, types, clicks,
-        drags, scrubs the Visualizer, waits until a run finishes, and takes screenshots. The same scripts test
-        updates in CI, run the benchmarks, and record the videos on the website. The window can be invisible while it does this, so a script can run without taking over the screen.
+        Dr. Rocket does not write its own stepper. It runs DrRacket&rsquo;s stepper in a Racket process and streams
+        each reduction to the editor as JSON, pausing every 500 steps until the editor asks for more. By default,
+        every step matches DrRacket&rsquo;s. A test steps <code>(is-list? (cons &apos;a (cons &apos;b empty)))</code>{" "}
+        and compares the result with DrRacket 9.3&rsquo;s stepper window, step for step.
       </p>
       <p>
-        Recording video is where the obvious version fails. If frames are captured on the wall clock, a slow frame
-        becomes a dropped frame, and animations stutter. So while recording, the app runs on a virtual clock. Frame{" "}
-        <em>n</em> is told that the time is the start plus <em>n</em>/30 of a second, however long it actually took
-        to draw. Frames go through a channel that holds four, so a slow encoder slows the app instead of losing
-        frames, and ffmpeg encodes them at a steady 30 frames per second.
+        Matching DrRacket also meant matching how it prints. DrRacket builds its print settings in its GUI thread,
+        where built lists print as <code>list</code>, so <code>(cons &apos;b &apos;())</code> appears as{" "}
+        <code>(list &apos;b)</code> even in Beginning Student. Dr. Rocket forces the same setting.
+      </p>
+      <Figure title="Stepping like DrRacket" caption="Stepping (f 5 17 3) in Beginning Student. Top: DrRacket's 37 reductions, which Dr. Rocket shows by default. Bottom: the functional step trace, which folds each call into one step and keeps the last call's reductions, leaving 13. Built lists print as list, as DrRacket prints them." tools>
+        <Stepper />
+      </Figure>
+      <p>
+        A recursive function makes a long trace, so an opt-in setting, the functional step trace, shortens it. The
+        stepper holds back the reductions between two calls of a user function and shows them as one step, keeping
+        the expression around the call. After the last call, the remaining reductions are shown in full.
+      </p>
+
+      {/* 7 · Robot */}
+      <Chapter s={S.robot} />
+      <p>
+        Dr. Rocket can be driven by a script: a JSON file of steps that opens files, types, clicks, scrubs the
+        Visualizer, waits for a run to finish and records video. The same scripts test updates in CI, run the
+        benchmarks and film the website&rsquo;s videos. Filming on the wall clock drops frames whenever one is slow
+        to draw, so while recording, the app runs on a virtual clock instead. Frame <em>n</em> is told the time is
+        the start plus <em>n</em>/30 of a second, however long it took. Frames pass through a channel that holds
+        four, so a slow encoder slows the app rather than losing frames.
       </p>
       <Figure title="Two clocks" caption="The same ten frames filmed two ways, with illustrative timings. On the wall clock, slow frames repeat and quick ones are lost. On the virtual clock, frame k happens at k/30 s, so every frame lands once." tools>
         <Clocks />
       </Figure>
-      <p>
-        The robot types into real files, which has a cost. One commit in the history restores the Visualizer&rsquo;s
-        own Racket source, with the message that a benchmark run had typed into it.
-      </p>
 
-      {/* 7 · Terminal */}
+      {/* 8 · Terminal */}
       <Chapter s={S.terminal} />
       <p>
         Dr. Rocket includes a terminal; even installing a Racket package runs in a terminal tab. It is a real
@@ -409,42 +461,25 @@ Oct 23 {blue} | 50 | beta 14
         edges, so neighbouring characters join without a seam.
       </p>
 
-      {/* 8 · Shipping */}
+      {/* 9 · Shipping */}
       <Chapter s={S.shipping} />
       <p>
-        An app that students install on their own laptops has to update itself safely, and to start on any machine.
-      </p>
-      <p>
-        Updates are signed with Ed25519, by a key built into every copy of the app. The signature covers a message
-        that begins with a fixed tag, then the version, the platform, the download&rsquo;s SHA-256 and its URL, one
-        per line. Change any one of them and the signature fails, and the tag keeps a signature made for anything
-        else from passing as an update. Downloads go through the system&rsquo;s own curl and tar, so the app carries
-        no TLS stack of its own, and a downloaded program is never run to learn its version. The archive is checked
-        when it arrives and again just before it is installed. The app refuses to update a copy that macOS is running from a temporary
-        translocated path or straight from a disk image, and asks the user to drag it into Applications first. To install,
-        it renames the running app aside, moves the new one into place, and renames the old one back if anything
-        fails.
+        Students install Dr. Rocket on their own laptops, so it updates itself, and it has to do so safely. Each
+        update is signed with Ed25519 by a key built into the app. The signature covers a fixed tag, then the
+        version, the platform, the download&rsquo;s SHA-256 and its URL, one per line, so changing any of them breaks
+        it, and nothing signed for another purpose passes as an update. The archive is checked when it arrives and
+        again just before install, and a downloaded program is never run. To install, the app renames itself aside,
+        moves the new copy into place, and renames itself back if anything fails.
       </p>
       <Figure title="A signed update" caption="Four updates, four paths: a good one, one with a changed URL, one run from the disk image, and one whose swap fails and is undone." tools>
         <UpdateFlow />
       </Figure>
       <p>
-        On macOS, some behaviour is only reachable through the application delegate, and winit owns the delegate.
-        Dr. Rocket adds two methods to winit&rsquo;s delegate class at runtime: one to open files from Finder, and
-        one so that quitting with unsaved work asks first instead of exiting.
+        One more safety net runs at launch. On Windows and Linux, a launch that finds the previous one crashed before
+        painting steps down a list of renderers, from the default to software, and remembers the one that works.
       </p>
-      <p>
-        Finally, not every machine can run every GPU backend, and a bad driver can crash the app before it shows
-        anything. On Windows and Linux, each launch leaves a marker file that is deleted once three frames have
-        painted. A launch that finds the marker knows the last one died, and steps one renderer down the list: the
-        default, DirectX 12, OpenGL, then software. A renderer that fails to set up relaunches the app at the next
-        step at once. The one that works is remembered.
-      </p>
-      <Figure title="Renderer fallback" caption="Three launches on one machine: a driver crash, a setup error, and then a renderer that paints and is remembered." tools>
-        <RendererLadder />
-      </Figure>
 
-      {/* 9 · Limits */}
+      {/* 10 · Limits */}
       <Chapter s={S.limits} />
       <p>
         The Visualizer records at most 1,500 steps, so a long run is cut short and says so. A large structure is
@@ -453,9 +488,9 @@ Oct 23 {blue} | 50 | beta 14
         benchmark that prints a number but checks none.
       </p>
       <p>
-        Several features didn&rsquo;t fit here and deserve a line each: the stepper, which matches DrRacket&rsquo;s
-        steps exactly; check syntax, with arrows from each use to its binding; a vim mode with counts, operators and
-        text objects; and undo that groups typing the way a person expects.
+        Several features didn&rsquo;t fit here and deserve a line each: a vim mode with counts, operators and
+        text objects; undo that groups typing the way a person expects; and exact fractions printed as repeating
+        decimals, so 1/3 shows as 0.3 with a bar over the 3.
       </p>
     </>
   );

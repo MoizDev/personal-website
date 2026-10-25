@@ -45,6 +45,19 @@
   opacity: 1;
   transform: none;
 }
+/* a layout still to come keeps its slot as a faint dashed outline, so the space reads as waiting */
+.drf-fmt-card:not([data-on]) {
+  opacity: 1;
+  transform: none;
+  border-style: dashed;
+  background: transparent;
+}
+.drf-fmt-card > * {
+  transition: opacity 0.45s;
+}
+.drf-fmt-card:not([data-on]) > * {
+  opacity: 0;
+}
 .drf-fmt-card[data-state="out"],
 .drf-fmt-card[data-state="lose"] {
   opacity: 0.55;
