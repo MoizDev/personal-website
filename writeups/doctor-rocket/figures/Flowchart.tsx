@@ -42,7 +42,13 @@ export type FEdge = {
   outer?: boolean;
 };
 
-export type FWalk = { name: string; path: string[]; note?: ReactNode };
+export type FWalk = {
+  name: string;
+  path: string[];
+  note?: ReactNode;
+  /** side inputs, [from, to]: lit along with `to` when the walk reaches it */
+  also?: [string, string][];
+};
 
 function sidePt(b: Box, s: Side): Pt {
   if (s === "t") return [b.x + b.w / 2, b.y];
@@ -131,7 +137,8 @@ function headOf(pts: Pt[]): string {
 function labelAt(pts: Pt[]): Pt {
   const [a, b] = pts;
   const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-  const t = Math.min(1, 22 / (len || 1));
+  // a short hop (phones) gets its label in the middle, between the two boxes
+  const t = len < 56 ? 0.5 : Math.min(1, 22 / (len || 1));
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
@@ -158,6 +165,18 @@ export function Flowchart({
   const els = useRef(new Map<string, HTMLDivElement>());
   const [boxes, setBoxes] = useState<Map<string, Box>>(new Map());
   const [size, setSize] = useState({ w: 0, h: 0 });
+  // narrower than minWidth (phones): tighten the grid instead of scrolling sideways
+  const [compact, setCompact] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const check = () => setCompact(el.clientWidth < minWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [minWidth]);
 
   // one step per box along each walk, and a breath between walks
   const steps = useMemo(() => walks.flatMap((w, wi) => w.path.map((_, i) => ({ wi, i }))), [walks]);
@@ -177,7 +196,7 @@ export function Flowchart({
     const ro = new ResizeObserver(measure);
     ro.observe(g);
     return () => ro.disconnect();
-  }, [nodes]);
+  }, [nodes, compact]);
 
   // what the current walk has reached
   const cur = seq.reduced || seq.step < 0 ? null : steps[seq.step];
@@ -185,6 +204,11 @@ export function Flowchart({
   const reached = new Set(walk ? walk.path.slice(0, cur!.i + 1) : []);
   const taken = new Set<string>();
   if (walk) for (let i = 1; i <= cur!.i; i++) taken.add(key(walk.path[i - 1], walk.path[i]));
+  for (const [a, b] of walk?.also ?? []) {
+    if (!reached.has(b)) continue;
+    reached.add(a);
+    taken.add(key(a, b));
+  }
   const head = walk ? walk.path[cur!.i] : null;
   const lastEdge = walk && cur!.i > 0 ? key(walk.path[cur!.i - 1], walk.path[cur!.i]) : null;
 
@@ -194,8 +218,9 @@ export function Flowchart({
     if (!a || !b) return [];
     const [o, i] = guessSides(a, b);
     const out = e.out ?? o;
-    const edge = !e.outer ? null : out === "l" ? 14 : size.w - 14;
-    const pts = route(a, b, out, e.in ?? i, e.swing ?? 26, edge);
+    const rim = compact ? 6 : 14;
+    const edge = !e.outer ? null : out === "l" ? rim : size.w - rim;
+    const pts = route(a, b, out, e.in ?? i, e.swing ?? (compact ? 14 : 26), edge);
     return [{ e, pts, d: pathOf(pts), k: key(e.from, e.to) }];
   });
 
@@ -207,7 +232,8 @@ export function Flowchart({
           ref={grid}
           className="drf-flow-grid"
           data-walking={walk ? "" : undefined}
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, minWidth }}
+          data-compact={compact ? "" : undefined}
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, minWidth: compact ? 0 : minWidth }}
         >
           <svg className="drf-flow-wires" width={size.w} height={size.h} aria-hidden>
             {routed.map(({ e, pts, d, k }) => {

@@ -103,7 +103,7 @@ function build(): Step[] {
 /* ---------- layout ---------- */
 
 const CW = 6.62; // advance of an 11px monospace character
-const W_CARD = 272;
+const W_CARD = 300;
 const HEAD = 30;
 const ROW = 22;
 const ASK = 24;
@@ -116,8 +116,8 @@ function cardH(f: Frame) {
 }
 
 type Lay = { W: number; H: number; stack: [number, number]; tree: [number, number]; s: number; narrow: boolean };
-const WIDE: Lay = { W: 920, H: 520, stack: [16, 14], tree: [430, 70], s: 1.05, narrow: false };
-const NARROW: Lay = { W: 304, H: 720, stack: [16, 214], tree: [10, 18], s: 0.66, narrow: true };
+const WIDE: Lay = { W: 920, H: 520, stack: [16, 14], tree: [440, 70], s: 1.02, narrow: false };
+const NARROW: Lay = { W: 332, H: 720, stack: [16, 214], tree: [18, 18], s: 0.68, narrow: true };
 
 function stackPos(frames: Frame[], lay: Lay) {
   const pos = new Map<number, { x: number; y: number; h: number }>();
@@ -241,7 +241,7 @@ function Card({ f, x, y }: { f: Frame; x: number; y: number }) {
 
 export function MiniViz() {
   const wrap = useRef<HTMLDivElement>(null);
-  const steps = useMemo(build, []);
+  const steps = useMemo(() => build(), []);
   const seq = useSequence(wrap, steps.length, { delay: [700, ...steps.slice(1).map((s) => (s.ret ? 1250 : 1050))], loop: true, hold: 3200 });
   const [narrow, setNarrow] = useState(false);
 
@@ -335,15 +335,14 @@ export function MiniViz() {
         })}
 
         {/* frames to the nodes they hold */}
-        {step.frames.map((f) => {
+        {/* on phones the tree sits above the stack, so lines would cross the cards */}
+        {!lay.narrow && step.frames.map((f) => {
           if (!f.node) return null;
           const p = pos.get(f.id)!;
           const n = nodeAt(f.node, lay);
           const x1 = p.x + W_CARD - 12;
           const y1 = p.y + HEAD + 11;
-          const d = lay.narrow
-            ? `M${x1},${y1} C${x1 + 14},${y1 - 40} ${n.cx},${n.cy + 70} ${n.cx},${n.cy + n.h / 2}`
-            : `M${x1},${y1} C${x1 + 70},${y1} ${n.cx - n.w / 2 - 70},${n.cy} ${n.cx - n.w / 2},${n.cy}`;
+          const d = `M${x1},${y1} C${x1 + 70},${y1} ${n.cx - n.w / 2 - 70},${n.cy} ${n.cx - n.w / 2},${n.cy}`;
           return <path key={`r${f.id}-${f.node}`} className="drf-mv-ref" data-running={f === running && started ? "" : undefined} d={d} />;
         })}
 

@@ -1,0 +1,319 @@
+/* Two clocks: filming the app. Scoped under .drf-clk-. */
+
+.drf-clk {
+  --tone: var(--t-blue);
+  container-type: inline-size;
+  margin: -16px;
+  padding: 20px 18px 16px;
+  border-radius: 4px;
+  background-image: radial-gradient(rgba(var(--ink-rgb), 0.13) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-position: 8px 8px;
+}
+
+.drf-clk-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+@container (max-width: 520px) {
+  .drf-clk-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .drf-clk .drf-clk-step {
+    white-space: normal;
+  }
+  .drf-clk .drf-clk-code {
+    overflow-wrap: anywhere;
+  }
+}
+
+/* the script */
+
+.drf-clk-script {
+  overflow: hidden;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 7px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.drf-clk-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg);
+  font-weight: 600;
+}
+.drf-clk-dim {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 10.5px;
+}
+.drf-clk-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: background 0.25s, color 0.25s;
+}
+.drf-clk-code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.drf-clk-step[data-past] {
+  color: var(--soft);
+}
+.drf-clk-step[data-on] {
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  color: var(--fg);
+}
+.drf-clk-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--ink-rgb), 0.3);
+}
+.drf-clk-step[data-past] .drf-clk-dot {
+  background: rgba(var(--ink-rgb), 0.35);
+  border-color: transparent;
+}
+.drf-clk-step[data-on] .drf-clk-dot {
+  background: var(--tone);
+  border-color: var(--tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 22%, transparent);
+}
+
+/* the pipe: app, channel, encoder */
+
+.drf-clk-pipe {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.drf-clk-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 170px;
+  padding: 6px 12px;
+  border: 1px solid rgba(var(--ink-rgb), 0.22);
+  border-radius: 7px;
+  background: var(--bg);
+  text-align: center;
+  transition: border-color 0.25s, background 0.25s, box-shadow 0.3s;
+}
+.drf-clk-node[data-on] {
+  border-color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 7%, var(--bg));
+}
+.drf-clk-node[data-kind="store"] {
+  background: rgba(var(--ink-rgb), 0.06);
+  border-color: rgba(var(--ink-rgb), 0.16);
+}
+.drf-clk-node[data-full] {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--t-orange) 18%, transparent);
+}
+.drf-clk-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--fg);
+}
+.drf-clk-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.drf-clk-chan {
+  display: flex;
+  gap: 4px;
+  padding: 2px 0;
+}
+.drf-clk-chan span {
+  width: 16px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px dashed rgba(var(--ink-rgb), 0.3);
+  transition: background 0.2s, border-color 0.2s;
+}
+.drf-clk-chan span[data-on] {
+  border: 1px solid var(--tone);
+  background: color-mix(in srgb, var(--tone) 45%, transparent);
+}
+
+.drf-clk-wire {
+  position: relative;
+  width: 2px;
+  height: 14px;
+  background: rgba(var(--ink-rgb), 0.28);
+}
+.drf-clk-wire[data-on] {
+  background: var(--tone);
+}
+.drf-clk-wire[data-on]::after {
+  content: "";
+  position: absolute;
+  left: -2.5px;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tone);
+  animation: drf-clk-drip 0.6s linear infinite;
+}
+@keyframes drf-clk-drip {
+  from { transform: translateY(-3px); opacity: 1; }
+  to { transform: translateY(11px); opacity: 0; }
+}
+
+/* the lanes */
+
+.drf-clk-lanes {
+  display: grid;
+  gap: 10px;
+}
+.drf-clk-lane {
+  padding: 8px 0 0;
+  border-top: 1px solid var(--line);
+}
+.drf-clk-title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 0 6px 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.drf-clk-verdict {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+.drf-clk-lane[data-kind="wall"] .drf-clk-verdict[data-on] {
+  border-color: var(--t-orange);
+  background: var(--t-orange);
+  color: #fff;
+}
+.drf-clk-lane[data-kind="virtual"] .drf-clk-verdict[data-on] {
+  border-color: var(--tone);
+  background: var(--tone);
+  color: #fff;
+}
+
+.drf-clk-svg {
+  display: block;
+  overflow: visible;
+}
+.drf-clk-svg text {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-anchor: middle;
+  fill: var(--fg);
+}
+.drf-clk-svg .drf-clk-row {
+  text-anchor: start;
+  font-size: 10px;
+  fill: var(--muted);
+}
+
+.drf-clk-block rect {
+  fill: var(--bg);
+  stroke: rgba(var(--ink-rgb), 0.16);
+  stroke-dasharray: 3 3;
+  transition: fill 0.25s, stroke 0.25s;
+}
+.drf-clk-block text {
+  opacity: 0;
+}
+.drf-clk-block[data-on] rect {
+  fill: color-mix(in srgb, var(--tone) 12%, var(--bg));
+  stroke: var(--tone);
+  stroke-dasharray: none;
+}
+.drf-clk-block[data-on] text {
+  opacity: 1;
+}
+.drf-clk-block[data-on][data-slow] rect {
+  fill: color-mix(in srgb, var(--t-orange) 12%, var(--bg));
+  stroke: color-mix(in srgb, var(--t-orange) 70%, transparent);
+}
+.drf-clk-block[data-lost] rect {
+  fill: color-mix(in srgb, var(--t-red) 10%, var(--bg));
+  stroke: var(--t-red);
+  stroke-dasharray: 3 2;
+}
+.drf-clk-block[data-lost] text {
+  fill: var(--t-red);
+  text-decoration: line-through;
+}
+.drf-clk-block[data-lost] .drf-clk-tag {
+  font-size: 9.5px;
+  fill: var(--t-red);
+  text-decoration: none;
+}
+
+.drf-clk-slot rect {
+  fill: none;
+  stroke: rgba(var(--ink-rgb), 0.18);
+  stroke-dasharray: 2 3;
+}
+.drf-clk-slot[data-on] rect {
+  fill: rgba(var(--ink-rgb), 0.06);
+  stroke: rgba(var(--ink-rgb), 0.4);
+  stroke-dasharray: none;
+  animation: drf-clk-in 0.3s ease-out;
+}
+.drf-clk-slot[data-on][data-held] rect {
+  fill: color-mix(in srgb, var(--t-orange) 14%, var(--bg));
+  stroke: color-mix(in srgb, var(--t-orange) 70%, transparent);
+}
+.drf-clk-slot[data-on][data-held] text {
+  fill: color-mix(in srgb, var(--t-orange) 85%, var(--fg));
+}
+
+.drf-clk-link {
+  fill: none;
+  stroke: rgba(var(--ink-rgb), 0.3);
+  stroke-width: 1.2;
+  animation: drf-clk-draw 0.4s ease-out;
+}
+.drf-clk-link[data-held] {
+  stroke: color-mix(in srgb, var(--t-orange) 70%, transparent);
+  stroke-dasharray: 3 3;
+}
+
+@keyframes drf-clk-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes drf-clk-draw {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drf-clk * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

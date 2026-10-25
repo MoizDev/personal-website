@@ -1,0 +1,356 @@
+/* Fig: the three Racket processes and the JSON-lines wire. Scoped under .drf-wire-fig. */
+
+.drf-wire-fig {
+  container-type: inline-size;
+  margin: -16px;
+  padding: 18px 18px 16px;
+  border-radius: 4px;
+  background-image: radial-gradient(rgba(var(--ink-rgb), 0.13) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-position: 8px 8px;
+}
+
+.drf-wire-map {
+  display: grid;
+  grid-template-columns: minmax(104px, 150px) minmax(0, 1fr) minmax(128px, 184px);
+  grid-template-rows: auto repeat(3, auto);
+  row-gap: 12px;
+}
+
+.drf-wire-head {
+  grid-row: 1;
+  margin-bottom: -2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* the app: one tall box on the left */
+.drf-wire-app {
+  grid-column: 1;
+  grid-row: 2 / 5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 1.5px solid color-mix(in srgb, var(--wu-tone) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--wu-tone) 7%, var(--bg));
+  text-align: center;
+}
+.drf-wire-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.drf-wire-sub {
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.drf-wire-jobs {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 10px;
+  color: var(--soft);
+}
+.drf-wire-jobs li {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(var(--ink-rgb), 0.06);
+}
+
+/* one row per Racket process: a lane, then its box */
+.drf-wire-row {
+  grid-column: 2 / 4;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: stretch;
+  isolation: isolate; /* keeps the spare runner's card above the panel */
+}
+
+.drf-wire-lane {
+  position: relative;
+  min-height: 64px;
+  transition: opacity 0.3s;
+}
+.drf-wire-lane[data-off] {
+  opacity: 0.35;
+}
+
+/* a pipe: stdin on top, pointing right; stdout under it, pointing left */
+.drf-wire-line {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 0;
+  border-top: 1.4px solid rgba(var(--ink-rgb), 0.3);
+  transition: border-color 0.25s;
+}
+.drf-wire-line[data-dir="out"] {
+  top: 38%;
+}
+.drf-wire-line[data-dir="in"] {
+  top: 62%;
+}
+.drf-wire-line::after {
+  content: "";
+  position: absolute;
+  top: -4.7px;
+  border: 4px solid transparent;
+}
+.drf-wire-line[data-dir="out"]::after {
+  right: -2px;
+  border-left: 6px solid rgba(var(--ink-rgb), 0.3);
+  border-right: 0;
+}
+.drf-wire-line[data-dir="in"]::after {
+  left: -2px;
+  border-right: 6px solid rgba(var(--ink-rgb), 0.3);
+  border-left: 0;
+}
+.drf-wire-line[data-lit] {
+  border-top-color: var(--tone);
+  border-top-width: 2px;
+}
+.drf-wire-line[data-dir="out"][data-lit]::after {
+  border-left-color: var(--tone);
+}
+.drf-wire-line[data-dir="in"][data-lit]::after {
+  border-right-color: var(--tone);
+}
+
+.drf-wire-pipe {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  padding: 0 4px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.drf-wire-pipe[data-dir="out"] {
+  top: calc(38% - 3px);
+}
+.drf-wire-pipe[data-dir="in"] {
+  top: calc(62% + 3px);
+  transform: translate(-50%, 0);
+}
+
+/* the message riding a lane */
+.drf-wire-chip {
+  position: absolute;
+  z-index: 2;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 20%, transparent);
+  animation: drf-wire-go 1.1s cubic-bezier(0.45, 0, 0.25, 1) forwards;
+}
+.drf-wire-chip[data-dir="out"] {
+  top: 38%;
+}
+.drf-wire-chip[data-dir="in"] {
+  top: 62%;
+  animation-name: drf-wire-back;
+}
+
+@keyframes drf-wire-go {
+  0% { left: 4px; translate: 0 -50%; opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: calc(100% - 4px); translate: -100% -50%; opacity: 0; }
+}
+@keyframes drf-wire-back {
+  0% { left: calc(100% - 4px); translate: -100% -50%; opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: 4px; translate: 0 -50%; opacity: 0; }
+}
+
+/* a Racket process */
+.drf-wire-proc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid rgba(var(--ink-rgb), 0.2);
+  border-radius: 7px;
+  background: var(--bg);
+  transition: border-color 0.25s, box-shadow 0.3s, opacity 0.3s;
+}
+.drf-wire-proc[data-active] {
+  border-color: var(--tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 16%, transparent);
+}
+.drf-wire-proc[data-off] {
+  opacity: 0.45;
+  border-style: dashed;
+}
+/* the next runner, already warming up behind this one */
+.drf-wire-proc[data-spare]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px dashed rgba(var(--ink-rgb), 0.28);
+  border-radius: 7px;
+  background: rgba(var(--ink-rgb), 0.04);
+  transform: translate(5px, 5px);
+  animation: drf-wire-spare 0.5s ease-out backwards;
+}
+@keyframes drf-wire-spare {
+  from { transform: translate(0, 0); opacity: 0; }
+}
+
+.drf-wire-file {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tone);
+}
+.drf-wire-status {
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 0 6px;
+  white-space: nowrap;
+  border-radius: 999px;
+  font-size: 9.5px;
+  line-height: 16px;
+  color: var(--soft);
+  background: rgba(var(--ink-rgb), 0.07);
+  animation: drf-wire-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.drf-wire-proc[data-active] .drf-wire-status {
+  color: #fff;
+  background: var(--tone);
+}
+@keyframes drf-wire-pop {
+  from { scale: 0.7; opacity: 0; }
+}
+
+.drf-wire-say {
+  min-height: 3em;
+  margin: 14px 4px 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--soft);
+  text-align: center;
+}
+.drf-wire-say code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+
+/* the log: a gray store of the lines so far */
+.drf-wire-log {
+  border: 1px solid rgba(var(--ink-rgb), 0.14);
+  border-radius: 6px;
+  background: color-mix(in srgb, rgba(var(--ink-rgb), 0.05) 100%, var(--bg));
+  background-color: var(--bg);
+  background-image: linear-gradient(rgba(var(--ink-rgb), 0.05), rgba(var(--ink-rgb), 0.05));
+  overflow: hidden;
+}
+.drf-wire-log-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.drf-wire-log-rows {
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+}
+.drf-wire-log-rows li {
+  display: grid;
+  grid-template-columns: 14px 54px minmax(0, 1fr);
+  align-items: baseline;
+  padding: 0 10px;
+  font-size: 10.5px;
+  line-height: 19px;
+  color: var(--soft);
+}
+.drf-wire-log-rows li[data-new] {
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  animation: drf-wire-row 0.4s ease-out;
+}
+@keyframes drf-wire-row {
+  from { opacity: 0; translate: 0 6px; }
+}
+.drf-wire-dir {
+  color: var(--muted);
+}
+.drf-wire-who {
+  font-weight: 600;
+  color: var(--tone);
+}
+.drf-wire-json {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@container (max-width: 520px) {
+  .drf-wire-map {
+    grid-template-columns: 80px minmax(0, 1fr) 112px;
+  }
+  .drf-wire-jobs {
+    display: none;
+  }
+  .drf-wire-name {
+    font-size: 12.5px;
+  }
+  .drf-wire-app {
+    padding: 10px 4px;
+  }
+  .drf-wire-proc {
+    padding: 7px 8px;
+  }
+  .drf-wire-sub {
+    font-size: 9.5px;
+  }
+  .drf-wire-chip {
+    font-size: 9.5px;
+    padding: 1px 6px;
+  }
+  .drf-wire-pipe {
+    display: none;
+  }
+  .drf-wire-say {
+    font-size: 12.5px;
+  }
+  .drf-wire-log-rows li {
+    grid-template-columns: 12px 48px minmax(0, 1fr);
+    font-size: 9.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drf-wire-chip,
+  .drf-wire-status,
+  .drf-wire-proc[data-spare]::before,
+  .drf-wire-log-rows li {
+    animation: none;
+  }
+}

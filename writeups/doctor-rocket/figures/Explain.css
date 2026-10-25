@@ -1,0 +1,372 @@
+/* Fig: code into words. Scoped under .drf-ex. */
+
+.drf-ex {
+  --ex-o1: var(--t-purple);
+  --ex-o2: var(--t-teal);
+  container-type: inline-size;
+  margin: -16px;
+  padding: 18px;
+  border-radius: 4px;
+  background-image: radial-gradient(rgba(var(--ink-rgb), 0.13) 1px, transparent 1.2px);
+  background-size: 16px 16px;
+  background-position: 8px 8px;
+}
+
+/* the editor */
+.drf-ex-editor {
+  border: 1px solid rgba(var(--ink-rgb), 0.16);
+  border-radius: 7px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.drf-ex-tab {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(var(--ink-rgb), 0.1);
+  background: rgba(var(--ink-rgb), 0.04);
+  font-size: 10.5px;
+  color: var(--soft);
+}
+.drf-ex-tab-run {
+  color: var(--muted);
+}
+
+.drf-ex-code {
+  margin: 0;
+  padding: 8px 0;
+  font-size: 11.5px;
+  line-height: 19px;
+  overflow: hidden;
+}
+.drf-ex-line {
+  display: flex;
+  align-items: baseline;
+  min-height: 19px;
+  transition: background 0.3s;
+}
+.drf-ex-line[data-on] {
+  background: color-mix(in srgb, var(--wu-tone) 7%, transparent);
+}
+.drf-ex-gutter {
+  flex: none;
+  width: 30px;
+  padding-right: 10px;
+  text-align: right;
+  color: rgba(var(--ink-rgb), 0.3);
+  user-select: none;
+}
+.drf-ex-text {
+  white-space: pre;
+  color: var(--fg);
+}
+
+.drf-ex-code .tk-kw { color: var(--c-kw); }
+.drf-ex-code .tk-str { color: var(--c-str); }
+.drf-ex-code .tk-num,
+.drf-ex-code .tk-lit { color: var(--c-num); }
+.drf-ex-code .tk-key { color: var(--c-key); }
+.drf-ex-code .tk-fn { color: var(--c-fn); }
+.drf-ex-code .tk-punct { color: rgba(var(--ink-rgb), 0.5); }
+.drf-ex-code .tk-com { color: rgba(var(--ink-rgb), 0.44); }
+
+/* the step's own code, and code it worked out on the way */
+.drf-ex-code [data-own] {
+  background: color-mix(in srgb, var(--wu-tone) 18%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--wu-tone) 70%, transparent);
+}
+.drf-ex-code [data-work] {
+  background: color-mix(in srgb, var(--t-yellow) 22%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--t-yellow) 80%, transparent);
+}
+
+/* the note written beside the code */
+.drf-ex-note {
+  flex: none;
+  margin-left: 2.2ch;
+  white-space: nowrap;
+  font-size: 10.5px;
+  color: var(--muted);
+  animation: drf-ex-in 0.45s 0.15s ease-out backwards;
+}
+.drf-ex-note-chip {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgba(var(--ink-rgb), 0.05);
+}
+.drf-ex-note b {
+  font-weight: 600;
+  color: var(--wu-tone);
+}
+
+/* under the editor: the explanation and the phrasebook */
+.drf-ex-below {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 226px;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.drf-ex-card {
+  padding: 10px 14px 12px;
+  border: 1px solid rgba(var(--ink-rgb), 0.16);
+  border-radius: 7px;
+  background: var(--bg);
+}
+
+.drf-ex-steps {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.drf-ex-step {
+  flex: 1;
+  padding: 0;
+  height: 4px;
+  border: 0;
+  border-radius: 2px;
+  font-size: 0;
+  color: transparent;
+  background: rgba(var(--ink-rgb), 0.12);
+  cursor: pointer;
+  transition: background 0.25s;
+}
+.drf-ex-step[data-on] {
+  background: var(--wu-tone);
+}
+
+.drf-ex-kind {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.drf-ex-pill {
+  flex: none;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 17px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--wu-tone);
+}
+.drf-ex-pill[data-kind="call"] {
+  background: var(--t-purple);
+}
+.drf-ex-pill[data-kind="return"] {
+  background: var(--t-teal);
+}
+.drf-ex-stepcode {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.drf-ex-head {
+  margin: 9px 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--fg);
+  animation: drf-ex-in 0.4s ease-out backwards;
+}
+.drf-ex-lines {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--soft);
+}
+.drf-ex-lines li {
+  padding-left: 12px;
+  border-left: 2px solid rgba(var(--ink-rgb), 0.1);
+  animation: drf-ex-in 0.4s ease-out backwards;
+}
+
+@keyframes drf-ex-in {
+  from { opacity: 0; translate: 0 4px; }
+}
+
+/* chips */
+.drf-ex-name {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  font-weight: 500;
+  color: var(--fg);
+}
+.drf-ex-code-chip,
+.drf-ex-val,
+.drf-ex-obj {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 0.86em;
+  line-height: 1.55;
+  white-space: nowrap;
+}
+.drf-ex-code-chip {
+  white-space: normal;
+  background: rgba(var(--ink-rgb), 0.07);
+  color: var(--fg);
+}
+.drf-ex-val {
+  background: rgba(var(--ink-rgb), 0.07);
+  color: var(--fg);
+  font-weight: 600;
+}
+.drf-ex-obj {
+  --c: var(--ex-o1);
+  font-weight: 600;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.drf-ex-obj[data-c="2"] {
+  --c: var(--ex-o2);
+}
+.drf-ex-ans {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 0 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  vertical-align: 1px;
+  color: #fff;
+  background: var(--t-red);
+  animation: drf-ex-stamp 0.45s 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+.drf-ex-ans[data-yes] {
+  background: var(--t-green);
+}
+@keyframes drf-ex-stamp {
+  from { opacity: 0; scale: 1.8; }
+}
+
+/* the phrasebook: a gray store of rules */
+.drf-ex-book {
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(var(--ink-rgb), 0.12);
+  border-radius: 7px;
+  background-color: var(--bg);
+  background-image: linear-gradient(rgba(var(--ink-rgb), 0.05), rgba(var(--ink-rgb), 0.05));
+}
+.drf-ex-book-head {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.drf-ex-book ul {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.drf-ex-book li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 5px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  opacity: 0.7;
+  transition: background 0.25s, opacity 0.25s, color 0.25s;
+}
+.drf-ex-book li[data-on] {
+  opacity: 1;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--wu-tone) 14%, var(--bg));
+  box-shadow: inset 2px 0 0 var(--wu-tone);
+}
+.drf-ex-rule-code {
+  font-size: 10.5px;
+}
+.drf-ex-rule-arrow {
+  color: var(--muted);
+}
+.drf-ex-rule-own {
+  margin-left: auto;
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@container (max-width: 560px) {
+  .drf-ex-below {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .drf-ex-book ul {
+    grid-template-columns: 1fr 1fr;
+  }
+  .drf-ex-rule-own {
+    display: none;
+  }
+}
+
+@container (max-width: 470px) {
+  .drf-ex {
+    padding: 14px 12px;
+  }
+  .drf-ex-code {
+    font-size: 10px;
+    line-height: 17px;
+  }
+  .drf-ex-line {
+    flex-wrap: wrap;
+    min-height: 17px;
+  }
+  .drf-ex-gutter {
+    width: 20px;
+    padding-right: 6px;
+  }
+  /* the note no longer fits beside the line: it drops under it */
+  .drf-ex-note {
+    flex-basis: 100%;
+    margin: 1px 0 3px;
+    padding-left: 20px;
+    font-size: 9.5px;
+  }
+  .drf-ex-head {
+    font-size: 14.5px;
+  }
+  .drf-ex-lines {
+    min-height: 7.6em;
+    font-size: 12px;
+  }
+  .drf-ex-book ul {
+    grid-template-columns: 1fr;
+  }
+  .drf-ex-tab-run {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drf-ex-note,
+  .drf-ex-head,
+  .drf-ex-lines li,
+  .drf-ex-ans {
+    animation: none;
+  }
+}
