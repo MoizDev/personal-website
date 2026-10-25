@@ -4,6 +4,8 @@ Long technical reads about a project, at `/writeups/<slug>`. Each one explains
 how the thing works, taken apart from its code, with an animated figure every
 few paragraphs. `/writeups` lists them all.
 
+A portable copy of this setup, for other Next.js sites, lives in `writeup-kit/`.
+
 ## Adding one
 
 1. Make `writeups/<slug>/` with three files:
