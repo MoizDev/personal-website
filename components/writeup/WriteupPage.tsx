@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Icon } from "@/components/diagram/icons";
 import { SolarSystem } from "@/components/SolarSystem";
 import type { WriteupMeta } from "@/lib/writeups";
+import { HeroVideo } from "./HeroVideo";
 import { ThemeButton } from "./ThemeButton";
 import { Toc } from "./Toc";
 import "./writeup.css";
@@ -47,7 +48,11 @@ export function WriteupPage({ meta, others, children }: { meta: WriteupMeta; oth
         </div>
 
         <div className="wu-hero">
-          <Image src={meta.hero.src} alt={meta.hero.alt} priority sizes="(max-width: 720px) 100vw, 662px" />
+          {meta.hero.video ? (
+            <HeroVideo poster={meta.hero.src} alt={meta.hero.alt} {...meta.hero.video} />
+          ) : (
+            <Image src={meta.hero.src} alt={meta.hero.alt} priority sizes="(max-width: 720px) 100vw, 662px" />
+          )}
         </div>
 
         <section className="wu-meta" aria-label="About this project">

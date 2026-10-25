@@ -199,10 +199,16 @@ html:has(.wu) {
   background: rgba(var(--ink-rgb), 0.04);
 }
 
-.wu-hero img {
+.wu-hero img,
+.wu-hero video {
   display: block;
   width: 100%;
   height: auto;
+}
+
+.wu-hero video {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
 }
 
 /* ---------- team and overview ---------- */
