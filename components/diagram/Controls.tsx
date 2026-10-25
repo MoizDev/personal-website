@@ -6,15 +6,15 @@ import { createPortal } from "react-dom";
 import type { Sequence } from "./usePlayback";
 
 /**
- * Pause, play, or play again, with an optional badge ("Round 1"). They sit at
- * the right end of the figure's caption, out of the drawing; a diagram with no
- * caption keeps them in its top corner.
+ * Pause, play, or play again, with an optional badge ("Round 1"). They sit in
+ * a row above the figure's frame, on the right, out of the drawing; outside a
+ * Figure they fall back to the diagram's top corner.
  */
 export function Controls({ seq, label }: { seq: Sequence; label?: string }) {
-  // undefined until mounted: then the caption's slot, or null when there is none
+  // undefined until mounted: then the figure's tools row, or null when there is none
   const [slot, setSlot] = useState<HTMLElement | null | undefined>(undefined);
   const anchor = useCallback((el: HTMLSpanElement | null) => {
-    if (el) setSlot(el.closest("figure")?.querySelector<HTMLElement>(".wu-cap-tools") ?? null);
+    if (el) setSlot(el.closest("figure")?.querySelector<HTMLElement>(".wu-fig-tools") ?? null);
   }, []);
 
   const again = seq.finished && !seq.paused;

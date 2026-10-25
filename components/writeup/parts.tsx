@@ -56,18 +56,18 @@ export function Figure({
   wide?: boolean;
   /** no panel behind it (for photos that bring their own) */
   bare?: boolean;
-  /** leave room at the caption's right end for a diagram's play controls */
+  /** a row above the frame, on the right, for a diagram's play controls */
   tools?: boolean;
   children: ReactNode;
 }) {
   return (
     <figure className={`wu-fig${wide ? " wu-wide" : ""}`}>
+      {tools && <div className="wu-fig-tools" />}
       <div className={bare ? "wu-fig-bare" : "wu-fig-panel"}>{children}</div>
-      {(title || caption || tools) && (
+      {(title || caption) && (
         <figcaption className="wu-cap">
           <span className="wu-cap-title">{title}</span>
           {caption && <span className="wu-cap-text">{caption}</span>}
-          {tools && <span className="wu-cap-tools" />}
         </figcaption>
       )}
     </figure>

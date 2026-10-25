@@ -91,8 +91,8 @@ draws a small dot, so check new ones there.
 
 `<Diagram src={…}>` takes plain text. The first line names the kind. Blank lines
 and lines starting with `#` are ignored. Every diagram plays when it scrolls
-into view, has a pause/replay button at the right end of its caption (out of
-the drawing), and holds still for reduced motion.
+into view, has its pause/replay button (and any badge, like "Round 1") in a
+row above its frame, on the right, and holds still for reduced motion.
 
 Shared bits of a line: `"Label"` in double quotes, `[Icon]`, `{tone}`, and
 `: note` (everything after a colon is a smaller note).

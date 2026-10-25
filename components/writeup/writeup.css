@@ -456,9 +456,7 @@ html:has(.wu) {
 }
 
 .wu-cap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 16px;
+  display: block;
   max-width: var(--col);
   margin: 0 auto;
   padding: 14px 4px 0;
@@ -482,19 +480,22 @@ html:has(.wu) {
 
 .wu-cap-text {
   display: block;
-  grid-column: 1;
   margin-top: 3px;
 }
 
-/* a diagram's play controls, at the caption's right end */
-.wu-cap-tools {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: start;
+/* a diagram's play controls, in a row above its frame; the height is kept so
+   nothing moves when they mount */
+.wu-fig-tools {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 28px;
+  margin-bottom: 8px;
 }
 
-.wu-cap-tools:empty {
-  display: none;
+@media (prefers-reduced-motion: reduce) {
+  .wu-fig-tools {
+    display: none;
+  }
 }
 
 .wu-shot {
