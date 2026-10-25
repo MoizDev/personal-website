@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // the portable writeup kit is code for other apps, not part of this site
+    "writeup-kit/**",
   ]),
 ]);
 
