@@ -456,7 +456,9 @@ html:has(.wu) {
 }
 
 .wu-cap {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
   max-width: var(--col);
   margin: 0 auto;
   padding: 14px 4px 0;
@@ -480,7 +482,19 @@ html:has(.wu) {
 
 .wu-cap-text {
   display: block;
+  grid-column: 1;
   margin-top: 3px;
+}
+
+/* a diagram's play controls, at the caption's right end */
+.wu-cap-tools {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+}
+
+.wu-cap-tools:empty {
+  display: none;
 }
 
 .wu-shot {

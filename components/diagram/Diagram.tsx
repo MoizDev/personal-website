@@ -68,7 +68,7 @@ export function Diagram({
       break;
   }
   return (
-    <Figure title={title} caption={caption} wide={wide} bare={bare ?? spec.type === "chat"}>
+    <Figure title={title} caption={caption} wide={wide} bare={bare ?? spec.type === "chat"} tools>
       <div className={`dg dg-${spec.type}-fig`}>{body}</div>
     </Figure>
   );

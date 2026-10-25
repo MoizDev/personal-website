@@ -17,12 +17,16 @@
 
 .dg-controls {
   position: absolute;
-  top: -18px;
-  right: -14px;
+  top: 0;
+  right: 0;
   z-index: 3;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.wu-cap-tools .dg-controls {
+  position: static;
 }
 
 .dg-controls-label {
@@ -1359,11 +1363,6 @@
 /* ---------- small screens ---------- */
 
 @media (max-width: 720px) {
-  .dg-controls {
-    top: -14px;
-    right: -6px;
-  }
-
   .dg-flow {
     column-gap: 28px;
     row-gap: 44px;
