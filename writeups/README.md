@@ -67,6 +67,11 @@ The Bricked writeup was made this way; follow the same steps for the next projec
 `components/writeup/WriteupPage.tsx` draws everything around the article, so
 an article only writes its body.
 
+- The sky: the home page's ASCII solar system, one window tall behind the top
+  of the page, in the project's colour (`tone` in `meta.ts`, the same as its
+  card in `lib/projects.ts`). It scrolls away with the page, fades out before
+  the body, keeps clear of the title, and stops drawing once it's off screen.
+  Phones show only the soft glow, as on the home page.
 - Top bar: Back on the left; the project's links and the theme switch on the right.
 - Head: the title, centred, and a quiet line under it: project · date · occasion.
   Give it a title with some character ("Some Assembly Required"); the project's

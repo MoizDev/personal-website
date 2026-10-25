@@ -520,7 +520,11 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   return { resize, frame, setTheme, setAccent };
 }
 
-export function SolarSystem() {
+/**
+ * `tone` fixes the colour (a writeup, in its project's colour); without it the
+ * drawing follows the card in the spot on the home page.
+ */
+export function SolarSystem({ tone }: { tone?: string } = {}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const skyRef = useRef<HTMLDivElement>(null);
 
@@ -550,8 +554,10 @@ export function SolarSystem() {
 
     const still = matchMedia("(prefers-reduced-motion: reduce)");
     /** The colour of the card in the spot, which CardStack sets on the root as --project-tone. */
-    const readAccent = () => r.setAccent(hexRgb(root.style.getPropertyValue("--project-tone")), still.matches);
-    readAccent();
+    const readAccent = (instant = false) =>
+      r.setAccent(hexRgb(tone ?? root.style.getPropertyValue("--project-tone")), instant || still.matches);
+    // a fixed tone is there from the first frame; a card's colour fades in
+    readAccent(!!tone);
 
     // a fixed moment, for reduced motion: the planets spread out nicely
     const STILL_T = 40;
@@ -569,13 +575,20 @@ export function SolarSystem() {
       prev = now;
       r.frame(t);
     };
+    // off screen (scrolled past on a writeup, or hidden on phones) it stops drawing
+    let visible = true;
     const run = () => {
       cancelAnimationFrame(raf);
       prev = 0;
       if (still.matches) r.frame(STILL_T);
-      else raf = requestAnimationFrame(loop);
+      else if (visible) raf = requestAnimationFrame(loop);
     };
     run();
+    const io = new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      run();
+    });
+    io.observe(canvas);
     const redraw = () => {
       if (still.matches) r.frame(STILL_T);
     };
@@ -605,11 +618,12 @@ export function SolarSystem() {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      io.disconnect();
       mo.disconnect();
       still.removeEventListener("change", run);
       removeEventListener(SOLAR_EVENT, onChange);
     };
-  }, []);
+  }, [tone]);
 
   return (
     <>

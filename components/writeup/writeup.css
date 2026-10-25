@@ -32,6 +32,7 @@ html:has(.wu) {
   --t-gray: #8b8b8b;
   --tone: var(--t-ink);
 
+  position: relative;
   min-height: 100vh;
   background: var(--bg);
   color: var(--fg);
@@ -54,6 +55,33 @@ html:has(.wu) {
 .wu [data-tone="teal"] { --tone: var(--t-teal); }
 .wu [data-tone="red"] { --tone: var(--t-red); }
 .wu [data-tone="gray"] { --tone: var(--t-gray); }
+
+/* ---------- the sky ---------- */
+
+/* The home page's ASCII solar system and sky, one window tall at the top of the
+   page, in the project's colour. It isn't fixed: it scrolls away with the page
+   and fades out before the body. Phones hide the solar system, as on the home
+   page (app/globals.css). */
+.wu-sky {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  /* fades out toward the body, and clears a soft oval behind the title so
+     the planets pass around the words rather than under them */
+  --sky-fade: linear-gradient(to bottom, #000 45%, transparent 92%);
+  --sky-clear: radial-gradient(ellipse 380px 120px at 50% 185px, transparent 50%, #000 100%);
+  -webkit-mask-image: var(--sky-fade), var(--sky-clear);
+  -webkit-mask-composite: source-in;
+  mask-image: var(--sky-fade), var(--sky-clear);
+  mask-composite: intersect;
+}
+
+.wu-article {
+  position: relative;
+  z-index: 1;
+}
 
 /* ---------- top bar ---------- */
 

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon } from "@/components/diagram/icons";
+import { SolarSystem } from "@/components/SolarSystem";
 import type { WriteupMeta } from "@/lib/writeups";
 import { ThemeButton } from "./ThemeButton";
 import { Toc } from "./Toc";
@@ -12,6 +13,11 @@ import "@/components/diagram/diagram.css";
 export function WriteupPage({ meta, others, children }: { meta: WriteupMeta; others: WriteupMeta[]; children: ReactNode }) {
   return (
     <div className="wu" id="top" style={{ "--wu-tone": meta.tone } as React.CSSProperties}>
+      {/* the home page's sky, in the project's colour; it scrolls away with the page */}
+      <div className="wu-sky" style={{ "--project-tone": meta.tone } as React.CSSProperties} aria-hidden>
+        <SolarSystem tone={meta.tone} />
+      </div>
+
       <header className="wu-top">
         <Link href="/" className="wu-back">
           <Icon name="ArrowLeft" size={16} />

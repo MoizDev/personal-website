@@ -26,7 +26,7 @@ export type WriteupMeta = {
   /** a short line beside the date: "Hack the North 2026 · Winner" */
   occasion?: string;
   hero: { src: StaticImageData; alt: string };
-  /** the project's colour, for accents */
+  /** the project's colour, the same as its card's (lib/projects.ts): for accents and the sky at the top */
   tone: string;
   team: { name: string; role: string; href?: string }[];
   overview: string;
