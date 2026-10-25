@@ -20,7 +20,12 @@ export function Bars({ spec }: { spec: BarsSpec }) {
   const ref = useRef<HTMLDivElement>(null);
   const seq = useSequence(ref, 1, { delay: 250 });
   const grown = seq.step >= 0;
-  const fmt = (v: number) => (spec.format === "clock" ? clock(v) : `${v}${spec.unit}`);
+  // A word unit ("commits") gets a space and a singular for 1; a symbol ("s", "%", "/10") stays attached.
+  const wordUnit = /^[A-Za-z]{2,}/.test(spec.unit);
+  const unitFor = (v: number) => (wordUnit ? ` ${v === 1 ? spec.unit.replace(/s$/, "") : spec.unit}` : spec.unit);
+  const fmt = (v: number) => (spec.format === "clock" ? clock(v) : `${v}${unitFor(v)}`);
+  // axis ticks repeat on every line, so a word unit is left to the bars
+  const fmtTick = (v: number) => (wordUnit ? `${v}` : fmt(v));
   const pct = (v: number) => `${(v / spec.max) * 100}%`;
   const step = niceStep(spec.max, spec.format === "clock");
   const ticks: number[] = [];
@@ -62,7 +67,7 @@ export function Bars({ spec }: { spec: BarsSpec }) {
           <span className="dg-axis-track">
             {ticks.map((v) => (
               <span key={v} className="dg-tick" style={{ left: pct(v) }}>
-                {fmt(v)}
+                {fmtTick(v)}
               </span>
             ))}
             {spec.mark?.label && (
