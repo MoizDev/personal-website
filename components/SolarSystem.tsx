@@ -520,6 +520,51 @@ function makeRenderer(canvas: HTMLCanvasElement) {
   return { resize, frame, setTheme, setAccent };
 }
 
+/** How long the sky and corner glow take to fade to a new colour (the CSS transition on their layers). */
+const TONE_FADE_MS = 900;
+
+/**
+ * Fades a box of two colour layers (the sky, the corner glow) to new colours
+ * by crossfading them: the hidden layer takes the new colour and fades in over
+ * the other, so each colour is painted once rather than on every frame of the
+ * fade. A colour asked for mid-fade waits for the fade to end, and only the
+ * last one asked for is shown. `fallback` is the colour with no card in the spot.
+ */
+function makeToneFade(box: HTMLElement, fallback: string) {
+  const layers = Array.from(box.children) as HTMLElement[];
+  let front = 0;
+  let shown = "";
+  let pending = "";
+  let timer = 0;
+  const show = (tone: string, instant = false) => {
+    const c = tone || fallback;
+    if (instant) {
+      clearTimeout(timer);
+      timer = 0;
+      pending = "";
+      for (const l of layers) l.style.setProperty("--tone", c);
+      shown = c;
+      return;
+    }
+    if (timer) {
+      pending = c;
+      return;
+    }
+    if (c === shown) return;
+    front = 1 - front;
+    layers[front].style.setProperty("--tone", c);
+    box.dataset.front = String(front);
+    shown = c;
+    timer = window.setTimeout(() => {
+      timer = 0;
+      const next = pending;
+      pending = "";
+      if (next) show(next);
+    }, TONE_FADE_MS);
+  };
+  return { show, stop: () => clearTimeout(timer) };
+}
+
 /**
  * `tone` fixes the colour (a writeup, in its project's colour); without it the
  * drawing follows the card in the spot on the home page.
@@ -527,11 +572,13 @@ function makeRenderer(canvas: HTMLCanvasElement) {
 export function SolarSystem({ tone }: { tone?: string } = {}) {
   const ref = useRef<HTMLCanvasElement>(null);
   const skyRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const canvas = ref.current;
     const sky = skyRef.current;
-    if (!canvas || !sky) return;
+    const glow = glowRef.current;
+    if (!canvas || !sky || !glow) return;
     const r = makeRenderer(canvas);
     const root = document.documentElement;
 
@@ -554,9 +601,18 @@ export function SolarSystem({ tone }: { tone?: string } = {}) {
 
     const still = matchMedia("(prefers-reduced-motion: reduce)");
     /** The colour of the card in the spot, which CardStack sets on the root as --project-tone. */
-    const readAccent = (instant = false) =>
-      r.setAccent(hexRgb(tone ?? root.style.getPropertyValue("--project-tone")), instant || still.matches);
-    // a fixed tone is there from the first frame; a card's colour fades in
+    const skyFade = makeToneFade(sky, "hsl(calc(var(--sky-hue) + 1) 90% 59%)");
+    const glowFade = makeToneFade(glow, "transparent");
+    const readAccent = (instant = false) => {
+      const accent = tone ?? root.style.getPropertyValue("--project-tone");
+      r.setAccent(hexRgb(accent), instant || still.matches);
+      skyFade.show(accent, instant);
+      glowFade.show(accent, instant);
+    };
+    // the sky and glow start on the colour they were first painted in (see
+    // globals.css); a fixed tone is there from the first frame of the drawing too
+    skyFade.show(tone ?? root.style.getPropertyValue("--project-tone"), true);
+    glowFade.show(tone ?? root.style.getPropertyValue("--project-tone"), true);
     readAccent(!!tone);
 
     // a fixed moment, for reduced motion: the planets spread out nicely
@@ -617,6 +673,8 @@ export function SolarSystem({ tone }: { tone?: string } = {}) {
 
     return () => {
       cancelAnimationFrame(raf);
+      skyFade.stop();
+      glowFade.stop();
       ro.disconnect();
       io.disconnect();
       mo.disconnect();
@@ -627,8 +685,14 @@ export function SolarSystem({ tone }: { tone?: string } = {}) {
 
   return (
     <>
-      <div className="corner-glow" aria-hidden />
-      <div className="sky" ref={skyRef} aria-hidden />
+      <div className="corner-glow" ref={glowRef} aria-hidden>
+        <i />
+        <i />
+      </div>
+      <div className="sky" ref={skyRef} aria-hidden>
+        <i />
+        <i />
+      </div>
       <canvas className="solar" ref={ref} aria-hidden />
     </>
   );
