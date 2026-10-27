@@ -148,6 +148,8 @@ export function CardStack() {
   const cards = useRef<(HTMLElement | null)[]>([]);
   const slots = useRef<Float64Array>(new Float64Array(M));
   const goTo = useRef<(j: number) => void>(() => {});
+  /** move the row one card forward (1) or back (-1), for the phone's arrows */
+  const stepBy = useRef<(d: number) => void>(() => {});
   /** the project number in the spot (counting round the loop), or -1 */
   const [active, setActive] = useState(-1);
   const [hover, setHover] = useState<number | null>(null);
@@ -339,6 +341,11 @@ export function CardStack() {
       jump(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
+    stepBy.current = (d: number) => {
+      setHover(null);
+      jump(Math.round(m.target) + d);
+    };
+
     function onWheel(e: WheelEvent) {
       if (e.ctrlKey) return; // pinch zoom
       const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
@@ -360,7 +367,8 @@ export function CardStack() {
       const forward = ["ArrowDown", "ArrowRight", "PageDown", "j"];
       const back = ["ArrowUp", "ArrowLeft", "PageUp", "k"];
       let step = forward.includes(e.key) ? 1 : back.includes(e.key) ? -1 : 0;
-      if (e.key === " ") step = e.shiftKey ? -1 : 1;
+      // space on a focused button or link presses it; it shouldn't move the row as well
+      if (e.key === " " && !(e.target instanceof Element && e.target.closest("button, a"))) step = e.shiftKey ? -1 : 1;
       if (!step) return;
       e.preventDefault();
       setHover(null);
@@ -554,6 +562,34 @@ export function CardStack() {
         )}
       </div>
 
+      {/* phones: a card back and a card on, under the write-up */}
+      <div className="deck-arrows">
+        <button
+          type="button"
+          className="deck-arrow"
+          aria-label="Previous project"
+          disabled={active < 0}
+          onClick={() => stepBy.current(-1)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden>
+            <path d="M14.5 5.5 8 12l6.5 6.5" />
+          </svg>
+        </button>
+        <span className="deck-count" aria-hidden>
+          {active >= 0 && `${active + 1} / ${N}`}
+        </span>
+        <button
+          type="button"
+          className="deck-arrow"
+          aria-label="Next project"
+          disabled={active >= N - 1}
+          onClick={() => stepBy.current(1)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden>
+            <path d="M9.5 5.5 16 12l-6.5 6.5" />
+          </svg>
+        </button>
+      </div>
     </>
   );
 }

@@ -675,12 +675,15 @@ body {
     --text-h: 180px;
     /* the least room left above the card for the deck */
     --deck-h: 90px;
+    /* the strip along the bottom for the arrows, and the gap above it */
+    --arrows-h: 44px;
+    --arrows-gap: 12px;
     --spot-w: min(
       calc(100vw - 40px),
-      calc(100dvh - var(--nav-top) - var(--nav-h) - var(--deck-h) - var(--text-h) - 40px)
+      calc(100dvh - var(--nav-top) - var(--nav-h) - var(--deck-h) - var(--text-h) - var(--arrows-h) - var(--arrows-gap) - 40px)
     );
     --spot-x: calc((100vw - var(--spot-w)) / 2);
-    --spot-y: calc(100dvh - 20px - var(--text-h) - 20px - var(--spot-w));
+    --spot-y: calc(100dvh - 20px - var(--arrows-h) - var(--arrows-gap) - var(--text-h) - 20px - var(--spot-w));
 
     /* the row: the same size cards as the spot, standing in a line straight back from it */
     --card-w: var(--spot-w);
@@ -758,6 +761,70 @@ body {
 
   :root[data-out] .intro a {
     pointer-events: none;
+  }
+}
+
+/* the phone's arrows: hidden on bigger screens, where the wheel and keys do it */
+.deck-arrows {
+  display: none;
+}
+
+@media (max-aspect-ratio: 3/4) {
+  .deck-arrows {
+    position: fixed;
+    z-index: 3;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--arrows-h);
+  }
+
+  .deck-arrow {
+    display: grid;
+    place-items: center;
+    width: var(--arrows-h);
+    height: var(--arrows-h);
+    padding: 0;
+    border: 1px solid rgba(var(--ink-rgb), 0.14);
+    border-radius: 50%;
+    background: rgba(var(--paper-rgb), 0.7);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: var(--fg);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition:
+      opacity 200ms ease,
+      transform 120ms ease;
+  }
+
+  .deck-arrow:active {
+    transform: scale(0.92);
+  }
+
+  .deck-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .deck-arrow svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .deck-count {
+    color: var(--muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
   }
 }
 
