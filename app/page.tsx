@@ -5,6 +5,7 @@ import arion from "@/assets/arion.png";
 import { Navbar } from "@/components/Navbar";
 import { LINKS, newTab } from "@/lib/links";
 import { SolarSystem } from "@/components/SolarSystem";
+import { PERSON, jsonLd } from "@/lib/site";
 
 // Sliders for the scene, for development only. Behind a dynamic import in a
 // dead branch so production builds drop the panel entirely.
@@ -26,6 +27,8 @@ const SolarPanel =
 export default function Home() {
   return (
     <main className="home">
+      {/* who this is, for search engines */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(PERSON) }} />
       <SolarSystem />
       <CardStack />
       <Navbar />

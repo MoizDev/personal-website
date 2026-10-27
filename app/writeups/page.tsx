@@ -7,8 +7,9 @@ import { WRITEUPS } from "@/lib/writeups";
 import "@/components/writeup/writeup.css";
 
 export const metadata: Metadata = {
-  title: "Writeups · Moiz Hashmi",
-  description: "How the projects work, taken apart one piece at a time.",
+  title: "Writeups",
+  description: "How Moiz Hashmi's projects work, taken apart one piece at a time.",
+  alternates: { canonical: "/writeups" },
 };
 
 /** Every writeup, newest first as listed in lib/writeups.ts. */

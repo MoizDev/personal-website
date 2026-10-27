@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Libre_Baskerville, Manrope } from "next/font/google";
 import "./globals.css";
+import { SITE } from "@/lib/site";
 
 // Manrope is a variable font: one file covers every weight from 200 to 800.
 // next/font sizes a local fallback to its metrics, so the swap doesn't shift text.
@@ -17,9 +18,23 @@ const serif = Libre_Baskerville({
 
 export const metadata: Metadata = {
   // makes OG and Twitter image paths absolute; the apex domain redirects to www
-  metadataBase: new URL("https://www.moizhashmi.com"),
-  title: "Moiz Hashmi",
-  description: "Computer Science at the University of Waterloo. A row of projects, one card each.",
+  metadataBase: new URL(SITE.url),
+  title: { default: SITE.title, template: `%s · ${SITE.name}` },
+  description: SITE.description,
+  applicationName: SITE.name,
+  authors: [{ name: SITE.name, url: SITE.url }],
+  creator: SITE.name,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: SITE.name,
+    title: SITE.title,
+    description: SITE.description,
+    url: "/",
+    locale: "en_US",
+  },
+  twitter: { card: "summary_large_image", title: SITE.title, description: SITE.description, creator: SITE.x },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large" } },
 };
 
 // Runs before first paint so the page never flashes the wrong theme:
