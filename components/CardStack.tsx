@@ -452,15 +452,13 @@ export function CardStack() {
 
   const activeProject = active >= 0 ? PROJECTS[active % N] : null;
 
-  // the navbar's menu button takes the colour of the project in the spot
+  // the sky and the corner glow take the colour of the project in the spot
   useEffect(() => {
     const root = document.documentElement.style;
     if (activeProject) {
       root.setProperty("--project-tone", activeProject.tone);
-      root.setProperty("--project-tone-ink", "#fff");
     } else {
       root.removeProperty("--project-tone");
-      root.removeProperty("--project-tone-ink");
     }
   }, [activeProject]);
   const activeEl = active >= 0 ? active % M : -1;
