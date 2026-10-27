@@ -34,7 +34,7 @@ export default function Home() {
         <h1 className="intro-name">Moiz Hashmi</h1>
         <p className="intro-bio">
           I’m a computer science student at the University of Waterloo.
-          Currently, I’m a janitor at{" "}
+          Currently, I’m an engineer at{" "}
           <a className="org" href="https://arion.nyc" {...newTab("https://arion.nyc")}>
             <Image
               className="org-icon"
