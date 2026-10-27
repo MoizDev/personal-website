@@ -1,0 +1,98 @@
+/* The essay pages, on top of the writeup styles (components/writeup/writeup.css). */
+
+.th-body {
+  margin-top: 48px;
+}
+
+.th-body a {
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--ink-rgb), 0.3);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+
+.th-body a:hover {
+  text-decoration-color: var(--fg);
+}
+
+.th-kicker {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.th-related {
+  margin-top: 56px;
+}
+
+.th-related ul {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.th-related a,
+.th-list a {
+  display: block;
+}
+
+.th-related-title {
+  display: block;
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.th-related-blurb {
+  display: block;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.th-related a:hover .th-related-title,
+.th-list a:hover .th-related-title {
+  text-decoration: underline;
+  text-decoration-color: rgba(var(--ink-rgb), 0.3);
+  text-underline-offset: 3px;
+}
+
+.th-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 48px;
+  padding: 28px 0 96px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.th-pager a {
+  max-width: 45%;
+  color: var(--fg);
+}
+
+.th-pager .th-kicker {
+  margin-bottom: 4px;
+}
+
+.th-next {
+  margin-left: auto;
+  text-align: right;
+}
+
+.th-list {
+  display: grid;
+  gap: 22px;
+  margin: 56px 0 0;
+  padding: 0 0 96px;
+  list-style: none;
+}
