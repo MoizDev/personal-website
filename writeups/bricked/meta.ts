@@ -34,9 +34,9 @@ export const meta: WriteupMeta = {
   hero: { src: hero, alt: "Bricked on a laptop: a Lego model generated from a typed idea, in a light-blue instruction-manual interface." },
   tone: "#ff4d2e",
   team: [
-    { name: "Eason", role: "Generation engine" },
-    { name: "James", role: "Computer vision" },
-    { name: "Moiz", role: "Design, interface and the harness" },
+    { name: "Eason" },
+    { name: "James" },
+    { name: "Moiz" },
   ],
   overview:
     "Bricked turns anything you type into a Lego model you can actually build. An image model imagines the finished set, a team of AI agents plans it, a geometry kernel places every brick, and a critique loop keeps fixing the build until it matches the picture.",
