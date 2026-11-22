@@ -134,7 +134,7 @@ const worldTransform = (pitch: number, g?: Geo | null) =>
 // These objects never change, so re-renders leave the per-frame inline styles alone.
 const INITIAL: CSSProperties[] = Array.from({ length: M }, (_, j) => ({
   transform: rowTransform(slotOf(j, 0), DROP),
-  opacity: 0,
+  // no opacity here: a card fades on its face (see paint)
   visibility: "hidden",
 }));
 
@@ -147,13 +147,6 @@ function dropOf(j: number, ms: number) {
 const INITIAL_WORLD: CSSProperties = { transform: worldTransform(0) };
 const HIDDEN: CSSProperties = { opacity: 0, visibility: "hidden" };
 
-/**
- * Cards from the spot to this many slots into the row are built in 3D (thickness,
- * parting layers); the rest are flat, which keeps the GPU's layer count
- * down. Further back only a sliver of each card shows past the ones in front.
- */
-const DEEP = 4;
-
 export function CardStack() {
   const world = useRef<HTMLDivElement>(null);
   const origin = useRef<HTMLDivElement>(null);
@@ -164,6 +157,8 @@ export function CardStack() {
   const goTo = useRef<(j: number) => void>(() => {});
   /** the project number in the spot (counting round the loop), or -1 */
   const [active, setActive] = useState(-1);
+  /** the project in the spot once the row has come to rest, or -1 */
+  const [landed, setLanded] = useState(-1);
   const [hover, setHover] = useState<number | null>(null);
   /** a phone-shaped window, where the list shows instead; null until known */
   const [phone, setPhone] = useState<boolean | null>(null);
@@ -179,6 +174,7 @@ export function CardStack() {
   useEffect(() => {
     if (phone !== false) return;
     const worldEl = world.current;
+    const sceneEl = worldEl?.parentElement;
     const cardEls = cards.current;
     const detailEl = detail.current;
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -190,14 +186,14 @@ export function CardStack() {
     let raf = 0;
     let snapTimer = 0;
     let shown = -2;
+    let landedAt = -2;
     /** the visitor has moved the row (the load's own flip-out makes no sound) */
     let moved = false;
     let spot: Spot | null = null;
     let geo: Geo | null = null;
     // what was last written to each card, so a frame only touches what changed
     const lastTransform: string[] = new Array(M).fill("");
-    const lastOpacity: string[] = new Array(M).fill("0"); // as INITIAL has it
-    const lastFace: string[] = new Array(M).fill("");
+    const lastOpacity: string[] = new Array(M).fill("");
     const lastHidden: (boolean | null)[] = new Array(M).fill(null);
 
     // The spot is laid out by CSS; measure it so cards can fly there.
@@ -267,20 +263,13 @@ export function CardStack() {
           el.toggleAttribute("data-ghost", ghost);
           el.inert = ghost;
         }
-        const deep = s >= -OUT && s < DEEP;
-        if (deep !== el.hasAttribute("data-deep")) el.toggleAttribute("data-deep", deep);
-        // A 3D card fades layer by layer, on its face: opacity on the card itself would flatten it.
-        // (On the face directly, not through an inherited variable, which would restyle all that's inside.)
+        // A card fades on its face, never on the card itself: opacity there would
+        // flatten its 3D, and moving the fade between the two rebuilds the card's
+        // layers, each one a fresh raster in the middle of the motion.
         const fade = pose.opacity.toFixed(3);
-        const cardOpacity = deep ? "" : fade;
-        const faceOpacity = deep ? fade : "";
-        if (cardOpacity !== lastOpacity[j]) {
-          lastOpacity[j] = cardOpacity;
-          el.style.opacity = cardOpacity;
-        }
-        if (faceOpacity !== lastFace[j]) {
-          lastFace[j] = faceOpacity;
-          (el.firstElementChild as HTMLElement | null)?.style.setProperty("opacity", faceOpacity);
+        if (fade !== lastOpacity[j]) {
+          lastOpacity[j] = fade;
+          (el.firstElementChild as HTMLElement | null)?.style.setProperty("opacity", fade);
         }
       }
       if (world.current) world.current.style.transform = worldTransform(m.pitch, geo);
@@ -323,6 +312,11 @@ export function CardStack() {
       m.pitch += m.pitchVel * dt;
 
       paint(now);
+      // the card has all but come to rest in the spot (the ground may still be settling)
+      if (Math.abs(m.target - m.cur) < 0.03 && Math.abs(m.target - Math.round(m.target)) < 1e-9 && shown !== landedAt) {
+        landedAt = shown;
+        setLanded(shown);
+      }
       const still =
         now >= introEnd && m.cur === m.target && Math.abs(m.pitch) < 0.01 && Math.abs(m.pitchVel) < 0.01;
       if (still) {
@@ -330,6 +324,7 @@ export function CardStack() {
         m.pitchVel = 0;
         paint();
         m.running = false;
+        moving(false);
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -338,6 +333,7 @@ export function CardStack() {
     function kick() {
       if (m.running) return;
       m.running = true;
+      moving(true);
       m.last = performance.now();
       raf = requestAnimationFrame(tick);
     }
@@ -358,6 +354,15 @@ export function CardStack() {
     // gentle swipe moves on instead of springing back.
     const NUDGE = 0.08;
     let anchor: number | null = null; // the card the scroll or drag started from
+
+    /**
+     * While the row moves, the cards ignore the pointer. Cards sliding under a
+     * still cursor would otherwise each lift and recolour on hover as they pass,
+     * and every one of those is a fresh raster in the middle of the motion.
+     */
+    function moving(on: boolean) {
+      sceneEl?.toggleAttribute("data-moving", on);
+    }
 
     function push(by: number) {
       moved = true;
@@ -502,14 +507,15 @@ export function CardStack() {
       window.removeEventListener("click", onClick, true);
       // back to how the server drew it, for a window turned phone-shaped and back
       setActive(-1);
+      setLanded(-1);
       setHover(null);
       if (worldEl) worldEl.style.transform = worldTransform(0);
+      sceneEl?.removeAttribute("data-moving");
       cardEls.forEach((el, j) => {
         if (!el) return;
         el.removeAttribute("style");
         Object.assign(el.style, INITIAL[j]);
         (el.firstElementChild as HTMLElement | null)?.style.removeProperty("opacity");
-        el.removeAttribute("data-deep");
         el.removeAttribute("data-ghost");
         el.inert = false;
       });
@@ -519,16 +525,19 @@ export function CardStack() {
 
   const activeProject = active >= 0 ? PROJECTS[active % N] : null;
 
-  // the sky and the corner glow take the colour of the project in the spot
+  // The sky and the corner glow take the colour of the project in the spot once
+  // the row comes to rest. A fast scroll doesn't flash them through every card
+  // it passes, and each new colour, a full-screen repaint, waits for the motion to end.
+  const tone = landed >= 0 ? PROJECTS[landed % N].tone : null;
   useEffect(() => {
     if (phone !== false) return; // the carousel sets it on phones (CarouselBar)
     const root = document.documentElement.style;
-    if (activeProject) {
-      root.setProperty("--project-tone", activeProject.tone);
+    if (tone) {
+      root.setProperty("--project-tone", tone);
     } else {
       root.removeProperty("--project-tone");
     }
-  }, [activeProject, phone]);
+  }, [tone, phone]);
   const activeEl = active >= 0 ? active % M : -1;
 
   // A hovered card leans toward the pointer: where it is over the card, from -1 to 1 each way.
