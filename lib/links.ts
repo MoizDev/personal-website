@@ -13,3 +13,8 @@ export const LINKS = {
  */
 export const newTab = (href: string) =>
   href.startsWith("mailto:") ? {} : ({ target: "_blank", rel: "noreferrer" } as const);
+
+/** Just the site: "https://github.com/MoizDev/wat-wiki" -> "github.com" */
+export function linkLabel(href: string) {
+  return new URL(href).host.replace(/^www\./, "");
+}

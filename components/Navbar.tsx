@@ -21,9 +21,22 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import "./Navbar.css";
 import { EMAIL, LINKS, newTab } from "@/lib/links";
+import { PHONE_QUERY } from "@/lib/scale";
 
-/** Send the row back to its first card (CardStack listens for Home). */
-const toRow = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
+/**
+ * Back to the work: on desktops the row goes back to its first card (CardStack
+ * listens for Home); phones scroll to the list of projects.
+ */
+const toRow = () => {
+  if (matchMedia(PHONE_QUERY).matches) document.getElementById("work")?.scrollIntoView({ behavior: "smooth" });
+  else window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home" }));
+};
+
+/** Home: the first card on desktops, the top of the page on phones. */
+const toTop = () => {
+  if (matchMedia(PHONE_QUERY).matches) window.scrollTo({ top: 0, behavior: "smooth" });
+  else toRow();
+};
 
 /** The menu's big items: a link, or a button that does something on the page. */
 type BigItem = { label: string; href: string } | { label: string; onClick: () => void };
@@ -59,6 +72,31 @@ export function Navbar() {
   const panelId = useId();
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
+  const nav = useRef<HTMLElement>(null);
+
+  // Phones: the bar slides away while the page scrolls down, so it isn't
+  // sitting on the text being read, and comes back on any scroll up.
+  useEffect(() => {
+    const el = nav.current;
+    if (!el) return;
+    const mq = matchMedia(PHONE_QUERY);
+    let last = window.scrollY;
+    let hidden = false;
+    const set = (h: boolean) => {
+      if (h === hidden) return;
+      hidden = h;
+      el.dataset.hidden = String(h);
+    };
+    const onScroll = () => {
+      const y = window.scrollY;
+      const dy = y - last;
+      if (Math.abs(dy) < 6) return;
+      last = y;
+      set(mq.matches && dy > 0 && y > 80 && el.dataset.open !== "true");
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Escape closes; every other key stays with the menu while it's open.
   useEffect(() => {
@@ -92,6 +130,7 @@ export function Navbar() {
       />
 
       <nav
+        ref={nav}
         className="nav"
         data-open={open}
         aria-label="Site"
@@ -107,7 +146,7 @@ export function Navbar() {
               onClick={(e) => {
                 e.preventDefault();
                 close();
-                toRow();
+                toTop();
               }}
             >
               <Logo className="nav-logo" />

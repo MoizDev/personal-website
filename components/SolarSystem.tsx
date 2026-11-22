@@ -1,125 +1,19 @@
 "use client";
 
 /**
- * The solar system in ASCII, drawn faintly in the empty space above the row of
- * cards: the Sun boiling at the middle, planets going round on tilted orbits,
- * each a little sphere shaded by the Sun (so you see their day and night
- * sides), Earth with its continents turning and the Moon in tow, Jupiter's
- * bands, Saturn's rings passing in front of and behind it, the asteroid belt,
- * and a few twinkling stars.
+ * The ASCII solar system in the background (drawn by ./solar/render.ts), with
+ * the sky wash and the dark theme's corner glow, all in the colour of the card
+ * in the spot.
  *
- * It's a canvas on a grid of character cells. Every frame each body is
- * "ray traced" cell by cell: a cell inside a sphere gets the sphere's normal,
- * the normal and the Sun's direction give a brightness, and the brightness
- * picks a character from a ramp. A depth buffer lets nearer things hide
- * farther ones (a planet passing in front of the Sun, a ring in front of its
- * planet). Orbits, the belt and the stars only fill the cells left empty.
+ * The drawing runs in a worker on an OffscreenCanvas, so it never takes time
+ * from the cards; where a canvas can't go to a worker it runs here instead.
+ * It only starts once it's on screen, so phones, which hide it, never run it.
  */
 
 import { useEffect, useRef } from "react";
-import { SOLAR, SOLAR_EVENT, type ThemeLook } from "@/lib/solar";
-import { DESIGN_H, DESIGN_W } from "@/lib/scale";
-
-/*
- * Size, place, tilt, colour, contrast and weight all come from SOLAR
- * (lib/solar.ts), read afresh every frame, so the dev panel can change them live.
- */
-
-const FONT_FAMILY = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace';
-
-/** Characters from empty to full, for shading. */
-const RAMP = " .,:;-=+*#%@";
-
-/** Frames per second; it's a slow background, so it needn't be more. */
-const FPS = 30;
-
-type Rgb = [number, number, number];
-
-type Planet = {
-  /** orbit radius and own radius, in units (a unit is a thousandth of the canvas width) */
-  orbit: number;
-  r: number;
-  /** seconds per orbit, and where it starts (radians) */
-  period: number;
-  phase: number;
-  /** how it's painted */
-  look: "plain" | "earth" | "jupiter" | "saturn";
-  /** its colour (when the theme paints in colour; see ThemeLook.colour) */
-  tint: Rgb;
-};
-
-const PLANETS: Planet[] = [
-  { orbit: 92, r: 9, period: 31, phase: 2.4, look: "plain", tint: [150, 140, 130] }, // Mercury
-  { orbit: 132, r: 15, period: 64, phase: 5.75, look: "plain", tint: [222, 160, 70] }, // Venus
-  { orbit: 184, r: 28, period: 105, phase: 3.55, look: "earth", tint: [59, 130, 246] }, // Earth
-  { orbit: 236, r: 13, period: 168, phase: 3.2, look: "plain", tint: [214, 88, 48] }, // Mars
-  { orbit: 340, r: 44, period: 420, phase: 5.05, look: "jupiter", tint: [196, 140, 90] }, // Jupiter
-  { orbit: 450, r: 30, period: 728, phase: 3.62, look: "saturn", tint: [214, 178, 110] }, // Saturn
-];
-
-const SUN_R = 46;
-
-const SUN: Rgb = [245, 150, 20];
-const SUN_EDGE: Rgb = [234, 88, 12];
-const LAND: Rgb = [34, 160, 80];
-const CITY: Rgb = [250, 200, 80];
-const JUPITER_LIGHT: Rgb = [236, 214, 180];
-const MOON = { orbit: 40, r: 6, period: 9 };
-const BELT = { from: 268, to: 298, count: 320, period: 280 };
-const STARS = 260;
-
-/* ---------- a little noise, for the Sun's surface and Earth's land ---------- */
-
-function hash3(x: number, y: number, z: number) {
-  let h = (x * 374761393 + y * 668265263 + z * 2147483647) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
-}
-
-function noise3(x: number, y: number, z: number) {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const zi = Math.floor(z);
-  const fx = x - xi;
-  const fy = y - yi;
-  const fz = z - zi;
-  const u = fx * fx * (3 - 2 * fx);
-  const v = fy * fy * (3 - 2 * fy);
-  const w = fz * fz * (3 - 2 * fz);
-  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-  const c = (dx: number, dy: number, dz: number) => hash3(xi + dx, yi + dy, zi + dz);
-  return lerp(
-    lerp(lerp(c(0, 0, 0), c(1, 0, 0), u), lerp(c(0, 1, 0), c(1, 1, 0), u), v),
-    lerp(lerp(c(0, 0, 1), c(1, 0, 1), u), lerp(c(0, 1, 1), c(1, 1, 1), u), v),
-    w,
-  );
-}
-
-function fbm(x: number, y: number, z: number) {
-  return noise3(x, y, z) * 0.6 + noise3(x * 2.1, y * 2.1, z * 2.1) * 0.28 + noise3(x * 4.3, y * 4.3, z * 4.3) * 0.12;
-}
-
-const mix = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : v | 0);
-/** Greys run from near black to white. */
-const DAY: Rgb = [255, 255, 255];
-const NIGHT: Rgb = [14, 16, 20];
-const BLACK: Rgb = [0, 0, 0];
-
-/** A colour after the theme's vividness (saturation) and lightness. */
-function shadeOf([r, g, b]: Rgb, look: ThemeLook): Rgb {
-  const y = r * 0.299 + g * 0.587 + b * 0.114;
-  const c: Rgb = [y + (r - y) * look.vivid, y + (g - y) * look.vivid, y + (b - y) * look.vivid];
-  if (look.lightness > 0) return mix(c, DAY, Math.min(1, look.lightness));
-  if (look.lightness < 0) return mix(c, BLACK, Math.min(1, -look.lightness));
-  return c;
-}
-
-const css = (c: Rgb) => `rgb(${clamp255(c[0])},${clamp255(c[1])},${clamp255(c[2])})`;
-
-/** A colour as CSS, after the theme's vividness (saturation) and lightness. */
-const paint = (c: Rgb, look: ThemeLook) => css(shadeOf(c, look));
+import { SOLAR, SOLAR_EVENT } from "@/lib/solar";
+import { makeLoop, type SolarMsg } from "@/components/solar/loop";
+import type { Rgb } from "@/components/solar/render";
 
 /** "#rrggbb" to rgb, or null. */
 function hexRgb(hex: string): Rgb | null {
@@ -127,397 +21,24 @@ function hexRgb(hex: string): Rgb | null {
   return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
 }
 
-/** How fast the bodies fade to a new card's colour (seconds to get most of the way). */
-const ACCENT_EASE = 0.3;
-
-const ramp = (v: number) => RAMP[1 + Math.min(RAMP.length - 2, Math.floor(clamp01(v) * (RAMP.length - 1)))];
-
-/* ---------- the renderer ---------- */
-
-type Cell = { ch: string; color: string; alpha: number };
-/** A cell on a body, before the card's colour goes over it. */
-type BodyCell = { ch: string; color: Rgb; alpha: number };
-
-function makeRenderer(canvas: HTMLCanvasElement) {
-  const ctx = canvas.getContext("2d")!;
-  let cw = 5;
-  let chh = 9;
-  let cols = 0;
-  let rows = 0;
-  let W = 0;
-  let H = 0;
-  let cells: (Cell | null)[] = [];
-  let zbuf = new Float32Array(0);
-  let ink: Rgb = [22, 22, 22];
-  let dark = false;
-  /**
-   * The light theme paints the bodies in the colour of the card in the spot:
-   * `accent` is that colour (null back at the row), and the drawing eases
-   * `accentNow` toward it and `accentK` (how much of it shows) toward 1 or 0.
-   */
-  let accent: Rgb | null = null;
-  let accentNow: Rgb = [0, 0, 0];
-  let accentK = 0;
-  let lastFrame = 0;
-  /** the font the cells were measured with; when the panel changes it, re-measure */
-  let font = "";
-  /** the view's tilt: the sine and cosine of how steeply we look down onto the orbits */
-  let S = 0.36;
-  let C = Math.sqrt(1 - S * S);
-  // stars and belt rocks, placed once
-  const stars = Array.from({ length: STARS }, (_, i) => ({
-    u: hash3(i, 1, 7),
-    v: hash3(i, 2, 7),
-    tw: hash3(i, 3, 7) * Math.PI * 2,
-    sp: 0.4 + hash3(i, 4, 7) * 1.4,
-  }));
-  const rocks = Array.from({ length: BELT.count }, (_, i) => ({
-    r: BELT.from + (BELT.to - BELT.from) * hash3(i, 5, 9),
-    a: hash3(i, 6, 9) * Math.PI * 2,
-    s: 0.85 + hash3(i, 7, 9) * 0.3,
-  }));
-
-  const look = () => (dark ? SOLAR.dark : SOLAR.light);
-  /** the character cell in CSS px: SOLAR's size is in design pixels, so the grid scales with the page */
-  const cellPx = () => Math.max(1, SOLAR.shared.cell * Math.min(W / DESIGN_W, H / DESIGN_H));
-  const fontFor = () => `${look().weight} ${cellPx().toFixed(2)}px ${FONT_FAMILY}`;
-
-  /** Lay out the grid of cells for the canvas's size and the current font. */
-  function layout() {
-    const size = cellPx();
-    font = fontFor();
-    ctx.font = font;
-    ctx.textBaseline = "top";
-    cw = ctx.measureText("M").width || size * 0.6;
-    chh = size * 1.2;
-    // hidden (phones) or not laid out yet: an empty grid
-    cols = W > 0 ? Math.ceil(W / cw) : 0;
-    rows = H > 0 ? Math.ceil(H / chh) : 0;
-    cells = new Array(cols * rows).fill(null);
-    zbuf = new Float32Array(cols * rows);
-  }
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = canvas.clientWidth;
-    H = canvas.clientHeight;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    layout();
-  }
-
-  function setTheme(rgb: Rgb, isDark: boolean) {
-    ink = rgb;
-    dark = isDark;
-  }
-
-  /** The card colour for the bodies; `instant` skips the fade (for a still drawing). */
-  function setAccent(rgb: Rgb | null, instant: boolean) {
-    if (rgb && accentK === 0) accentNow = rgb;
-    accent = rgb;
-    if (instant) {
-      if (rgb) accentNow = rgb;
-      accentK = rgb ? 1 : 0;
+/**
+ * Start the drawing on `canvas`: in a worker if the browser can hand a canvas
+ * to one, else here. Returns how to send it messages and how to stop it.
+ */
+function startDrawing(canvas: HTMLCanvasElement): { send: (m: SolarMsg) => void; stop: () => void } {
+  const solar = JSON.parse(JSON.stringify(SOLAR));
+  if (typeof canvas.transferControlToOffscreen === "function" && typeof Worker !== "undefined") {
+    try {
+      const offscreen = canvas.transferControlToOffscreen();
+      const worker = new Worker(new URL("./solar/solar.worker.ts", import.meta.url), { type: "module" });
+      worker.postMessage({ type: "init", canvas: offscreen, solar }, [offscreen]);
+      return { send: (m) => worker.postMessage(m), stop: () => worker.terminate() };
+    } catch {
+      // fall through: draw here
     }
   }
-
-  /** Ease the card colour along by the time since the last frame. */
-  function easeAccent() {
-    const now = performance.now();
-    const dt = lastFrame ? Math.min(0.1, (now - lastFrame) / 1000) : 0;
-    lastFrame = now;
-    const e = 1 - Math.exp(-dt / ACCENT_EASE);
-    if (accent) accentNow = mix(accentNow, accent, e);
-    accentK += ((accent ? 1 : 0) - accentK) * e;
-    if (Math.abs(accentK - (accent ? 1 : 0)) < 0.002) accentK = accent ? 1 : 0;
-  }
-
-  /** Put a character in a cell if it's empty (for orbits, the belt, stars and glow). */
-  function fill(i: number, j: number, ch: string, color: string, alpha: number) {
-    if (i < 0 || j < 0 || i >= cols || j >= rows) return;
-    const k = j * cols + i;
-    if (cells[k]) return;
-    cells[k] = { ch, color, alpha };
-  }
-
-  /**
-   * Shade a sphere at screen (px, py), depth d0, radius r. `paint` gets the
-   * surface normal in the world (x right, y up, z toward the viewer's side of
-   * the plane) and the light on it, and returns the cell.
-   */
-  function sphere(
-    px: number,
-    py: number,
-    d0: number,
-    r: number,
-    sun: [number, number, number] | null,
-    paint: (wx: number, wy: number, wz: number, lit: number, nz: number) => Cell | null,
-  ) {
-    let drew = false;
-    const j0 = Math.max(0, Math.floor((py - r) / chh));
-    const j1 = Math.min(rows - 1, Math.floor((py + r) / chh));
-    const i0 = Math.max(0, Math.floor((px - r) / cw));
-    const i1 = Math.min(cols - 1, Math.floor((px + r) / cw));
-    for (let j = j0; j <= j1; j++) {
-      for (let i = i0; i <= i1; i++) {
-        const dx = ((i + 0.5) * cw - px) / r;
-        const dy = ((j + 0.5) * chh - py) / r;
-        const q = dx * dx + dy * dy;
-        if (q > 1) continue;
-        const nz = Math.sqrt(1 - q);
-        const depth = d0 - nz * r;
-        const k = j * cols + i;
-        if (depth >= zbuf[k]) continue;
-        // camera space normal is (dx, dy, -nz); back to the world
-        const wx = dx;
-        const wy = -dy * C + nz * S;
-        const wz = dy * S + nz * C;
-        const lit = sun ? Math.max(0, dx * sun[0] + dy * sun[1] - nz * sun[2]) : 1;
-        const cell = paint(wx, wy, wz, lit, nz);
-        if (!cell) continue;
-        cells[k] = cell;
-        zbuf[k] = depth;
-        drew = true;
-      }
-    }
-    // too small to cover a cell centre: still show it as a dot
-    if (!drew) {
-      const i = Math.floor(px / cw);
-      const j = Math.floor(py / chh);
-      if (i >= 0 && j >= 0 && i < cols && j < rows) {
-        const k = j * cols + i;
-        if (d0 < zbuf[k]) {
-          const cell = paint(0, 0, 1, 1, 1);
-          if (cell) {
-            cells[k] = { ...cell, ch: r > 2.5 ? "o" : "·" };
-            zbuf[k] = d0;
-          }
-        }
-      }
-    }
-  }
-
-  function frame(t: number) {
-    const L0 = look();
-    easeAccent();
-    // light theme only: how much of the card's colour the bodies take
-    const tintK = dark ? 0 : accentK;
-    /** A body's cell with the card's colour over it, at full opacity. */
-    const tinted = (c: BodyCell): Cell =>
-      tintK > 0
-        ? { ch: c.ch, color: css(mix(c.color, accentNow, tintK)), alpha: c.alpha + (1 - c.alpha) * tintK }
-        : { ch: c.ch, color: css(c.color), alpha: c.alpha };
-    const sh = SOLAR.shared;
-    if (fontFor() !== font) layout();
-    S = Math.max(0.02, Math.min(1, sh.tilt));
-    C = Math.sqrt(1 - S * S);
-    cells.fill(null);
-    zbuf.fill(Infinity);
-    // big: Saturn's orbit is nearly the width of the page. The Sun sits in the
-    // open band above the row of cards, and the outer orbits sweep down behind it.
-    // placed in the design frame (see lib/scale.ts), centred in the window like the rest of the page
-    const k = Math.min(W / DESIGN_W, H / DESIGN_H);
-    const unit = Math.min(W / 1000, H / 560) * sh.size;
-    const cx = (W - DESIGN_W * k) / 2 + DESIGN_W * k * sh.x;
-    const cy = (H - DESIGN_H * k) / 2 + DESIGN_H * k * sh.y;
-    const inkCss = paint(ink, L0);
-    const colour = clamp01(L0.colour);
-    const contrast = (v: number) => clamp01(0.5 + (v - 0.5) * L0.contrast);
-    /** A grey for a glyph of density d (0 to 1): with `invert` dense is dark, else dense is light. */
-    const greyOf = (d: number): Rgb => mix(NIGHT, DAY, clamp01(L0.invert >= 0.5 ? 1 - d : d));
-    /**
-     * A cell on a body, from how bright that spot is (0 to 1), its colour and
-     * opacity. In greys the shade agrees with the glyph's density (`tone`
-     * scales it, so Earth's oceans sit lighter than its land); `colour` blends
-     * from those greys to the body's own colour.
-     */
-    const body = (v: number, c: Rgb, alpha: number, tone = 1): Cell => {
-      const cv = contrast(v);
-      return tinted({
-        ch: ramp(cv),
-        color: shadeOf(mix(greyOf(cv * tone), c, colour), L0),
-        alpha: (1 + (alpha - 1) * colour) * L0.bodies,
-      });
-    };
-
-    // world (x, z) on the plane of the orbits -> screen and depth
-    const project = (x: number, z: number) => ({ sx: cx + x, sy: cy + z * S, d: -z * C });
-    const sunLight = (x: number, z: number): [number, number, number] => {
-      const lx = -x;
-      const ly = -z * S;
-      const lz = z * C;
-      const l = Math.hypot(lx, ly, lz) || 1;
-      return [lx / l, ly / l, lz / l];
-    };
-
-    /* the Sun: a boiling surface, brighter in the middle, and a glow around it */
-    const sunR = SUN_R * unit * sh.sun;
-    sphere(cx, cy, 0, sunR, null, (wx, wy, wz, _lit, nz) => {
-      const boil = noise3(wx * 3.2 + t * 0.35, wy * 3.2 - t * 0.2, wz * 3.2);
-      const v = 0.38 + nz * 0.42 + (boil - 0.5) * 0.5;
-      return body(v, mix(SUN_EDGE, SUN, clamp01(nz * 1.2)), 0.55 + nz * 0.4);
-    });
-
-    /* the planets */
-    for (const p of PLANETS) {
-      const a = p.phase + (t / p.period) * Math.PI * 2;
-      const R = p.orbit * unit;
-      const x = Math.cos(a) * R;
-      const z = Math.sin(a) * R;
-      const { sx, sy, d } = project(x, z);
-      const r = p.r * unit * sh.planets;
-      const L = sunLight(x, z);
-      const spin = t * 0.5;
-      const tint = p.tint;
-
-      if (p.look === "saturn") rings(sx, sy, d, r, L, tint, L0, tinted);
-
-      sphere(sx, sy, d, r, L, (wx, wy, wz, lit) => {
-        const shade = 0.2 + lit * 0.8;
-        if (p.look === "earth") {
-          const c = Math.cos(spin);
-          const s = Math.sin(spin);
-          const rx = wx * c - wz * s;
-          const rz = wx * s + wz * c;
-          const ice = Math.abs(wy) > 0.84;
-          const land = fbm(rx * 1.7 + 11, wy * 1.7 + 3, rz * 1.7 + 5) > 0.5;
-          const col = ice ? ink : land ? LAND : tint;
-          // the night side shows a few city lights on the land
-          if (colour > 0.5 && lit < 0.03 && land && !ice && hash3(Math.floor(rx * 40), Math.floor(wy * 40), Math.floor(rz * 40)) > 0.8) {
-            return { ch: ".", color: paint(CITY, L0), alpha: 0.7 * L0.bodies };
-          }
-          return body(shade, col, 0.45 + lit * 0.55, ice ? 1.2 : land ? 1 : 0.62);
-        }
-        if (p.look === "jupiter") {
-          const band = Math.sin(wy * 13 + noise3(wx * 3, wy * 3, wz * 3 + t * 0.05) * 2);
-          const col = mix(tint, JUPITER_LIGHT, band * 0.5 + 0.5);
-          return body(shade * (0.82 + band * 0.18), col, 0.45 + lit * 0.55);
-        }
-        return body(shade, tint, 0.45 + lit * 0.55);
-      });
-
-      if (p.look === "earth") {
-        const ma = (t / MOON.period) * Math.PI * 2;
-        const mx = x + Math.cos(ma) * MOON.orbit * unit;
-        const mz = z + Math.sin(ma) * MOON.orbit * unit;
-        const m = project(mx, mz);
-        sphere(m.sx, m.sy, m.d, MOON.r * unit * sh.planets, sunLight(mx, mz), (_x, _y, _z, lit) =>
-          body(0.2 + lit * 0.8, ink, 0.4 + lit * 0.5),
-        );
-      }
-    }
-
-    /* the Sun's glow: a steady halo of dots thinning outward, each one breathing slowly.
-       Light, whatever the theme: the light theme's darkening is left off it so it shines white. */
-    const glowCss = dark ? paint(mix(DAY, SUN, colour), L0) : css(mix(DAY, SUN, colour));
-    const glow = sunR * 2;
-    for (let j = Math.floor((cy - glow) / chh); j <= Math.floor((cy + glow) / chh); j++) {
-      for (let i = Math.floor((cx - glow) / cw); i <= Math.floor((cx + glow) / cw); i++) {
-        const dist = Math.hypot((i + 0.5) * cw - cx, (j + 0.5) * chh - cy) / sunR;
-        if (dist <= 1 || dist > 2) continue;
-        const k = 2 - dist;
-        if (hash3(i, j, 3) > k * k * 0.9) continue;
-        const breathe = 0.6 + 0.4 * Math.sin(t * 1.3 + hash3(i, j, 4) * 6.28);
-        fill(i, j, k > 0.7 ? ":" : "·", glowCss, (0.12 + k * 0.45) * breathe * L0.glow);
-      }
-    }
-
-    /* orbits: dotted ellipses, each dot on the part of its cell nearest the line */
-    for (const p of PLANETS) {
-      const R = p.orbit * unit;
-      const n = Math.ceil((Math.PI * 2 * R) / (cw * 1.15));
-      for (let k = 0; k < n; k++) {
-        const a = (k / n) * Math.PI * 2;
-        const x = cx + Math.cos(a) * R;
-        const y = cy + Math.sin(a) * R * S;
-        const fy = y / chh - Math.floor(y / chh);
-        // the far half of each orbit is a little fainter than the near half
-        const near = Math.sin(a) > 0 ? 1 : 0.7;
-        fill(Math.floor(x / cw), Math.floor(y / chh), fy < 0.34 ? "'" : fy < 0.67 ? "·" : ".", inkCss, 0.22 * near * L0.orbits);
-      }
-    }
-
-    /* the asteroid belt */
-    for (const rock of rocks) {
-      const a = rock.a + (t / (BELT.period * rock.s)) * Math.PI * 2;
-      const R = rock.r * unit;
-      const x = cx + Math.cos(a) * R;
-      const y = cy + Math.sin(a) * R * S;
-      fill(Math.floor(x / cw), Math.floor(y / chh), rock.s > 1.05 ? "." : "·", inkCss, 0.26 * L0.orbits);
-    }
-
-    /* stars */
-    for (const s of stars) {
-      const tw = 0.5 + 0.5 * Math.sin(t * s.sp + s.tw);
-      const ch = tw > 0.96 ? "+" : tw > 0.75 ? "*" : "·";
-      fill(Math.floor(s.u * cols), Math.floor(s.v * rows), ch, inkCss, (0.08 + tw * 0.28) * L0.stars);
-    }
-
-    /* paint */
-    ctx.clearRect(0, 0, W, H);
-    for (let j = 0; j < rows; j++) {
-      for (let i = 0; i < cols; i++) {
-        const c = cells[j * cols + i];
-        if (!c || c.ch === " ") continue;
-        ctx.globalAlpha = c.alpha;
-        ctx.fillStyle = c.color;
-        ctx.fillText(c.ch, i * cw, j * chh);
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  /** Saturn's rings: an annulus in a plane tipped toward us, with a gap in it. */
-  function rings(
-    px: number,
-    py: number,
-    d0: number,
-    r: number,
-    L: [number, number, number],
-    tint: Rgb,
-    look: ThemeLook,
-    tinted: (c: BodyCell) => Cell,
-  ) {
-    const colour = clamp01(look.colour);
-    const outer = r * 2.25;
-    const inner = r * 1.3;
-    const k = 0.36; // how open the rings look
-    const tiltRing = -0.12; // a slight roll
-    const cr = Math.cos(tiltRing);
-    const sr = Math.sin(tiltRing);
-    for (let j = Math.floor((py - outer * k - chh) / chh); j <= Math.floor((py + outer * k + chh) / chh); j++) {
-      for (let i = Math.floor((px - outer) / cw); i <= Math.floor((px + outer) / cw); i++) {
-        if (i < 0 || j < 0 || i >= cols || j >= rows) continue;
-        const x = (i + 0.5) * cw - px;
-        const y = (j + 0.5) * chh - py;
-        const ux = x * cr + y * sr;
-        const uy = (-x * sr + y * cr) / k;
-        const rho = Math.hypot(ux, uy);
-        if (rho < inner || rho > outer) continue;
-        const band = (rho - inner) / (outer - inner);
-        if (band > 0.58 && band < 0.66) continue; // the Cassini division
-        // the rings' near half sits in front of the planet, the far half behind
-        const depth = d0 - (uy / outer) * r * 1.5;
-        const kk = j * cols + i;
-        if (depth >= zbuf[kk]) continue;
-        // in the planet's shadow? (the side facing away from the Sun, behind the ball)
-        const shadow = ux * L[0] + uy * L[1] < 0 && Math.abs(ux * L[1] - uy * L[0]) < r ? 0.35 : 1;
-        // in greys, density: the lit ring dense near the planet, the shadow faint
-        const density = shadow < 1 ? 0.15 : 0.9 - band * 0.4;
-        const g = mix(NIGHT, DAY, look.invert >= 0.5 ? 1 - density : density);
-        const alpha = (0.35 + 0.35 * (1 - band)) * shadow;
-        cells[kk] = tinted({
-          ch: band < 0.58 ? "=" : "-",
-          color: shadeOf(mix(g, tint, colour), look),
-          alpha: (1 + (alpha - 1) * colour) * look.bodies,
-        });
-        zbuf[kk] = depth;
-      }
-    }
-  }
-
-  return { resize, frame, setTheme, setAccent };
+  const onMessage = makeLoop(canvas, solar);
+  return { send: onMessage, stop: () => onMessage({ type: "run", visible: false, still: false }) };
 }
 
 /** How long the sky and corner glow take to fade to a new colour (the CSS transition on their layers). */
@@ -570,116 +91,104 @@ function makeToneFade(box: HTMLElement, fallback: string) {
  * drawing follows the card in the spot on the home page.
  */
 export function SolarSystem({ tone }: { tone?: string } = {}) {
-  const ref = useRef<HTMLCanvasElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const skyRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = ref.current;
+    const box = boxRef.current;
     const sky = skyRef.current;
     const glow = glowRef.current;
-    if (!canvas || !sky || !glow) return;
-    const r = makeRenderer(canvas);
+    if (!box || !sky || !glow) return;
     const root = document.documentElement;
+    const still = matchMedia("(prefers-reduced-motion: reduce)");
 
-    /** The theme's ink and the sky and fade, which live in CSS. */
+    // the canvas is made here, not rendered, because it can be handed to a
+    // worker only once and an effect may run more than once on the same element
+    let drawing: ReturnType<typeof startDrawing> | null = null;
+    let canvas: HTMLCanvasElement | null = null;
+    let visible = false;
+    const send = (m: SolarMsg) => drawing?.send(m);
+
+    /** The theme's ink, and the sky, which live in CSS. */
     const readTheme = () => {
       const parts = getComputedStyle(root).getPropertyValue("--ink-rgb").split(",").map((n) => parseFloat(n));
       const dark = root.dataset.theme === "dark";
-      if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) r.setTheme(parts as Rgb, dark);
+      if (parts.length === 3 && parts.every((n) => !Number.isNaN(n))) send({ type: "theme", ink: parts as Rgb, dark });
       const look = dark ? SOLAR.dark : SOLAR.light;
       sky.style.opacity = String(look.sky);
       sky.style.visibility = look.sky > 0 ? "" : "hidden";
       sky.style.setProperty("--sky-hue", String(look.skyHue));
-      // across the design frame, not the window
-      const across = (pct: number) => `calc(var(--frame-x) + var(--frame-w) * ${pct / 100})`;
-      canvas.style.setProperty("--fade-from", across(SOLAR.shared.fadeFrom));
-      canvas.style.setProperty("--fade-to", across(SOLAR.shared.fadeTo));
     };
-    readTheme();
-    r.resize();
 
-    const still = matchMedia("(prefers-reduced-motion: reduce)");
     /** The colour of the card in the spot, which CardStack sets on the root as --project-tone. */
     const skyFade = makeToneFade(sky, "hsl(calc(var(--sky-hue) + 1) 90% 59%)");
     const glowFade = makeToneFade(glow, "transparent");
+    const accentNow = () => tone ?? root.style.getPropertyValue("--project-tone");
     const readAccent = (instant = false) => {
-      const accent = tone ?? root.style.getPropertyValue("--project-tone");
-      r.setAccent(hexRgb(accent), instant || still.matches);
+      const accent = accentNow();
+      send({ type: "accent", rgb: hexRgb(accent), instant });
       skyFade.show(accent, instant);
       glowFade.show(accent, instant);
     };
-    // the sky and glow start on the colour they were first painted in (see
-    // globals.css); a fixed tone is there from the first frame of the drawing too
-    skyFade.show(tone ?? root.style.getPropertyValue("--project-tone"), true);
-    glowFade.show(tone ?? root.style.getPropertyValue("--project-tone"), true);
-    readAccent(!!tone);
+    // the sky and glow start on the colour they were first painted in (see globals.css)
+    skyFade.show(accentNow(), true);
+    glowFade.show(accentNow(), true);
+    readTheme();
 
-    // a fixed moment, for reduced motion: the planets spread out nicely
-    const STILL_T = 40;
-    // the scene's own clock, so changing the speed doesn't make it jump
-    let t = 0;
-    let raf = 0;
-    let last = 0;
-    let prev = 0;
-    const loop = (now: number) => {
-      raf = requestAnimationFrame(loop);
-      if (now - last < 1000 / FPS - 2) return;
-      last = now;
-      // a hidden tab pauses rAF; don't leap ahead when it comes back
-      t += Math.min(0.1, prev ? (now - prev) / 1000 : 0) * SOLAR.shared.speed;
-      prev = now;
-      r.frame(t);
+    const size = () => {
+      const r = box.getBoundingClientRect();
+      send({ type: "size", w: r.width, h: r.height, dpr: Math.min(window.devicePixelRatio || 1, 2) });
     };
+    const run = () => send({ type: "run", visible: visible && !document.hidden, still: still.matches });
+
     // off screen (scrolled past on a writeup, or hidden on phones) it stops drawing
-    let visible = true;
-    const run = () => {
-      cancelAnimationFrame(raf);
-      prev = 0;
-      if (still.matches) r.frame(STILL_T);
-      else if (visible) raf = requestAnimationFrame(loop);
-    };
-    run();
     const io = new IntersectionObserver(([e]) => {
       visible = e.isIntersecting;
+      if (visible && !drawing) {
+        canvas = document.createElement("canvas");
+        box.appendChild(canvas);
+        drawing = startDrawing(canvas);
+        size();
+        readTheme();
+        // a fixed tone is there from the first frame
+        send({ type: "accent", rgb: hexRgb(accentNow()), instant: true });
+      }
       run();
     });
-    io.observe(canvas);
-    const redraw = () => {
-      if (still.matches) r.frame(STILL_T);
-    };
+    io.observe(box);
+    const ro = new ResizeObserver(() => drawing && size());
+    ro.observe(box);
 
-    const ro = new ResizeObserver(() => {
-      r.resize();
-      redraw();
-    });
-    ro.observe(canvas);
-    const onChange = () => {
+    const onTheme = () => {
       readTheme();
       readAccent();
-      redraw();
     };
     // the theme re-reads styles; a change of card (an inline style) only needs the colour
     const mo = new MutationObserver((records) => {
-      if (records.some((m) => m.attributeName === "data-theme")) onChange();
-      else {
-        readAccent();
-        redraw();
-      }
+      if (records.some((m) => m.attributeName === "data-theme")) onTheme();
+      else readAccent();
     });
     mo.observe(root, { attributes: true, attributeFilter: ["data-theme", "style"] });
+    const onSolar = () => {
+      send({ type: "solar", solar: JSON.parse(JSON.stringify(SOLAR)) });
+      onTheme();
+    };
     still.addEventListener("change", run);
-    addEventListener(SOLAR_EVENT, onChange);
+    document.addEventListener("visibilitychange", run);
+    addEventListener(SOLAR_EVENT, onSolar);
 
     return () => {
-      cancelAnimationFrame(raf);
+      drawing?.stop();
+      canvas?.remove();
       skyFade.stop();
       glowFade.stop();
       ro.disconnect();
       io.disconnect();
       mo.disconnect();
       still.removeEventListener("change", run);
-      removeEventListener(SOLAR_EVENT, onChange);
+      document.removeEventListener("visibilitychange", run);
+      removeEventListener(SOLAR_EVENT, onSolar);
     };
   }, [tone]);
 
@@ -693,7 +202,7 @@ export function SolarSystem({ tone }: { tone?: string } = {}) {
         <i />
         <i />
       </div>
-      <canvas className="solar" ref={ref} aria-hidden />
+      <div className="solar" ref={boxRef} aria-hidden />
     </>
   );
 }

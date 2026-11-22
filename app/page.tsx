@@ -2,7 +2,9 @@ import { CardStack } from "@/components/CardStack";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import arion from "@/assets/arion.png";
+import generalMagic from "@/assets/generalmagic.png";
 import { Navbar } from "@/components/Navbar";
+import { ProjectList } from "@/components/ProjectList";
 import { LINKS, newTab } from "@/lib/links";
 import { SolarSystem } from "@/components/SolarSystem";
 import { PERSON, jsonLd } from "@/lib/site";
@@ -50,6 +52,12 @@ export default function Home() {
           </a>
           , building novel, <span className="nowrap">AI-native</span> consumer
           experiences.
+          Incoming at{" "}
+          <a className="org" href="https://generalmagic.inc" {...newTab("https://generalmagic.inc")}>
+            <Image className="org-icon org-icon-plain" src={generalMagic} alt="" width={44} height={44} />
+            <span>General Magic</span>
+          </a>{" "}
+          this winter.
         </p>
         <nav className="intro-links" aria-label="Elsewhere">
           {Object.values(LINKS).map((l) => (
@@ -59,6 +67,9 @@ export default function Home() {
           ))}
         </nav>
       </header>
+
+      {/* phones: the projects as a list under the intro, instead of the 3D row */}
+      <ProjectList />
 
       <TunePanel />
       <SolarPanel />
