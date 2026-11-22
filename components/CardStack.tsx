@@ -1,21 +1,21 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
+  memo,
   useEffect,
   useRef,
   useState,
   type CSSProperties,
   type MouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { MOTION } from "@/lib/motion";
 import { designPx, PHONE_QUERY } from "@/lib/scale";
 import { playWhoop, unlockSound } from "@/lib/sound";
-import { CardLines } from "@/components/CardLines";
-import { PROJECTS, type Project } from "@/lib/projects";
+import { Body, CardFace } from "@/components/CardFace";
+import { linkLabel } from "@/lib/links";
+import { PROJECTS } from "@/lib/projects";
 
 /*
  * A row of square cards standing on a ground plane, running off into the
@@ -31,8 +31,12 @@ import { PROJECTS, type Project } from "@/lib/projects";
  * camera angle is the world's rotateX (pitch) and rotateY (yaw).
  *
  * Position `p` counts cards pulled out. At p = 0 nothing is out (the opening
- * view, which on desktop only shows during the load before the first card flips out). Card n sits in slot s = n - p: s >= 0 is in the row, s in [-1, 0) is
+ * view, which only shows during the load before the first card flips out).
+ * Card n sits in slot s = n - p: s >= 0 is in the row, s in [-1, 0) is
  * flying to the spot, s in [-2, -1) is leaving it.
+ *
+ * Desktops only: phones (a screen taller than wide) get a plain scrolling list
+ * instead (ProjectList). CSS hides this there, and none of its script runs.
  */
 
 const N = PROJECTS.length;
@@ -80,9 +84,17 @@ const slotOf = (j: number, p: number) => wrap(j - p + OUT, M) - OUT;
  */
 type Spot = { dx: number; dy: number; scale: number; lift: number; push: number; fade: number; yaw: number; lead: number };
 
-/** `drop` lifts the card off the ground, in card widths. */
-const rowTransform = (s: number, drop = 0) =>
-  `translate3d(calc(var(--card-w) * var(--gap) * (${s.toFixed(4)} + var(--lead))), calc(var(--card-w) * ${(-drop).toFixed(4)}), 0) rotateY(-90deg)`;
+/**
+ * The row's measurements in px, read from CSS once per resize, so the
+ * transforms written every frame are plain numbers the browser needn't resolve.
+ */
+type Geo = { w: number; step: number; lead: number; ox: number; oy: number; pitch: number; yaw: number };
+
+/** `drop` lifts the card off the ground, in card widths. Without `g` (before measuring) it's in CSS terms. */
+const rowTransform = (s: number, drop = 0, g?: Geo | null) =>
+  g
+    ? `translate3d(${(g.step * (s + g.lead)).toFixed(2)}px, ${(-g.w * drop).toFixed(2)}px, 0) rotateY(-90deg)`
+    : `translate3d(calc(var(--card-w) * var(--gap) * (${s.toFixed(4)} + var(--lead))), calc(var(--card-w) * ${(-drop).toFixed(4)}), 0) rotateY(-90deg)`;
 
 /**
  * The world turns the row by (pitch, yaw). To face the camera a card undoes
@@ -99,10 +111,10 @@ function flightTransform(t: number, spot: Spot, pitch: number, up = 0, near = 0)
   );
 }
 
-function cardPose(s: number, n: number, spot: Spot | null, pitch: number) {
-  if (n < 0) return { transform: rowTransform(s), opacity: 0 }; // before the first project
-  if (s >= 0) return { transform: rowTransform(s), opacity: clamp((M - OUT - s) / FOG, 0, 1) };
-  if (!spot) return { transform: rowTransform(s), opacity: 0 };
+function cardPose(s: number, n: number, spot: Spot | null, pitch: number, g: Geo | null) {
+  if (n < 0) return { transform: rowTransform(s, 0, g), opacity: 0 }; // before the first project
+  if (s >= 0) return { transform: rowTransform(s, 0, g), opacity: clamp((M - OUT - s) / FOG, 0, 1) };
+  if (!spot) return { transform: rowTransform(s, 0, g), opacity: 0 };
   if (s >= -1) return { transform: flightTransform(-s, spot, pitch), opacity: 1 };
   // leaving: drift up and toward the camera out of the spot, and fade. Coming
   // forward keeps it in front of the next card, which turns as it flies in and
@@ -113,8 +125,10 @@ function cardPose(s: number, n: number, spot: Spot | null, pitch: number) {
   return { transform: flightTransform(1, spot, pitch, spot.lift * smooth(e), near), opacity };
 }
 
-const worldTransform = (pitch: number) =>
-  `translate3d(var(--ox), var(--oy), 0) rotateX(calc(var(--pitch) + ${pitch.toFixed(3)}deg)) rotateY(var(--yaw))`;
+const worldTransform = (pitch: number, g?: Geo | null) =>
+  g
+    ? `translate3d(${g.ox.toFixed(2)}px, ${g.oy.toFixed(2)}px, 0) rotateX(${(g.pitch + pitch).toFixed(3)}deg) rotateY(${g.yaw}deg)`
+    : `translate3d(var(--ox), var(--oy), 0) rotateX(calc(var(--pitch) + ${pitch.toFixed(3)}deg)) rotateY(var(--yaw))`;
 
 // Server render and first paint have every card up in the air, unseen, ready to drop.
 // These objects never change, so re-renders leave the per-frame inline styles alone.
@@ -148,13 +162,25 @@ export function CardStack() {
   const cards = useRef<(HTMLElement | null)[]>([]);
   const slots = useRef<Float64Array>(new Float64Array(M));
   const goTo = useRef<(j: number) => void>(() => {});
-  /** move the row one card forward (1) or back (-1), for the phone's arrows */
-  const stepBy = useRef<(d: number) => void>(() => {});
   /** the project number in the spot (counting round the loop), or -1 */
   const [active, setActive] = useState(-1);
   const [hover, setHover] = useState<number | null>(null);
+  /** a phone-shaped window, where the list shows instead; null until known */
+  const [phone, setPhone] = useState<boolean | null>(null);
 
   useEffect(() => {
+    const mq = matchMedia(PHONE_QUERY);
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (phone !== false) return;
+    const worldEl = world.current;
+    const cardEls = cards.current;
+    const detailEl = detail.current;
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const m = { cur: 0, target: 0, vel: 0, pitch: 0, pitchVel: 0, last: 0, running: false };
     // the load-in: cards dropping onto the ground (skipped for reduced motion)
@@ -167,7 +193,12 @@ export function CardStack() {
     /** the visitor has moved the row (the load's own flip-out makes no sound) */
     let moved = false;
     let spot: Spot | null = null;
-    let basePitch = 0;
+    let geo: Geo | null = null;
+    // what was last written to each card, so a frame only touches what changed
+    const lastTransform: string[] = new Array(M).fill("");
+    const lastOpacity: string[] = new Array(M).fill("0"); // as INITIAL has it
+    const lastFace: string[] = new Array(M).fill("");
+    const lastHidden: (boolean | null)[] = new Array(M).fill(null);
 
     // The spot is laid out by CSS; measure it so cards can fly there.
     function measure() {
@@ -176,13 +207,21 @@ export function CardStack() {
       if (intro)
         document.documentElement.style.setProperty("--intro-bottom", `${intro.offsetTop + intro.offsetHeight}px`);
       const root = getComputedStyle(document.documentElement);
-      basePitch = parseFloat(root.getPropertyValue("--pitch")) || 0;
       const o = origin.current?.getBoundingClientRect();
       const r = spotRef.current?.getBoundingClientRect();
       const w = cards.current[0]?.offsetWidth;
       if (!o || !r || !w) return;
       const num = (k: string) => parseFloat(root.getPropertyValue(k)) || 0;
       const lead = w * num("--gap") * num("--lead");
+      geo = {
+        w,
+        step: w * num("--gap"),
+        lead: num("--lead"),
+        ox: w * num("--ox-k"),
+        oy: w * num("--oy-k"),
+        pitch: num("--pitch"),
+        yaw: num("--yaw"),
+      };
       const dx = r.left + r.width / 2 - o.left;
       const dy = r.bottom - o.top;
       spot = {
@@ -198,22 +237,29 @@ export function CardStack() {
     }
 
     function paint(now = performance.now()) {
-      const pitch = basePitch + m.pitch;
+      const pitch = (geo?.pitch ?? 0) + m.pitch;
       const intro = now < introEnd ? now - introStart : -1;
       for (let j = 0; j < M; j++) {
         const el = cards.current[j];
         if (!el) continue;
         const s = slotOf(j, m.cur);
         slots.current[j] = s;
-        const pose = cardPose(s, Math.round(m.cur + s), spot, pitch);
+        const pose = cardPose(s, Math.round(m.cur + s), spot, pitch, geo);
         if (intro >= 0 && s >= 0) {
           const d = dropOf(j, intro);
-          pose.transform = rowTransform(s, d.drop);
+          pose.transform = rowTransform(s, d.drop, geo);
           pose.opacity *= d.fade;
         }
-        el.style.transform = pose.transform;
         const hidden = pose.opacity < 0.01;
-        el.style.visibility = hidden ? "hidden" : "";
+        if (hidden !== lastHidden[j]) {
+          lastHidden[j] = hidden;
+          el.style.visibility = hidden ? "hidden" : "";
+        }
+        // a hidden card needn't move; it's put right when it shows again
+        if (!hidden && pose.transform !== lastTransform[j]) {
+          lastTransform[j] = pose.transform;
+          el.style.transform = pose.transform;
+        }
         // The row is a loop, so projects already pulled out come back round at the far
         // end. There they're plain grey like the mystery cards, and can't be clicked.
         const ghost = j < N && Math.round(m.cur + s) >= M;
@@ -223,12 +269,21 @@ export function CardStack() {
         }
         const deep = s >= -OUT && s < DEEP;
         if (deep !== el.hasAttribute("data-deep")) el.toggleAttribute("data-deep", deep);
-        // A 3D card fades layer by layer: opacity on the card itself would flatten it.
+        // A 3D card fades layer by layer, on its face: opacity on the card itself would flatten it.
+        // (On the face directly, not through an inherited variable, which would restyle all that's inside.)
         const fade = pose.opacity.toFixed(3);
-        el.style.opacity = deep ? "" : fade;
-        el.style.setProperty("--fade", deep ? fade : "1");
+        const cardOpacity = deep ? "" : fade;
+        const faceOpacity = deep ? fade : "";
+        if (cardOpacity !== lastOpacity[j]) {
+          lastOpacity[j] = cardOpacity;
+          el.style.opacity = cardOpacity;
+        }
+        if (faceOpacity !== lastFace[j]) {
+          lastFace[j] = faceOpacity;
+          (el.firstElementChild as HTMLElement | null)?.style.setProperty("opacity", faceOpacity);
+        }
       }
-      if (world.current) world.current.style.transform = worldTransform(m.pitch);
+      if (world.current) world.current.style.transform = worldTransform(m.pitch, geo);
 
       // The write-up fades out as its card leaves and in as the next one lands.
       const k = Math.round(m.cur);
@@ -243,8 +298,6 @@ export function CardStack() {
         if (moved) playWhoop();
         shown = n;
         setActive(n);
-        // lets the page make room for a pulled-out card (phones hide the intro)
-        document.documentElement.toggleAttribute("data-out", n >= 0);
       }
     }
 
@@ -290,15 +343,13 @@ export function CardStack() {
     }
 
     /**
-     * The first position the row can rest at. On desktop a card is always in
-     * the spot, so it's 1 (the opening view, 0, is only passed through on load).
-     * Phones show the intro where a card's write-up goes, so they open on 0
-     * (the deck, with nothing pulled out yet) and can come back to it.
+     * The first position the row can rest at. A card is always in the spot,
+     * so it's 1 (the opening view, 0, is only passed through on load).
      */
-    const first = () => (matchMedia(PHONE_QUERY).matches ? 0 : 1);
+    const FIRST = 1;
 
     function aim(target: number) {
-      m.target = clamp(target, first(), N); // up to the last project
+      m.target = clamp(target, FIRST, N); // up to the last project
       kick();
     }
 
@@ -341,11 +392,6 @@ export function CardStack() {
       jump(Math.round(m.cur + slotOf(j, m.cur)) + 1);
     };
 
-    stepBy.current = (d: number) => {
-      setHover(null);
-      jump(Math.round(m.target) + d);
-    };
-
     function onWheel(e: WheelEvent) {
       if (e.ctrlKey) return; // pinch zoom
       const unit = e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? window.innerHeight : 1;
@@ -361,7 +407,7 @@ export function CardStack() {
       if (e.key === "Home" || e.key === "Escape") {
         e.preventDefault();
         setHover(null);
-        jump(first());
+        jump(FIRST);
         return;
       }
       const forward = ["ArrowDown", "ArrowRight", "PageDown", "j"];
@@ -438,7 +484,7 @@ export function CardStack() {
     window.addEventListener("click", onClick, true);
     kick();
     // once the front cards have landed, the first one flips out (unless the visitor already moved)
-    if (first() === 1) flipTimer = window.setTimeout(() => m.target < 1 && aim(1), reduce ? 0 : FLIP_AT_MS);
+    flipTimer = window.setTimeout(() => m.target < 1 && aim(1), reduce ? 0 : FLIP_AT_MS);
 
     return () => {
       cancelAnimationFrame(raf);
@@ -454,21 +500,35 @@ export function CardStack() {
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("click", onClick, true);
-      document.documentElement.removeAttribute("data-out");
+      // back to how the server drew it, for a window turned phone-shaped and back
+      setActive(-1);
+      setHover(null);
+      if (worldEl) worldEl.style.transform = worldTransform(0);
+      cardEls.forEach((el, j) => {
+        if (!el) return;
+        el.removeAttribute("style");
+        Object.assign(el.style, INITIAL[j]);
+        (el.firstElementChild as HTMLElement | null)?.style.removeProperty("opacity");
+        el.removeAttribute("data-deep");
+        el.removeAttribute("data-ghost");
+        el.inert = false;
+      });
+      if (detailEl) Object.assign(detailEl.style, HIDDEN);
     };
-  }, []);
+  }, [phone]);
 
   const activeProject = active >= 0 ? PROJECTS[active % N] : null;
 
   // the sky and the corner glow take the colour of the project in the spot
   useEffect(() => {
+    if (phone !== false) return; // the list sets it on phones (ToneOnScroll)
     const root = document.documentElement.style;
     if (activeProject) {
       root.setProperty("--project-tone", activeProject.tone);
     } else {
       root.removeProperty("--project-tone");
     }
-  }, [activeProject]);
+  }, [activeProject, phone]);
   const activeEl = active >= 0 ? active % M : -1;
 
   // A hovered card leans toward the pointer: where it is over the card, from -1 to 1 each way.
@@ -505,7 +565,7 @@ export function CardStack() {
                   aria-hidden
                   style={INITIAL[j]}
                 >
-                  <MysteryFace j={j} front={j === N && active === N - 1} />
+                  <Mystery j={j} front={j === N && active === N - 1} />
                 </div>
               );
             const p = PROJECTS[j];
@@ -530,7 +590,7 @@ export function CardStack() {
                 onPointerLeave={() => setHover((h) => (h === j ? null : h))}
                 onFocus={(e) => e.currentTarget.matches(":focus-visible") && goTo.current(j)}
               >
-                <CardFace project={p} live={j === activeEl} />
+                <Face project={p} live={j === activeEl} sizes="32vw" />
               </a>
             );
           })}
@@ -562,42 +622,10 @@ export function CardStack() {
         )}
       </div>
 
-      {/* phones: a card back and a card on, under the write-up */}
-      <div className="deck-arrows">
-        <button
-          type="button"
-          className="deck-arrow"
-          aria-label="Previous project"
-          disabled={active < 0}
-          onClick={() => stepBy.current(-1)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M14.5 5.5 8 12l6.5 6.5" />
-          </svg>
-        </button>
-        <span className="deck-count" aria-hidden>
-          {active >= 0 && `${active + 1} / ${N}`}
-        </span>
-        <button
-          type="button"
-          className="deck-arrow"
-          aria-label="Next project"
-          disabled={active >= N - 1}
-          onClick={() => stepBy.current(1)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden>
-            <path d="M9.5 5.5 16 12l-6.5 6.5" />
-          </svg>
-        </button>
-      </div>
     </>
   );
 }
 
-/** Just the site: "https://github.com/MoizDev/wat-wiki" -> "github.com" */
-function linkLabel(href: string) {
-  return new URL(href).host.replace(/^www\./, "");
-}
 
 /** Shades of grey for the mystery cards, as a share of the text colour over the page. */
 const GREYS = [16, 24, 12, 30, 20, 26, 14, 22];
@@ -643,60 +671,6 @@ function MysteryFace({ j, front }: { j: number; front: boolean }) {
   );
 }
 
-function CardFace({ project: p, live }: { project: Project; live: boolean }) {
-  return (
-    <Body
-      tone={p.tone}
-      outside={
-        p.badge && (
-          <span className="card-badge" data-live={live}>
-            <span className="card-badge-title">{p.badge.title}</span>
-            <span className="card-badge-detail">{p.badge.detail}</span>
-          </span>
-        )
-      }
-    >
-      <CardLines art={p.lines} />
-      {p.art.kind === "shot" ? (
-        <Image
-          className="card-shot"
-          src={p.art.src}
-          alt=""
-          sizes="(max-aspect-ratio: 3/4) 60vw, 30vw"
-          loading="eager"
-          draggable={false}
-        />
-      ) : (
-        <div className="card-logo">
-          <Image className="card-logo-mark" src={p.art.src} alt="" draggable={false} loading="eager" />
-          <span className="card-logo-tag">{p.art.tagline}</span>
-        </div>
-      )}
-      {live && p.video && (
-        <video className="card-shot card-video" src={p.video} autoPlay muted loop playsInline aria-hidden />
-      )}
-      <span className="card-name">
-        <Image className="card-name-logo" src={p.logo} alt="" draggable={false} loading="eager" />
-        {p.name}
-      </span>
-    </Body>
-  );
-}
-
-/**
- * A card: one flat layer holding what's printed on it and the gloss, plus
- * anything that sticks out past its edge (`outside`, not clipped by the plate). (Printed
- * layers as separate 3D planes sit too close together for the browser to sort,
- * so they cut through each other; the hover parallax slides them within the
- * face instead.)
- */
-function Body({ tone, children, outside }: { tone: string; children: ReactNode; outside?: ReactNode }) {
-  return (
-    <div className="card-face" style={{ "--tone": tone } as CSSProperties}>
-      <div className="card-front">
-        {children}
-      </div>
-      {outside}
-    </div>
-  );
-}
+// the faces only change with what they show, not every time the row re-renders
+const Face = memo(CardFace);
+const Mystery = memo(MysteryFace);

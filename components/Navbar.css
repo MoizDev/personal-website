@@ -19,9 +19,16 @@
   border-radius: calc(14 * var(--u));
   background: rgb(var(--paper-rgb));
   box-shadow: 0 calc(6 * var(--u)) calc(24 * var(--u)) rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(calc(18 * var(--u))) saturate(1.4);
-  -webkit-backdrop-filter: blur(calc(18 * var(--u))) saturate(1.4);
-  transition: width 560ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* no backdrop blur: the bar is opaque, so a blur wouldn't show, yet the GPU
+     would redo it every frame the drawing behind it moves */
+  transition:
+    width 560ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    translate 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* phones: tucked above the screen while the page scrolls down */
+.nav[data-hidden="true"] {
+  translate: 0 calc(-100% - var(--nav-top) - 32px);
 }
 
 :root[data-theme="dark"] .nav {
