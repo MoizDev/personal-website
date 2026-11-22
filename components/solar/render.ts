@@ -13,26 +13,38 @@
  * farther ones (a planet passing in front of the Sun, a ring in front of its
  * planet). Orbits, the belt and the stars only fill the cells left empty.
  *
- * This module has no DOM in it: it runs in a worker on an OffscreenCanvas
- * (./solar.worker.ts), so drawing it never takes time from the page, or on the
- * page itself where workers can't draw (./loop.ts).
+ * This module works out the grid; ./paint.ts puts it on the canvas, on the
+ * GPU where it can. Neither has DOM in it: they run in a worker on an
+ * OffscreenCanvas (./solar.worker.ts), so drawing never takes time from the
+ * page, or on the page itself where workers can't draw (./loop.ts).
  *
  * Kept cheap per frame: the cells live in flat typed arrays (no objects or
- * colour strings made per cell), the canvas's colour changes once per colour
- * rather than once per character, and the fade on the left, which keeps the
- * drawing clear of the text, is worked into each character's opacity, so the
- * hidden ones aren't drawn at all.
+ * strings made per cell), and the fade on the left, which keeps the drawing
+ * clear of the text, is worked into each character's opacity, so the hidden
+ * ones aren't drawn at all.
  */
 
 import type { Solar, ThemeLook } from "@/lib/solar";
 import { DESIGN_H, DESIGN_W } from "@/lib/scale";
+import { glyph, makePainter, type Grid } from "./paint";
 
 export type Rgb = [number, number, number];
 
 const FONT_FAMILY = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace';
 
-/** Characters from empty to full, for shading. */
-const RAMP = " .,:;-=+*#%@";
+/** Characters from empty to full, for shading, as cell codes (see ./paint.ts). */
+const RAMP = Array.from(" .,:;-=+*#%@", glyph);
+
+/** The other characters it draws. */
+const DOT = glyph(".");
+const MID = glyph("·");
+const TICK = glyph("'");
+const COLON = glyph(":");
+const BALL = glyph("o");
+const PLUS = glyph("+");
+const STAR = glyph("*");
+const RING = glyph("=");
+const RING_OUTER = glyph("-");
 
 type Planet = {
   /** orbit radius and own radius, in units (a unit is a thousandth of the canvas width) */
@@ -130,27 +142,15 @@ function shadeOf([r, g, b]: Rgb, look: ThemeLook): Rgb {
  */
 const pack = (c: Rgb) => ((clamp255(c[0]) & 0xfc) << 16) | ((clamp255(c[1]) & 0xfc) << 8) | (clamp255(c[2]) & 0xfc);
 
-/** The CSS for a packed colour, made once per colour rather than once per cell. */
-const cssCache = new Map<number, string>();
-function cssOf(c: number) {
-  let s = cssCache.get(c);
-  if (!s) {
-    s = `rgb(${c >> 16},${(c >> 8) & 255},${c & 255})`;
-    cssCache.set(c, s);
-  }
-  return s;
-}
-
 /** How fast the bodies fade to a new card's colour (seconds to get most of the way). */
 const ACCENT_EASE = 0.3;
 
 const ramp = (v: number) => RAMP[1 + Math.min(RAMP.length - 2, Math.floor(clamp01(v) * (RAMP.length - 1)))];
 
 type Canvas = HTMLCanvasElement | OffscreenCanvas;
-type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export function makeRenderer(canvas: Canvas, solar: Solar) {
-  const ctx = canvas.getContext("2d") as Ctx;
+  const painter = makePainter(canvas);
   let cw = 5;
   let chh = 9;
   let cols = 0;
@@ -158,15 +158,15 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
   let W = 0;
   let H = 0;
   // the grid: a character, colour and opacity per cell, and a depth buffer;
-  // an empty cell has no character
-  let chs: (string | null)[] = [];
+  // an empty cell has character 0
+  let chs = new Uint8Array(0);
   let colors = new Int32Array(0);
   let alphas = new Float32Array(0);
   let zbuf = new Float32Array(0);
   /** how much of each column the fade on the left lets through */
   let colFade = new Float32Array(0);
-  /** the cells drawn this frame, by colour; the lists are kept between frames */
-  const byColor = new Map<number, number[]>();
+  /** the grid handed to the painter each frame */
+  const grid: Grid = { cols: 0, rows: 0, glyphs: chs, colors, alphas, colFade };
   let ink: Rgb = [22, 22, 22];
   let dark = false;
   /**
@@ -223,15 +223,14 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
   function layout() {
     const size = cellPx();
     font = fontFor();
-    ctx.font = font;
-    ctx.textBaseline = "top";
-    cw = ctx.measureText("M").width || size * 0.6;
+    cw = painter.measure(font) || size * 0.6;
     chh = size * 1.2;
+    painter.setFont(font, cw, chh);
     // hidden or not laid out yet: an empty grid
     cols = W > 0 ? Math.ceil(W / cw) : 0;
     rows = H > 0 ? Math.ceil(H / chh) : 0;
     const n = cols * rows;
-    chs = new Array(n).fill(null);
+    chs = new Uint8Array(n);
     colors = new Int32Array(n);
     alphas = new Float32Array(n);
     zbuf = new Float32Array(n);
@@ -242,10 +241,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
   function resize(w: number, h: number, dpr: number) {
     W = w;
     H = h;
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    // resizing a canvas resets its state
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    painter.resize(w, h, dpr);
     layout();
   }
 
@@ -276,22 +272,22 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
   }
 
   /** Set cell k. */
-  function put(k: number, ch: string, color: number, alpha: number) {
+  function put(k: number, ch: number, color: number, alpha: number) {
     chs[k] = ch;
     colors[k] = color;
     alphas[k] = alpha;
   }
 
   /** Put a character in a cell if it's empty (for orbits, the belt, stars and glow). */
-  function fill(i: number, j: number, ch: string, color: number, alpha: number) {
+  function fill(i: number, j: number, ch: number, color: number, alpha: number) {
     if (i < 0 || j < 0 || i >= cols || j >= rows) return;
     const k = j * cols + i;
-    if (chs[k] !== null) return;
+    if (chs[k] !== 0) return;
     put(k, ch, color, alpha);
   }
 
   /** What a body's paint function gives for a cell: written into these, or false for nothing. */
-  const out = { ch: "", color: 0, alpha: 0 };
+  const out = { ch: 0, color: 0, alpha: 0 };
 
   /**
    * Shade a sphere at screen (px, py), depth d0, radius r. `paint` gets the
@@ -340,7 +336,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
       if (i >= 0 && j >= 0 && i < cols && j < rows) {
         const k = j * cols + i;
         if (d0 < zbuf[k] && paint(0, 0, 1, 1, 1)) {
-          put(k, r > 2.5 ? "o" : "·", out.color, out.alpha);
+          put(k, r > 2.5 ? BALL : MID, out.color, out.alpha);
           zbuf[k] = d0;
         }
       }
@@ -353,7 +349,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
     // light theme only: how much of the card's colour the bodies take
     const tintK = dark ? 0 : accentK;
     /** Write a body's cell into `out`, with the card's colour over it, at full opacity. */
-    const tinted = (ch: string, color: Rgb, alpha: number) => {
+    const tinted = (ch: number, color: Rgb, alpha: number) => {
       out.ch = ch;
       if (tintK > 0) {
         out.color = pack(mix(color, accentNow, tintK));
@@ -369,7 +365,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
     else if (fadeFor() !== fadeKey) layoutFade();
     S = Math.max(0.02, Math.min(1, sh.tilt));
     C = Math.sqrt(1 - S * S);
-    chs.fill(null);
+    chs.fill(0);
     zbuf.fill(Infinity);
     // big: Saturn's orbit is nearly the width of the page. The Sun sits in the
     // open band above the row of cards, and the outer orbits sweep down behind it.
@@ -439,7 +435,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
           const col = ice ? ink : land ? LAND : tint;
           // the night side shows a few city lights on the land
           if (colour > 0.5 && lit < 0.03 && land && !ice && hash3(Math.floor(rx * 40), Math.floor(wy * 40), Math.floor(rz * 40)) > 0.8) {
-            out.ch = ".";
+            out.ch = DOT;
             out.color = cityC;
             out.alpha = 0.7 * L0.bodies;
             return true;
@@ -476,7 +472,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
         const g = 2 - dist;
         if (hash3(i, j, 3) > g * g * 0.9) continue;
         const breathe = 0.6 + 0.4 * Math.sin(t * 1.3 + hash3(i, j, 4) * 6.28);
-        fill(i, j, g > 0.7 ? ":" : "·", glowC, (0.12 + g * 0.45) * breathe * L0.glow);
+        fill(i, j, g > 0.7 ? COLON : MID, glowC, (0.12 + g * 0.45) * breathe * L0.glow);
       }
     }
 
@@ -491,7 +487,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
         const fy = y / chh - Math.floor(y / chh);
         // the far half of each orbit is a little fainter than the near half
         const near = Math.sin(a) > 0 ? 1 : 0.7;
-        fill(Math.floor(x / cw), Math.floor(y / chh), fy < 0.34 ? "'" : fy < 0.67 ? "·" : ".", inkC, 0.22 * near * L0.orbits);
+        fill(Math.floor(x / cw), Math.floor(y / chh), fy < 0.34 ? TICK : fy < 0.67 ? MID : DOT, inkC, 0.22 * near * L0.orbits);
       }
     }
 
@@ -501,43 +497,23 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
       const R = rock.r * unit;
       const x = cx + Math.cos(a) * R;
       const y = cy + Math.sin(a) * R * S;
-      fill(Math.floor(x / cw), Math.floor(y / chh), rock.s > 1.05 ? "." : "·", inkC, 0.26 * L0.orbits);
+      fill(Math.floor(x / cw), Math.floor(y / chh), rock.s > 1.05 ? DOT : MID, inkC, 0.26 * L0.orbits);
     }
 
     /* stars */
     for (const s of stars) {
       const tw = 0.5 + 0.5 * Math.sin(t * s.sp + s.tw);
-      const ch = tw > 0.96 ? "+" : tw > 0.75 ? "*" : "·";
+      const ch = tw > 0.96 ? PLUS : tw > 0.75 ? STAR : MID;
       fill(Math.floor(s.u * cols), Math.floor(s.v * rows), ch, inkC, (0.08 + tw * 0.28) * L0.stars);
     }
 
-    /* paint: one colour at a time, skipping what the fade hides */
-    for (const list of byColor.values()) list.length = 0;
-    for (let j = 0; j < rows; j++) {
-      for (let i = 0; i < cols; i++) {
-        const q = j * cols + i;
-        const ch = chs[q];
-        if (ch === null || ch === " ") continue;
-        const a = alphas[q] * colFade[i];
-        if (a < 0.004) continue;
-        alphas[q] = a;
-        let list = byColor.get(colors[q]);
-        if (!list) byColor.set(colors[q], (list = []));
-        list.push(q);
-      }
-    }
-    ctx.clearRect(0, 0, W, H);
-    for (const [color, list] of byColor) {
-      if (!list.length) continue;
-      ctx.fillStyle = cssOf(color);
-      for (const q of list) {
-        ctx.globalAlpha = alphas[q] > 1 ? 1 : alphas[q];
-        ctx.fillText(chs[q]!, (q % cols) * cw, Math.floor(q / cols) * chh);
-      }
-    }
-    ctx.globalAlpha = 1;
-    // forget colours that have gone, so a long fade between cards doesn't pile them up
-    if (byColor.size > 512) byColor.clear();
+    grid.cols = cols;
+    grid.rows = rows;
+    grid.glyphs = chs;
+    grid.colors = colors;
+    grid.alphas = alphas;
+    grid.colFade = colFade;
+    painter.draw(grid);
   }
 
   /** Saturn's rings: an annulus in a plane tipped toward us, with a gap in it. */
@@ -549,7 +525,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
     L: [number, number, number],
     tint: Rgb,
     look: ThemeLook,
-    tinted: (ch: string, color: Rgb, alpha: number) => boolean,
+    tinted: (ch: number, color: Rgb, alpha: number) => boolean,
   ) {
     const colour = clamp01(look.colour);
     const outer = r * 2.25;
@@ -579,7 +555,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
         const density = shadow < 1 ? 0.15 : 0.9 - band * 0.4;
         const g = mix(NIGHT, DAY, look.invert >= 0.5 ? 1 - density : density);
         const alpha = (0.35 + 0.35 * (1 - band)) * shadow;
-        tinted(band < 0.58 ? "=" : "-", shadeOf(mix(g, tint, colour), look), (1 + (alpha - 1) * colour) * look.bodies);
+        tinted(band < 0.58 ? RING : RING_OUTER, shadeOf(mix(g, tint, colour), look), (1 + (alpha - 1) * colour) * look.bodies);
         put(kk, out.ch, out.color, out.alpha);
         zbuf[kk] = depth;
       }
