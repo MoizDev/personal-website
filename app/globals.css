@@ -85,6 +85,20 @@ svg {
   --tint-k: 16%;
 }
 
+/* Switching theme (lib/theme.ts): the page changes in one step, under a single
+   crossfade, rather than each part easing to its new colour on its own. */
+:root[data-theme-switching] *,
+:root[data-theme-switching] *::before,
+:root[data-theme-switching] *::after {
+  transition: none !important;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: ease;
+}
+
 html,
 body {
   height: 100%;

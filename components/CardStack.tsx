@@ -491,10 +491,24 @@ export function CardStack() {
     // once the front cards have landed, the first one flips out (unless the visitor already moved)
     flipTimer = window.setTimeout(() => m.target < 1 && aim(1), reduce ? 0 : FLIP_AT_MS);
 
+    // Decode every card's pictures once the load has settled. Each card first
+    // shows big when it reaches the front of the row; decoded ahead, that first
+    // time doesn't stall the scroll that brings it there.
+    let decodeIdle = 0;
+    const decodeAll = () => {
+      for (const img of worldEl?.querySelectorAll("img") ?? []) img.decode().catch(() => {});
+    };
+    const decodeTimer = window.setTimeout(() => {
+      decodeIdle =
+        typeof requestIdleCallback === "function" ? requestIdleCallback(decodeAll, { timeout: 1500 }) : (decodeAll(), 0);
+    }, DROP_END);
+
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(snapTimer);
       clearTimeout(flipTimer);
+      clearTimeout(decodeTimer);
+      if (decodeIdle) cancelIdleCallback(decodeIdle);
       introSize.disconnect();
       document.documentElement.style.removeProperty("--intro-bottom");
       window.removeEventListener("resize", onResize);
@@ -599,7 +613,7 @@ export function CardStack() {
                 onPointerLeave={() => setHover((h) => (h === j ? null : h))}
                 onFocus={(e) => e.currentTarget.matches(":focus-visible") && goTo.current(j)}
               >
-                <Face project={p} live={j === activeEl} sizes="32vw" />
+                <Face project={p} live={j === activeEl} sizes="32vw" eager />
               </a>
             );
           })}

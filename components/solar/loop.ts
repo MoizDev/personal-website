@@ -67,6 +67,17 @@ export function makeLoop(canvas: HTMLCanvasElement | OffscreenCanvas, solar: Sol
     if (sized && still) r.frame(STILL_T);
   };
 
+  /**
+   * A change that shows across the whole drawing at once (the theme): draw it
+   * now, even while animating, so it lands with the page's own change rather
+   * than up to a frame behind it.
+   */
+  const redrawNow = () => {
+    if (!sized) return;
+    if (still) r.frame(STILL_T);
+    else if (visible) r.frame(t);
+  };
+
   return function onMessage(m: SolarMsg) {
     switch (m.type) {
       case "size":
@@ -76,7 +87,7 @@ export function makeLoop(canvas: HTMLCanvasElement | OffscreenCanvas, solar: Sol
         break;
       case "theme":
         r.setTheme(m.ink, m.dark);
-        redraw();
+        redrawNow();
         break;
       case "accent":
         r.setAccent(m.rgb, m.instant || still);

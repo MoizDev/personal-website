@@ -10,9 +10,22 @@ import type { Project } from "@/lib/projects";
  * the same in either.
  *
  * `live` shows the badge (in the row, once the card is in the spot); `sizes`
- * says how wide the screenshot shows, for picking its file.
+ * says how wide the screenshot shows, for picking its file. `eager` loads the
+ * images with the page rather than as they near the screen (the row, whose
+ * cards are all on screen from the start, if tiny and far off).
  */
-export function CardFace({ project: p, live, sizes }: { project: Project; live: boolean; sizes: string }) {
+export function CardFace({
+  project: p,
+  live,
+  sizes,
+  eager = false,
+}: {
+  project: Project;
+  live: boolean;
+  sizes: string;
+  eager?: boolean;
+}) {
+  const loading = eager ? "eager" : "lazy";
   return (
     <Body
       tone={p.tone}
@@ -27,10 +40,10 @@ export function CardFace({ project: p, live, sizes }: { project: Project; live: 
     >
       <CardLines art={p.lines} />
       {p.art.kind === "shot" ? (
-        <Image className="card-shot" src={p.art.src} alt="" sizes={sizes} draggable={false} />
+        <Image className="card-shot" src={p.art.src} alt="" sizes={sizes} loading={loading} draggable={false} />
       ) : (
         <div className="card-logo">
-          <Image className="card-logo-mark" src={p.art.src} alt="" draggable={false} />
+          <Image className="card-logo-mark" src={p.art.src} alt="" loading={loading} draggable={false} />
           <span className="card-logo-tag">{p.art.tagline}</span>
         </div>
       )}
@@ -38,7 +51,7 @@ export function CardFace({ project: p, live, sizes }: { project: Project; live: 
         <video className="card-shot card-video" src={p.video} autoPlay muted loop playsInline aria-hidden />
       )}
       <span className="card-name">
-        <Image className="card-name-logo" src={p.logo} alt="" draggable={false} />
+        <Image className="card-name-logo" src={p.logo} alt="" loading={loading} draggable={false} />
         {p.name}
       </span>
     </Body>
