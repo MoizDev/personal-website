@@ -367,10 +367,6 @@ body {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  perspective: var(--depth);
-  perspective-origin:
-    calc(var(--frame-x) + var(--frame-w) * var(--po-x))
-    calc(var(--frame-y) + var(--frame-h) * var(--po-y) + var(--row-dy));
   touch-action: none;
   cursor: grab;
 }
@@ -384,12 +380,16 @@ body {
   pointer-events: none;
 }
 
-/* the ground: x runs along the row, -y is up */
+/* the ground: x runs along the row, -y is up. Each card carries the world's
+   turn in its own transform, seen through this perspective; nothing here is
+   preserve-3d (see CardStack). The box is empty, so the vanishing point is
+   given from its top left corner, the centre of the frame. */
 .world {
   position: absolute;
   left: calc(var(--frame-x) + var(--frame-w) / 2);
   top: calc(var(--frame-y) + var(--frame-h) / 2 + var(--row-dy));
-  transform-style: preserve-3d;
+  perspective: var(--depth);
+  perspective-origin: calc(var(--frame-w) * (var(--po-x) - 0.5)) calc(var(--frame-h) * (var(--po-y) - 0.5));
 }
 
 /* each card stands on the ground with its bottom edge centred on its spot */
@@ -400,7 +400,6 @@ body {
   width: var(--card-w);
   height: var(--card-w);
   transform-origin: 50% 100%;
-  transform-style: preserve-3d;
   -webkit-user-drag: none;
   --ease: 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
@@ -417,9 +416,11 @@ body {
   transition: transform var(--ease);
 }
 
-/* hover lifts the card straight up off the ground and leans it toward the pointer */
+/* hover lifts the card straight up off the ground and leans it toward the
+   pointer, seen through a perspective of its own (the card is flat) */
 .card[data-hover="true"] .card-face {
-  transform: translateY(-22%) rotateX(calc(var(--py, 0) * -5deg)) rotateY(calc(var(--px, 0) * 5deg));
+  transform: perspective(var(--depth)) translateY(-22%) rotateX(calc(var(--py, 0) * -5deg))
+    rotateY(calc(var(--px, 0) * 5deg));
 }
 
 .card-front {

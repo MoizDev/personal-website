@@ -343,6 +343,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
     }
   }
 
+  /** Draw the moment t; false if the painter isn't ready to draw yet. */
   function frame(t: number) {
     const L0 = look();
     easeAccent();
@@ -513,7 +514,7 @@ export function makeRenderer(canvas: Canvas, solar: Solar) {
     grid.colors = colors;
     grid.alphas = alphas;
     grid.colFade = colFade;
-    painter.draw(grid);
+    return painter.draw(grid);
   }
 
   /** Saturn's rings: an annulus in a plane tipped toward us, with a gap in it. */

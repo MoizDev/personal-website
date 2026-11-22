@@ -38,7 +38,8 @@ export type Painter = {
   measure(font: string): number;
   /** Lay out for a font, with cells cw by ch CSS px. */
   setFont(font: string, cw: number, ch: number): void;
-  draw(g: Grid): void;
+  /** Returns false if it couldn't draw yet (the shaders are still compiling). */
+  draw(g: Grid): boolean;
 };
 
 type Canvas = HTMLCanvasElement | OffscreenCanvas;
@@ -79,11 +80,14 @@ out vec4 outColor;
 
 // this pixel's share of the glyph in cell n, coloured and premultiplied
 vec4 stamp(ivec2 n, vec2 px) {
+  // first whether the pixel is in reach of the cell's glyph at all, which is
+  // only arithmetic: a glyph reaches half a cell past its own, so of the eight
+  // cells around a pixel only those on its side (about three) need looking up
+  vec2 local = px - vec2(n) * uCell + uPad;
+  if (local.x < 0.0 || local.y < 0.0 || local.x >= uSlot.x || local.y >= uSlot.y) return vec4(0.0);
   if (n.x < 0 || n.y < 0 || n.x >= uGrid.x || n.y >= uGrid.y) return vec4(0.0);
   uint g = texelFetch(uGlyphs, n, 0).r;
   if (g == 0u) return vec4(0.0);
-  vec2 local = px - vec2(n) * uCell + uPad;
-  if (local.x < 0.0 || local.y < 0.0 || local.x >= uSlot.x || local.y >= uSlot.y) return vec4(0.0);
   vec4 c = texelFetch(uCells, n, 0);
   float a = texelFetch(uAtlas, ivec2(float(g - 1u) * uSlot.x + local.x, local.y), 0).a * c.a;
   return vec4(c.rgb * a, a);
@@ -134,6 +138,10 @@ function makeGlPainter(canvas: Canvas): Painter | null {
   let lost = false;
 
   let prog: WebGLProgram | null = null;
+  /** a program still compiling (see setup) */
+  let pending: WebGLProgram | null = null;
+  // lets the GPU compile the shaders on its own time, asked after on later frames
+  const parallel = gl.getExtension("KHR_parallel_shader_compile") as { COMPLETION_STATUS_KHR: number } | null;
   let uCell: WebGLUniformLocation | null = null;
   let uCanvasH: WebGLUniformLocation | null = null;
   let uSlot: WebGLUniformLocation | null = null;
@@ -161,13 +169,33 @@ function makeGlPainter(canvas: Canvas): Painter | null {
     return t;
   }
 
-  /** Make the program and textures; again after the GPU drops the context. Returns false if the shaders failed. */
+  /**
+   * Start the program compiling; again after the GPU drops the context. Asking
+   * whether a link worked waits for it, and the GPU process, which draws the
+   * whole page, waits with it: a frozen screen for a tenth of a second on a
+   * first visit. Where the browser can say whether it's done without waiting,
+   * the sky starts on the first frame after it is.
+   */
   function setup() {
     const p = gl!.createProgram()!;
     gl!.attachShader(p, shader(gl!.VERTEX_SHADER, VERT));
     gl!.attachShader(p, shader(gl!.FRAGMENT_SHADER, FRAG));
     gl!.linkProgram(p);
-    if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) return false;
+    prog = null;
+    pending = p;
+    return parallel ? true : finish();
+  }
+
+  /** Once the program has compiled, set it up with its textures. Returns false if it isn't ready or failed. */
+  function finish() {
+    const p = pending;
+    if (!p) return false;
+    if (parallel && !gl!.getProgramParameter(p, parallel.COMPLETION_STATUS_KHR)) return false;
+    pending = null;
+    if (!gl!.getProgramParameter(p, gl!.LINK_STATUS)) {
+      lost = true; // nothing to draw with; the page is fine without the sky
+      return false;
+    }
     prog = p;
     gl!.useProgram(p);
     gl!.bindVertexArray(gl!.createVertexArray());
@@ -251,7 +279,8 @@ function makeGlPainter(canvas: Canvas): Painter | null {
       ch = h;
     },
     draw(g) {
-      if (lost || !prog) return;
+      if (lost) return true; // never will: nothing to wait for
+      if (!prog && !finish()) return false;
       if (`${font}@${dpr}` !== atlasFont) buildAtlas();
       if (g.cols !== cols || g.rows !== rows) {
         cols = g.cols;
@@ -295,6 +324,7 @@ function makeGlPainter(canvas: Canvas): Painter | null {
       gl.uniform2i(uGrid, cols, rows);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+      return true;
     },
   };
 }
@@ -364,6 +394,7 @@ function make2dPainter(canvas: Canvas): Painter {
       ctx.globalAlpha = 1;
       // forget colours that have gone, so a long fade between cards doesn't pile them up
       if (byColor.size > 512) byColor.clear();
+      return true;
     },
   };
 }

@@ -298,6 +298,12 @@
   height: auto;
 }
 
+/* while the menu is closed its card can't be seen: hold the star and its wash
+   still, or they ask for a fresh frame (colour, on the main thread) 60 times a second */
+.nav:not([data-open="true"]) :is(.nav-card, .star-spin) {
+  animation-play-state: paused;
+}
+
 /* the page dims behind an open menu, and a click there closes it */
 .nav-scrim {
   position: fixed;

@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 import { SOLAR, SOLAR_EVENT } from "@/lib/solar";
 import { makeLoop, type SolarMsg } from "@/components/solar/loop";
 import type { Rgb } from "@/components/solar/render";
+import { onProjectTone, projectTone } from "@/lib/tone";
 
 /** "#rrggbb" to rgb, or null. */
 function hexRgb(hex: string): Rgb | null {
@@ -121,10 +122,10 @@ export function SolarSystem({ tone }: { tone?: string } = {}) {
       sky.style.setProperty("--sky-hue", String(look.skyHue));
     };
 
-    /** The colour of the card in the spot, which CardStack sets on the root as --project-tone. */
+    /** The colour of the card in the spot (lib/tone). */
     const skyFade = makeToneFade(sky, "hsl(calc(var(--sky-hue) + 1) 90% 59%)");
     const glowFade = makeToneFade(glow, "transparent");
-    const accentNow = () => tone ?? root.style.getPropertyValue("--project-tone");
+    const accentNow = () => tone ?? projectTone();
     const readAccent = (instant = false) => {
       const accent = accentNow();
       send({ type: "accent", rgb: hexRgb(accent), instant });
@@ -164,12 +165,10 @@ export function SolarSystem({ tone }: { tone?: string } = {}) {
       readTheme();
       readAccent();
     };
-    // the theme re-reads styles; a change of card (an inline style) only needs the colour
-    const mo = new MutationObserver((records) => {
-      if (records.some((m) => m.attributeName === "data-theme")) onTheme();
-      else readAccent();
-    });
-    mo.observe(root, { attributes: true, attributeFilter: ["data-theme", "style"] });
+    const mo = new MutationObserver(onTheme);
+    mo.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    // a fixed tone never changes
+    const stopTone = tone ? () => {} : onProjectTone(() => readAccent());
     const onSolar = () => {
       send({ type: "solar", solar: JSON.parse(JSON.stringify(SOLAR)) });
       onTheme();
@@ -186,6 +185,7 @@ export function SolarSystem({ tone }: { tone?: string } = {}) {
       ro.disconnect();
       io.disconnect();
       mo.disconnect();
+      stopTone();
       still.removeEventListener("change", run);
       document.removeEventListener("visibilitychange", run);
       removeEventListener(SOLAR_EVENT, onSolar);
