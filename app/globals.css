@@ -764,8 +764,9 @@ body {
 /*
  * Phones (a screen taller than wide; zooming never changes that, so it can't
  * flip the layout): no 3D. The page scrolls like any other: the intro, then
- * the projects as a list of flat cards, each with its write-up under it
- * (components/ProjectList). The 3D row is hidden and its script doesn't run.
+ * the projects as a flat carousel swiped sideways, each card with its
+ * write-up under it (components/ProjectList). The 3D row is hidden and its
+ * script doesn't run.
  */
 @media (max-aspect-ratio: 3/4) {
   :root {

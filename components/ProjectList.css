@@ -1,5 +1,5 @@
-/* Phones: the projects as a scrolling list (ProjectList.tsx). Desktops show
-   the 3D row instead (CardStack), so this is hidden there. */
+/* Phones: the projects as a flat carousel swiped sideways (ProjectList.tsx).
+   Desktops show the 3D row instead (CardStack), so this is hidden there. */
 
 .plist {
   display: none;
@@ -9,18 +9,43 @@
   .plist {
     position: relative;
     z-index: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 56px;
-    padding: 44px 20px calc(48px + env(safe-area-inset-bottom));
-    /* the cards' sizes are all in card widths (app/globals.css) */
-    --card-w: calc(100vw - 40px);
+    display: block;
+    padding: 20px 0 calc(28px + env(safe-area-inset-bottom));
+    /* a card a screen wide less room for its neighbours to peek in either side;
+       the cards' sizes are all in card widths (app/globals.css) */
+    --card-w: calc(100vw - 72px);
+    --peek: calc((100vw - var(--card-w)) / 2);
+    --plist-gap: 12px;
     /* a link that jumps here lands clear of the navbar */
     scroll-margin-top: calc(var(--nav-top) + var(--nav-h));
   }
 
+  /* the browser's own sideways scroll, snapping a card at a time to the middle */
+  .plist-track {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--plist-gap);
+    /* room above for the award badge, which stands off the card's top edge */
+    padding: 18px var(--peek) 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    outline: none;
+  }
+
+  .plist-track::-webkit-scrollbar {
+    display: none;
+  }
+
   .plist-item {
-    scroll-margin-top: calc(var(--nav-top) + var(--nav-h) + 16px);
+    flex: 0 0 var(--card-w);
+    width: var(--card-w);
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
   }
 
   .plist-card {
@@ -29,27 +54,24 @@
     width: var(--card-w);
     aspect-ratio: 1;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 160ms ease;
+    -webkit-touch-callout: none;
+    transition: scale 160ms ease;
   }
 
   .plist-card:active {
-    transform: scale(0.985);
+    scale: 0.985;
   }
 
   .plist-card .card-front {
     border-radius: calc(var(--card-w) * 0.035);
   }
 
-  /* the award badge sits on the card's top right corner, inside the screen */
-  .plist-card .card-badge {
-    top: calc(var(--card-w) * -0.035);
+  /* the award badge sits on the card's top right corner */
+  .plist-card .card-badge,
+  .plist-card .card-badge[data-live="true"] {
+    top: calc(var(--card-w) * -0.04);
     right: calc(var(--card-w) * 0.03);
     font-size: 10px;
-    transform: rotate(4deg);
-    transition: none;
-  }
-
-  .plist-card .card-badge[data-live="true"] {
     opacity: 1;
     transform: rotate(4deg);
     transition: none;
@@ -92,31 +114,130 @@
     color: var(--muted);
   }
 
-  /* each card rises into place as it scrolls in, where the browser can tie
-     that to the scroll itself (no script, and it runs off the main thread) */
+  /* a card eases back and dims as it leaves the middle, and comes up as it
+     arrives, tied to the swipe itself where the browser can (no script, and
+     it runs off the main thread); elsewhere the cards just slide */
   @supports (animation-timeline: view()) {
-    .plist-card {
-      animation: plist-in linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 55%;
+    .plist-item {
+      animation: plist-pass linear both;
+      animation-timeline: view(inline);
     }
 
-    .plist-card:active {
-      transform: none;
-      scale: 0.985;
+    /* the write-ups only show for the card in the middle, so a neighbour's
+       text doesn't stick in at the edge cut off mid-word */
+    .plist-detail,
+    .plist-next-note {
+      animation: plist-text linear both;
+      animation-timeline: view(inline);
     }
+  }
+
+  /* back, a dot per card, on */
+  .plist-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 22px;
+    padding: 0 var(--peek);
+  }
+
+  .plist-arrow {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(var(--ink-rgb), 0.14);
+    border-radius: 50%;
+    background: rgba(var(--paper-rgb), 0.6);
+    color: var(--fg);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition:
+      opacity 200ms ease,
+      scale 120ms ease;
+  }
+
+  .plist-arrow:active {
+    scale: 0.92;
+  }
+
+  .plist-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .plist-arrow svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .plist-dots {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .plist-dots li {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(var(--ink-rgb), 0.2);
+    transition:
+      width 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 260ms ease;
+  }
+
+  .plist-dots li[data-on="true"] {
+    width: 18px;
+    background: var(--fg);
   }
 }
 
-@keyframes plist-in {
-  from {
+/* through the middle of the track: 50% is a card centred */
+@keyframes plist-pass {
+  0%,
+  100% {
+    opacity: 0.55;
+    scale: 0.94;
+  }
+  50% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes plist-text {
+  0%,
+  32%,
+  68%,
+  100% {
     opacity: 0;
-    transform: translateY(28px) scale(0.97);
+  }
+  50% {
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .plist-card {
+  .plist-item,
+  .plist-detail,
+  .plist-next-note {
     animation: none !important;
+  }
+
+  .plist-dots li {
+    transition: none;
   }
 }
