@@ -22,6 +22,7 @@ import { Logo } from "@/components/Logo";
 import "./Navbar.css";
 import { EMAIL, LINKS, newTab } from "@/lib/links";
 import { PHONE_QUERY } from "@/lib/scale";
+import { toggleTheme } from "@/lib/theme";
 
 /**
  * Back to the work: on desktops the row goes back to its first card (CardStack
@@ -54,18 +55,6 @@ const SMALL = [
 ];
 
 const stop = (e: SyntheticEvent) => e.stopPropagation();
-
-/** Flip between light and dark, and remember the choice. */
-function toggleTheme() {
-  const root = document.documentElement;
-  const next = root.dataset.theme === "dark" ? "light" : "dark";
-  root.dataset.theme = next;
-  try {
-    localStorage.setItem("theme", next);
-  } catch {
-    // storage blocked; the choice lasts until reload
-  }
-}
 
 export function Navbar() {
   const [open, setOpen] = useState(false);
