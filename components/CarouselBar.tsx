@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { PHONE_QUERY } from "@/lib/scale";
+import { setProjectTone } from "@/lib/tone";
 
 /** The carousel's track: the bar's sibling. */
 const trackOf = (bar: HTMLElement | null) => bar?.parentElement?.querySelector<HTMLElement>(".plist-track") ?? null;
@@ -9,8 +10,7 @@ const trackOf = (bar: HTMLElement | null) => bar?.parentElement?.querySelector<H
 /**
  * The phone carousel's controls (ProjectList): a card back, a dot per card,
  * and a card on. It watches which card sits in the middle of the track, and
- * the sky takes that card's colour (--project-tone on the root, which
- * SolarSystem fades to), as the desktop's does from the card in the spot.
+ * the sky takes that card's colour (lib/tone, which SolarSystem fades to), as the desktop's does from the card in the spot.
  */
 export function CarouselBar({ count }: { count: number }) {
   const bar = useRef<HTMLDivElement>(null);
@@ -32,7 +32,6 @@ export function CarouselBar({ count }: { count: number }) {
     const t = trackOf(bar.current);
     if (!t) return;
     const mq = matchMedia(PHONE_QUERY);
-    const root = document.documentElement.style;
     const items = Array.from(t.children) as HTMLElement[];
     let io: IntersectionObserver | null = null;
 
@@ -47,9 +46,7 @@ export function CarouselBar({ count }: { count: number }) {
             if (!e.isIntersecting) continue;
             const i = items.indexOf(e.target as HTMLElement);
             setActive(i);
-            const tone = items[i].dataset.tone;
-            if (tone) root.setProperty("--project-tone", tone);
-            else root.removeProperty("--project-tone");
+            setProjectTone(items[i].dataset.tone ?? null);
           }
         },
         { root: t, threshold: 0.6 },

@@ -53,18 +53,24 @@ export function makeLoop(canvas: HTMLCanvasElement | OffscreenCanvas, solar: Sol
     r.frame(t);
   };
 
+  /** The fixed drawing, tried again each frame until the painter can draw it (its shaders compiling). */
+  const drawStill = () => {
+    caf(id);
+    id = r.frame(STILL_T) ? 0 : raf(drawStill);
+  };
+
   function run() {
     caf(id);
     id = 0;
     prev = 0;
     if (!sized) return;
-    if (still) r.frame(STILL_T);
+    if (still) drawStill();
     else if (visible) id = raf(tick);
   }
 
   /** A change while still: draw it again. (While animating, the next frame picks it up.) */
   const redraw = () => {
-    if (sized && still) r.frame(STILL_T);
+    if (sized && still) drawStill();
   };
 
   /**
@@ -74,7 +80,7 @@ export function makeLoop(canvas: HTMLCanvasElement | OffscreenCanvas, solar: Sol
    */
   const redrawNow = () => {
     if (!sized) return;
-    if (still) r.frame(STILL_T);
+    if (still) drawStill();
     else if (visible) r.frame(t);
   };
 

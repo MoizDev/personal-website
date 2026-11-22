@@ -16,6 +16,7 @@ import { playWhoop, unlockSound } from "@/lib/sound";
 import { Body, CardFace } from "@/components/CardFace";
 import { linkLabel } from "@/lib/links";
 import { PROJECTS } from "@/lib/projects";
+import { setProjectTone } from "@/lib/tone";
 
 /*
  * A row of square cards standing on a ground plane, running off into the
@@ -29,6 +30,13 @@ import { PROJECTS } from "@/lib/projects";
  *
  * In CSS terms the ground is the x/z plane of `.world`, "up" is -y, and the
  * camera angle is the world's rotateX (pitch) and rotateY (yaw).
+ *
+ * There is no shared 3D scene: each card carries the whole of its transform,
+ * the world's turn followed by its own place in it, and the cards are stacked
+ * by z-index, nearest on top. In a shared scene (preserve-3d) the browser draws
+ * every card into an offscreen pass of its own, at full size, on every frame:
+ * fifty-odd passes to show one row. Flat, each card is drawn once, straight
+ * onto the page.
  *
  * Position `p` counts cards pulled out. At p = 0 nothing is out (the opening
  * view, which only shows during the load before the first card flips out).
@@ -125,6 +133,9 @@ function cardPose(s: number, n: number, spot: Spot | null, pitch: number, g: Geo
   return { transform: flightTransform(1, spot, pitch, spot.lift * smooth(e), near), opacity };
 }
 
+/** Where card in slot s stacks: the row nearest on top, then the card flying in, then the one leaving. */
+const zOf = (s: number) => (s >= 0 ? M + 2 - Math.floor(s) : s >= -1 ? M + 3 : M + 4);
+
 const worldTransform = (pitch: number, g?: Geo | null) =>
   g
     ? `translate3d(${g.ox.toFixed(2)}px, ${g.oy.toFixed(2)}px, 0) rotateX(${(g.pitch + pitch).toFixed(3)}deg) rotateY(${g.yaw}deg)`
@@ -133,7 +144,8 @@ const worldTransform = (pitch: number, g?: Geo | null) =>
 // Server render and first paint have every card up in the air, unseen, ready to drop.
 // These objects never change, so re-renders leave the per-frame inline styles alone.
 const INITIAL: CSSProperties[] = Array.from({ length: M }, (_, j) => ({
-  transform: rowTransform(slotOf(j, 0), DROP),
+  transform: `${worldTransform(0)} ${rowTransform(slotOf(j, 0), DROP)}`,
+  zIndex: zOf(slotOf(j, 0)),
   // no opacity here: a card fades on its face (see paint)
   visibility: "hidden",
 }));
@@ -144,7 +156,6 @@ function dropOf(j: number, ms: number) {
   const t = clamp((ms - delay) / DROP_MS, 0, 1);
   return { drop: DROP * (1 - easeOut(t)), fade: clamp(t * 2.5, 0, 1) };
 }
-const INITIAL_WORLD: CSSProperties = { transform: worldTransform(0) };
 const HIDDEN: CSSProperties = { opacity: 0, visibility: "hidden" };
 
 export function CardStack() {
@@ -195,6 +206,7 @@ export function CardStack() {
     const lastTransform: string[] = new Array(M).fill("");
     const lastOpacity: string[] = new Array(M).fill("");
     const lastHidden: (boolean | null)[] = new Array(M).fill(null);
+    const lastZ: number[] = new Array(M).fill(-1);
 
     // The spot is laid out by CSS; measure it so cards can fly there.
     function measure() {
@@ -218,8 +230,9 @@ export function CardStack() {
         pitch: num("--pitch"),
         yaw: num("--yaw"),
       };
-      const dx = r.left + r.width / 2 - o.left;
-      const dy = r.bottom - o.top;
+      // the origin's element sits where the world starts; the front card's foot is (ox, oy) on from it
+      const dx = r.left + r.width / 2 - (o.left + geo.ox);
+      const dy = r.bottom - (o.top + geo.oy);
       spot = {
         dx,
         dy,
@@ -235,6 +248,7 @@ export function CardStack() {
     function paint(now = performance.now()) {
       const pitch = (geo?.pitch ?? 0) + m.pitch;
       const intro = now < introEnd ? now - introStart : -1;
+      const turn = worldTransform(m.pitch, geo);
       for (let j = 0; j < M; j++) {
         const el = cards.current[j];
         if (!el) continue;
@@ -252,9 +266,15 @@ export function CardStack() {
           el.style.visibility = hidden ? "hidden" : "";
         }
         // a hidden card needn't move; it's put right when it shows again
-        if (!hidden && pose.transform !== lastTransform[j]) {
-          lastTransform[j] = pose.transform;
-          el.style.transform = pose.transform;
+        const transform = `${turn} ${pose.transform}`;
+        if (!hidden && transform !== lastTransform[j]) {
+          lastTransform[j] = transform;
+          el.style.transform = transform;
+        }
+        const z = zOf(s);
+        if (z !== lastZ[j]) {
+          lastZ[j] = z;
+          el.style.zIndex = String(z);
         }
         // The row is a loop, so projects already pulled out come back round at the far
         // end. There they're plain grey like the mystery cards, and can't be clicked.
@@ -272,7 +292,6 @@ export function CardStack() {
           (el.firstElementChild as HTMLElement | null)?.style.setProperty("opacity", fade);
         }
       }
-      if (world.current) world.current.style.transform = worldTransform(m.pitch, geo);
 
       // The write-up fades out as its card leaves and in as the next one lands.
       const k = Math.round(m.cur);
@@ -523,7 +542,6 @@ export function CardStack() {
       setActive(-1);
       setLanded(-1);
       setHover(null);
-      if (worldEl) worldEl.style.transform = worldTransform(0);
       sceneEl?.removeAttribute("data-moving");
       cardEls.forEach((el, j) => {
         if (!el) return;
@@ -545,12 +563,7 @@ export function CardStack() {
   const tone = landed >= 0 ? PROJECTS[landed % N].tone : null;
   useEffect(() => {
     if (phone !== false) return; // the carousel sets it on phones (CarouselBar)
-    const root = document.documentElement.style;
-    if (tone) {
-      root.setProperty("--project-tone", tone);
-    } else {
-      root.removeProperty("--project-tone");
-    }
+    setProjectTone(tone);
   }, [tone, phone]);
   const activeEl = active >= 0 ? active % M : -1;
 
@@ -573,7 +586,7 @@ export function CardStack() {
   return (
     <>
       <div className="scene" aria-label="Projects">
-        <div className="world" ref={world} style={INITIAL_WORLD}>
+        <div className="world" ref={world}>
           <div className="world-origin" ref={origin} />
           {Array.from({ length: M }, (_, j) => {
             // past the last project: what's next
