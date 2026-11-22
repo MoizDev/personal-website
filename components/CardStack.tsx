@@ -521,7 +521,7 @@ export function CardStack() {
 
   // the sky and the corner glow take the colour of the project in the spot
   useEffect(() => {
-    if (phone !== false) return; // the list sets it on phones (ToneOnScroll)
+    if (phone !== false) return; // the carousel sets it on phones (CarouselBar)
     const root = document.documentElement.style;
     if (activeProject) {
       root.setProperty("--project-tone", activeProject.tone);
